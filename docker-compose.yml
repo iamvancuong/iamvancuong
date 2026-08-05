@@ -1,0 +1,30 @@
+# MySQL chạy trong Docker — không phải cài MySQL vào máy, xóa đi cũng sạch sẽ.
+#
+#   docker compose up -d     bật
+#   docker compose down      tắt (dữ liệu vẫn còn)
+#
+# Dữ liệu nằm trong volume `mysql_data`, không mất khi tắt container.
+# Sau này thuê hosting thì chỉ cần đổi DATABASE_URL trong .env, không đổi code.
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: vancuong_mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: devroot
+      MYSQL_DATABASE: iamvancuong
+      MYSQL_USER: cuong
+      MYSQL_PASSWORD: devpass
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-pdevroot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  mysql_data:

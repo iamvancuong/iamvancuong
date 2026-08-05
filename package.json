@@ -1,0 +1,51 @@
+{
+  "name": "iamvancuong",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "predev": "npm run db:up && prisma generate",
+    "dev": "next dev",
+    "prestart": "npm run db:up && prisma generate",
+    "prebuild": "prisma generate",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "db:up": "docker compose up -d --wait",
+    "db:down": "docker compose down",
+    "db:push": "prisma db push && node scripts/after-db-push.mjs",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:studio": "prisma studio",
+    "hash-password": "tsx scripts/hash-password.ts",
+    "db:demo": "tsx prisma/seed-demo.ts",
+    "db:demo:clear": "tsx prisma/seed-demo.ts --clear"
+  },
+  "dependencies": {
+    "@prisma/adapter-mariadb": "^7.9.1",
+    "@prisma/client": "^7.9.1",
+    "bcryptjs": "^3.0.3",
+    "gray-matter": "^4.0.3",
+    "jose": "^6.2.8",
+    "lucide-react": "^1.28.0",
+    "next": "16.3.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "remark": "^15.0.1",
+    "remark-gfm": "^4.0.1",
+    "remark-html": "^16.0.1",
+    "sharp": "^0.35.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "dotenv": "^17.4.2",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.0",
+    "prisma": "^7.9.1",
+    "tailwindcss": "^4",
+    "tsx": "^4.23.5",
+    "typescript": "^5"
+  }
+}

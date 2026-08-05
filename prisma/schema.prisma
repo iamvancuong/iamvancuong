@@ -1,0 +1,383 @@
+// Life OS — schema. Xem docs/OS-DESIGN.md
+//
+// Nguyên tắc: LĨNH VỰC nằm trong dữ liệu, không nằm trong code.
+// Thêm một lĩnh vực mới = INSERT một dòng Area, không sửa dòng code nào.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Prisma 7: chuỗi kết nối không còn khai báo ở đây nữa.
+// Migration đọc từ prisma.config.ts, còn lúc chạy thì lib/db.ts truyền adapter.
+datasource db {
+  provider = "mysql"
+}
+
+/// Lĩnh vực của cuộc sống. Tiếng Nhật, Công việc, Tình yêu, Gia đình...
+model Area {
+  id      String  @id @default(cuid())
+  slug    String  @unique // "tieng-nhat"
+  name    String // "Tiếng Nhật"
+  tagline String? @db.Text // câu hỏi mà lĩnh vực này trả lời
+  icon    String? // tên icon lucide
+  order   Int     @default(0)
+  active  Boolean @default(true) // tạm ẩn mà không xóa dữ liệu
+
+  goals      Goal[]
+  principles Principle[]
+  items      Item[]
+  memories   Memory[]
+  photos     Photo[]
+  focusItems FocusItem[]
+  metrics    Metric[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Mốc thời gian của mục tiêu.
+///
+/// Hai nhóm khác hẳn nhau về bản chất, cố ý để chung một bảng vì chúng đều
+/// là "điều tôi muốn đạt ở lĩnh vực này":
+///
+///   WEEK · MONTH        CAM KẾT CÓ KỲ. Thuộc về đúng một tuần/tháng cụ thể
+///                       (xem periodStart), hết kỳ thì chấm kết quả rồi đóng
+///                       lại. Tuần sau là một cam kết mới, không phải cái cũ.
+///   THIS_YEAR … LIFE    MỐC DÀI HẠN. Không có ngày kết thúc, sống cùng mình
+///                       nhiều tháng tới nhiều năm.
+///
+/// Thứ tự khai báo cũng là thứ tự sắp xếp trong MySQL — gần nhất lên trước.
+enum Horizon {
+  WEEK // cam kết một tuần — dùng kèm periodStart
+  MONTH // cam kết một tháng — dùng kèm periodStart
+  THIS_YEAR
+  NEXT_YEAR
+  AGE // dùng kèm horizonAge: 25, 30...
+  LIFE // cả đời
+}
+
+enum GoalStatus {
+  NOT_STARTED
+  DOING
+  DONE
+  DROPPED // bỏ đúng lúc là kỹ năng — nhớ ghi lý do vào dropReason
+}
+
+/// Kết quả của một cam kết SAU KHI hết kỳ.
+///
+/// Tách khỏi GoalStatus vì đây là hai câu hỏi khác nhau: status trả lời "đang
+/// làm tới đâu", outcome trả lời "kỳ đó rốt cuộc thế nào". Có PARTIAL vì phần
+/// lớn tuần thật nằm ở giữa — ép về đúng/sai chỉ khiến người ta ngại chấm.
+enum GoalOutcome {
+  SUCCESS
+  PARTIAL
+  FAILED
+}
+
+model Goal {
+  id     String @id @default(cuid())
+  areaId String
+  area   Area   @relation(fields: [areaId], references: [id], onDelete: Cascade)
+
+  title  String
+  detail String? @db.Text
+  why    String? @db.Text // vì sao việc này quan trọng với mình
+
+  horizon    Horizon
+  horizonAge Int? // chỉ dùng khi horizon = AGE
+
+  /// Ngày đầu kỳ — CHỈ dùng khi horizon = WEEK hoặc MONTH.
+  /// Tuần: thứ Hai của tuần đó. Tháng: ngày 1.
+  /// Luôn là nửa đêm UTC như mọi cột @db.Date khác (lib/os/day.ts).
+  periodStart DateTime? @db.Date
+
+  /// Cách đo. Để trống nếu mục tiêu không đo được bằng số.
+  metric String?
+  target String?
+  current String?
+
+  status     GoalStatus @default(NOT_STARTED)
+  dropReason String?    @db.Text
+  doneAt     DateTime?
+
+  /// ---- Tự sự sau khi hết kỳ ----
+  /// Phần có giá trị nhất của cam kết tuần. Bản thân việc đạt hay không đạt
+  /// một tuần thì ít nghĩa; biết VÌ SAO mới đổi được tuần sau.
+  /// Ba câu giống hệt nhật ký ngày, để khỏi phải học thêm khung tư duy mới.
+  outcome    GoalOutcome?
+  reviewWhat String?      @db.Text // chuyện gì đã xảy ra
+  reviewWhy  String?      @db.Text // điều gì khiến mình đạt / không đạt
+  reviewNext String?      @db.Text // kỳ sau đổi gì
+  reviewedAt DateTime?
+
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([areaId, status])
+  @@index([horizon, periodStart])
+}
+
+enum PrincipleKind {
+  DO // nên
+  DONT // không nên
+}
+
+/// Nguyên tắc sống. KHÔNG phải to-do — không tick hằng ngày.
+/// Đây là thứ để đọc lại lúc đang phân vân.
+model Principle {
+  id     String @id @default(cuid())
+  areaId String
+  area   Area   @relation(fields: [areaId], references: [id], onDelete: Cascade)
+
+  kind PrincipleKind
+  text String        @db.Text
+  why  String?       @db.Text
+
+  active    Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([areaId, kind])
+}
+
+enum ItemStatus {
+  USING // đang dùng
+  DROPPED // đã bỏ  ← phần có giá trị nhất
+  WANT // muốn thử
+}
+
+/// Thứ đang dùng: skincare, dầu gội, quần áo, giáo trình, khóa học, công cụ.
+model Item {
+  id     String @id @default(cuid())
+  areaId String
+  area   Area   @relation(fields: [areaId], references: [id], onDelete: Cascade)
+
+  name  String
+  kind  String? // "skincare" | "tóc" | "quần áo" | "sách"... nhập tự do
+  status ItemStatus @default(WANT)
+
+  startedAt DateTime?
+  endedAt   DateTime?
+  cost      Int? // ¥
+
+  /// Kết luận sau khi dùng. Ô quan trọng nhất — để 6 tháng sau
+  /// khỏi mua lại thứ từng vô dụng.
+  verdict String? @db.Text
+  note    String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([areaId, status])
+}
+
+/// Chiều nào là tốt lên. Cần biết mới tô được màu đúng:
+/// cân nặng tăng có thể là tốt, chi tiêu tăng thì không.
+enum MetricDirection {
+  UP // càng cao càng tốt — điểm thi, số bài đã viết
+  DOWN // càng thấp càng tốt — chi tiêu, cân nặng khi đang giảm
+}
+
+/// Số đo — một con số có tên, ghi lại theo thời gian.
+///
+/// Đây là câu trả lời chung cho ba thứ từng định làm thành ba module riêng:
+/// điểm mock test JLPT, cân nặng, chi tiêu hằng tháng. Cùng một hình dạng dữ
+/// liệu, nên cùng một bộ code — đúng nguyên tắc ở OS-DESIGN §1.
+///
+/// PLAN §9 chống ảo tưởng tiến bộ: neo vào số đo được thật (điểm thang JLPT
+/// 60/60/60), đừng dùng "Vocabulary 72%" — phần trăm của cái gì thì không ai
+/// biết. Bảng này tồn tại để chỗ ghi con số thật đó có mặt.
+model Metric {
+  id     String @id @default(cuid())
+  areaId String
+  area   Area   @relation(fields: [areaId], references: [id], onDelete: Cascade)
+
+  name      String // "điểm mock N3"
+  unit      String? // "/180" · "kg" · "¥"
+  target    String? // "≥ 95" — để chữ vì có khi là khoảng, không phải một số
+  direction MetricDirection @default(UP)
+  note      String?         @db.Text
+
+  entries MetricEntry[]
+
+  order     Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([areaId, active])
+}
+
+/// Một lần ghi. Ngày chứ không phải thời điểm — cùng quy ước nửa đêm UTC với
+/// mọi cột @db.Date khác (lib/os/day.ts).
+model MetricEntry {
+  id       String @id @default(cuid())
+  metricId String
+  metric   Metric @relation(fields: [metricId], references: [id], onDelete: Cascade)
+
+  date  DateTime @db.Date
+  value Float
+  note  String?  @db.Text
+
+  createdAt DateTime @default(now())
+
+  /// Một ngày một giá trị — ghi lại cùng ngày là đè lên, không tạo dòng thứ hai.
+  @@unique([metricId, date])
+  @@index([metricId, date])
+}
+
+enum Visibility {
+  PRIVATE // mặc định — chỉ mình xem
+  PUBLIC // đã tick "cho người khác xem"
+}
+
+/// Ký ức. Ngày tự do nên lùi được về tận tuổi thơ ở Quảng Trị.
+/// Vừa là nhật ký riêng, vừa là nguyên liệu cho blog.
+model Memory {
+  id     String  @id @default(cuid())
+  areaId String?
+  area   Area?   @relation(fields: [areaId], references: [id], onDelete: SetNull)
+
+  /// Ngày CHUYỆN XẢY RA, không phải ngày nhập.
+  /// @db.Date (không giờ) — ký ức thuộc về một ngày, không phải một thời điểm.
+  /// Luôn dựng bằng nửa đêm UTC, nếu không múi giờ JST sẽ đẩy lùi một ngày.
+  date    DateTime @db.Date
+  title   String
+  body    String?  @db.Text
+  learned String?  @db.Text
+  place   String?
+  people  String? // đi với ai
+
+  visibility Visibility @default(PRIVATE)
+  photos     Photo[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([date])
+  @@index([visibility, date])
+}
+
+/// Ảnh — database chỉ giữ ĐƯỜNG DẪN. File thật nằm ở object storage.
+/// Nhồi ảnh vào MySQL sẽ làm backup chậm và không có CDN.
+model Photo {
+  id  String @id @default(cuid())
+  url String @db.Text // bản đầy đủ (WebP)
+  thumbUrl String? @db.Text // bản nhỏ cho trang lưới
+  width  Int?
+  height Int?
+  bytes  Int?
+
+  caption String?   @db.Text
+  takenAt DateTime?
+
+  memoryId String?
+  memory   Memory? @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+  areaId   String?
+  area     Area?   @relation(fields: [areaId], references: [id], onDelete: SetNull)
+  postId   String?
+  post     Post?   @relation(fields: [postId], references: [id], onDelete: SetNull)
+
+  visibility Visibility @default(PRIVATE)
+
+  createdAt DateTime @default(now())
+
+  @@index([visibility, takenAt])
+  @@index([memoryId])
+}
+
+enum FocusStatus {
+  NOW // trần cứng 3 — ràng buộc quan trọng nhất của hệ thống
+  NEXT
+  LATER
+  NO // chủ động không làm
+}
+
+model FocusItem {
+  id    String @id @default(cuid())
+  title String
+
+  /// Khóa ngoại thật, không phải chuỗi rời. Trước đây đây là String? trần —
+  /// xóa một lĩnh vực để lại con trỏ chết và giao diện im lặng bỏ qua.
+  areaId String?
+  area   Area?   @relation(fields: [areaId], references: [id], onDelete: SetNull)
+
+  status FocusStatus @default(NEXT)
+  why    String?     @db.Text
+
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([areaId])
+}
+
+/// Chỉ số hằng ngày. Cố tình nhỏ — 3 thói quen nền tảng, không phải 20.
+model DailyLog {
+  id   String   @id @default(cuid())
+  date DateTime @unique @db.Date
+
+  sleepAt String? // "23:40"
+  jpMin   Int     @default(0)
+  itMin   Int     @default(0)
+  spend   Int? // ¥
+
+  kSleep    Boolean @default(false) // ngủ trước 00:00
+  kJapanese Boolean @default(false) // tiếng Nhật ≥ 60 phút
+  kEat      Boolean @default(false) // ăn đủ 3 bữa
+  workout   Boolean @default(false)
+
+  journalWhat   String? @db.Text
+  journalLearn  String? @db.Text
+  journalChange String? @db.Text
+
+  /// Đáng viết thành bài — cuối tuần lọc ra
+  publishable Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([date])
+}
+
+/// Chủ đề bài viết. Nằm trong dữ liệu chứ không hard-code trong lib/site.ts,
+/// nên tạo chủ đề mới ngay lúc viết bài là được — trang /blog tự có thêm
+/// bộ lọc tương ứng, không phải sửa code.
+model Tag {
+  id    String @id @default(cuid())
+  slug  String @unique
+  name  String
+  order Int    @default(0)
+  posts Post[] @relation("PostTags")
+
+  createdAt DateTime @default(now())
+}
+
+/// Blog. Cùng một kho cho bài công khai và bài riêng tư —
+/// khác nhau đúng một trường.
+model Post {
+  id      String  @id @default(cuid())
+  slug    String  @unique
+  title   String
+  excerpt String? @db.Text
+  body    String  @db.LongText
+  tags    Tag[]   @relation("PostTags")
+
+  /// Bản tiếng Nhật. Null = bài chưa có bản tiếng Nhật,
+  /// route /blog/[slug]/ja sẽ không tồn tại.
+  titleJa String?
+  bodyJa  String? @db.LongText
+
+  visibility  Visibility @default(PRIVATE)
+  publishedAt DateTime?
+
+  photos Photo[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([visibility, publishedAt])
+}

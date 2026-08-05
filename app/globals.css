@@ -1,0 +1,207 @@
+@import "tailwindcss";
+
+/* ============================================================
+   DESIGN TOKENS — xem docs/PLAN.md §4
+   Notion-like: trắng · border mảnh · gần như không shadow
+   Sửa màu/khoảng cách ở đây, không sửa rải rác trong page.
+   ============================================================ */
+
+@theme {
+  /* Background */
+  --color-bg: #ffffff;
+  --color-surface: #fafafa;
+  --color-surface-2: #f5f5f5;
+
+  /* Text */
+  --color-ink: #171717;
+  --color-ink-2: #737373;
+  --color-ink-3: #a3a3a3;
+
+  /* Border */
+  --color-line: #e5e5e5;
+  --color-line-soft: #f0f0f0;
+
+  /* Accent — tối đa 1 chỗ trên mỗi màn hình */
+  --color-accent: #2563eb;
+
+  /* Trạng thái — chỉ dùng trong /os */
+  --color-up: #16a34a;
+  --color-flat: #a3a3a3;
+  --color-down: #dc2626;
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  /* Container */
+  --container-site: 1120px;
+  --container-prose: 720px;
+  --container-os: 1280px;
+
+  /* Font — biến được gán trong app/fonts.ts */
+  --font-sans: var(--font-inter), var(--font-jp), system-ui, sans-serif;
+  --font-jp-first: var(--font-jp), var(--font-inter), system-ui, sans-serif;
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: #e8eeff;
+}
+
+/* Chữ Nhật cần line-height rộng hơn chữ Latin */
+:lang(ja) {
+  font-family: var(--font-jp-first);
+  line-height: 1.9;
+}
+
+/* ============================================================
+   PROSE — style cho nội dung Markdown đã render.
+   Tự viết thay vì cài @tailwindcss/typography để giữ đúng
+   design system (PLAN §4.2).
+   ============================================================ */
+
+.prose {
+  font-size: 17px;
+  line-height: 1.75;
+  color: var(--color-ink);
+}
+
+.prose > * + * {
+  margin-top: 24px;
+}
+
+.prose h2 {
+  font-size: 24px;
+  line-height: 1.35;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-top: 48px;
+  margin-bottom: -8px;
+}
+
+.prose h3 {
+  font-size: 18px;
+  line-height: 1.4;
+  font-weight: 600;
+  margin-top: 32px;
+  margin-bottom: -12px;
+}
+
+.prose a {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  text-decoration-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+
+.prose a:hover {
+  text-decoration-color: var(--color-accent);
+}
+
+.prose strong {
+  font-weight: 600;
+}
+
+.prose ul,
+.prose ol {
+  padding-left: 24px;
+}
+
+.prose ul {
+  list-style: disc;
+}
+
+.prose ol {
+  list-style: decimal;
+}
+
+.prose li::marker {
+  color: var(--color-ink-3);
+}
+
+.prose li + li {
+  margin-top: 8px;
+}
+
+.prose blockquote {
+  border-left: 2px solid var(--color-line);
+  padding-left: 20px;
+  color: var(--color-ink-2);
+}
+
+.prose hr {
+  border: 0;
+  border-top: 1px solid var(--color-line);
+  margin-top: 48px;
+  margin-bottom: 48px;
+}
+
+.prose code {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.875em;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-line-soft);
+  border-radius: var(--radius-sm);
+  padding: 1px 5px;
+}
+
+.prose pre {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  overflow-x: auto;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.prose pre code {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: inherit;
+}
+
+.prose img {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-line);
+  max-width: 100%;
+  height: auto;
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+  display: block;
+  overflow-x: auto;
+}
+
+.prose th,
+.prose td {
+  border: 1px solid var(--color-line);
+  padding: 8px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.prose th {
+  background: var(--color-surface);
+  font-weight: 500;
+}

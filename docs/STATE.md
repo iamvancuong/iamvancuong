@@ -1,0 +1,331 @@
+# STATE.md — dự án đang đứng ở đâu
+
+> **Đọc file này TRƯỚC.** Đây là trạng thái thật, cập nhật **2026-08-05**.
+> `PLAN.md` là lý do đằng sau các quyết định · `OS-DESIGN.md` là thiết kế Life OS.
+> Hai file kia giải thích *vì sao*; file này nói *đang ở đâu và làm gì tiếp*.
+
+---
+
+## 0. Nếu chỉ đọc được 5 dòng
+
+1. **Code gần như xong. Sản phẩm chưa được dùng ngày nào.** Toàn bộ dữ liệu trong database là **demo do script sinh ra**, không phải của chủ nhân.
+2. **Chưa deploy.** Không có git remote. Chỉ chạy trên một máy.
+3. **Mật khẩu `/os` vẫn là mật khẩu tạm, và nó nằm trong lịch sử git.** Phải đổi trước khi push.
+4. **Toàn bộ đợt sửa ngày 05/08 chưa commit.** Commit cuối cùng là `a8a70bf`, từ trước đợt đó. Chạy `git status` để xem hiện trạng.
+5. Việc tiếp theo **không phải là code** — xem §9.
+
+---
+
+## 1. Dự án là gì
+
+Trang cá nhân + hệ điều hành cuộc sống riêng, **một người dùng duy nhất** (Trương Văn Cường, sinh 06/07/2003, người Việt đang ở Nhật, hướng tới JLPT N2 + việc IT ở Nhật).
+
+Một codebase, hai vùng, **chung một database**:
+
+```
+CÔNG KHAI  /  /now  /blog  /journey  /photos  /projects  /about
+RIÊNG TƯ   /os/*   (middleware chặn, cookie JWT ký, hạn 30 ngày)
+```
+
+Nối hai vùng bằng **đúng một cột `visibility`** trên `Memory`, `Photo`, `Post`.
+Không tick = chỉ mình xem. Tick = hiện ra ngoài. Viết một lần, không copy qua lại.
+
+Vòng lặp mục tiêu:
+
+```
+Sống → ghi vào /os → chọn cái đáng kể → viết thành bài → công khai
+```
+
+---
+
+## 2. Stack
+
+| | |
+|---|---|
+| Framework | Next.js **16.3.0** App Router + Turbopack · React 19.2.8 · TypeScript |
+| CSS | Tailwind **v4** (token trong `app/globals.css`, không dùng UI framework) |
+| DB | MySQL **8.4** trong Docker · Prisma **7.9.1** + `@prisma/adapter-mariadb` |
+| Khác | `jose` + `bcryptjs` (đăng nhập) · `sharp` (ảnh) · `remark` (Markdown) · `lucide-react` |
+| Không có | test framework · CI · git remote · dark mode · RSS |
+
+**Quy mô:** 85 file nguồn, ~10.400 dòng. 21 trang, 5 API route, 42 server action, 12 bảng, 8 enum.
+
+---
+
+## 3. Chạy
+
+Cần **Docker Desktop** bật.
+
+```bash
+npm.cmd run dev
+```
+
+`predev` tự chạy `docker compose up -d --wait` nên MySQL luôn sẵn sàng trước khi Next khởi động.
+
+> ⚠️ **Trên PowerShell phải gõ `npm.cmd`**, không phải `npm`. Máy này đang ở
+> execution policy `Restricted` (mặc định Windows) nên `npm.ps1` bị chặn.
+> Sửa hẳn: `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`.
+
+Lệnh khác:
+
+```bash
+npm.cmd run build           # kiểm tra trước khi push
+npm.cmd run db:studio       # xem/sửa DB bằng giao diện — CÁCH DUY NHẤT để thêm lĩnh vực
+npm.cmd run db:demo:clear   # xóa dữ liệu mẫu  ← nên chạy trước khi dùng thật
+npm.cmd run hash-password   # đổi mật khẩu /os
+npm.cmd run db:push         # sau khi sửa schema
+```
+
+---
+
+## 4. Cấu trúc
+
+```
+app/
+├── (công khai)  page · now · blog/[slug]/(ja) · journey · photos · projects · about
+├── login/       LoginForm (client)
+├── os/          layout(force-dynamic, noindex) · page(dashboard) · calendar · focus
+│   ├── goals · journey · log/[date] · write/[slug] · data
+│   └── a/[slug]   ← MỘT file cho CẢ 7 lĩnh vực (điểm mấu chốt của thiết kế)
+├── api/         auth/login · auth/logout · backup · uploads · uploads/[...path]
+├── error.tsx · os/error.tsx · robots.ts · sitemap.ts(force-dynamic)
+lib/
+├── db.ts          Prisma singleton — ĐỌC CHÚ THÍCH, có bẫy caching_sha2 (§7)
+├── auth.ts · session.ts
+├── posts.ts · markdown.ts · now.ts · projects.ts · site.ts
+└── os/
+    ├── actions.ts      23 action: Goal · Principle · Item · Memory · Photo
+    ├── dayActions.ts    7 action: Focus · DailyLog
+    ├── postActions.ts   7 action: Post · Tag
+    ├── metricActions.ts 5 action: Metric · MetricEntry
+    ├── formData.ts     đọc + KIỂM dữ liệu form (dùng chung cả 4 file trên)
+    ├── day.ts          quy ước ngày nửa đêm UTC — TUÂN THỦ TUYỆT ĐỐI
+    ├── period.ts       kỳ tuần/tháng, tuần bắt đầu THỨ HAI
+    ├── age.ts · stats.ts · upload.ts · constants.ts
+components/os/  GoalsTab · GoalReview · HorizonPicker · MetricsTab · Sparkline
+                PrinciplesTab · ItemsTab · MemoryForm · MemoryList · DailyLogForm
+                Streak · TodayPanel · OsNav · AreaTabs · Disclosure · FormButtons
+                formBits · MarkdownEditor
+```
+
+### Luật bất di bất dịch
+
+1. **Mọi server action gọi `assertOwner()` ở dòng đầu.** Server Action là endpoint thật, middleware KHÔNG chặn nó. Hiện 42/42 hàm đều có. Viết hàm mới mà quên là thủng cả hệ thống.
+2. **Ngày `@db.Date` luôn ở nửa đêm UTC.** Dùng `dayUTC()` / `isoUTC()` trong `lib/os/day.ts`, đọc bằng `getUTC*`. Thiếu hậu tố `Z` là lệch một ngày ngay, vì JST là UTC+9.
+3. **Tuần bắt đầu Thứ Hai** — thống nhất giữa `period.ts` và lịch nhiệt trong `Streak.tsx`.
+4. **Ảnh không vào database.** DB chỉ giữ đường dẫn; file thật ở `uploads/YYYY/MM/`, phục vụ qua `/api/uploads/*` có kiểm quyền từng tấm.
+5. **Không dùng `Object.values(EnumCủaPrisma)`** — dùng `valuesOf<T>({...})` trong `formData.ts`. Lý do ở §7.
+
+---
+
+## 5. ✅ ĐÃ LÀM (đã kiểm chứng chạy được)
+
+### Nền móng
+Next 16 + Tailwind v4 + design token tập trung · Inter + Noto Sans JP (đẹp ở cả Việt/Nhật/Anh) · responsive · `/os` mobile-first.
+
+### Đăng nhập & bảo mật
+- Middleware chặn `/os/*` · cookie httpOnly ký HS256, hạn 30 ngày · bcrypt cost 12
+- Hash lưu **base64** (bộ nạp `.env` của Next coi `$2b` `$12` là biến môi trường rồi thay bằng rỗng)
+- Chống dò mật khẩu **hai tầng**: theo IP (8 lần/10 phút) + tổng (30 lần/10 phút). Hai tầng vì `x-forwarded-for` do client gửi nên giả được; site một người dùng thì trần tổng là hợp lý và không giả mạo được.
+- `verifySession` kiểm cả `sub`, không chỉ chữ ký
+- Chặn open redirect ở `?from=`
+- `/api/uploads/*`: kiểm quyền từng ảnh, chặn leo thư mục, từ chối file mồ côi, `Cache-Control: private` cho ảnh riêng tư
+
+### Life OS
+| Trang | Nội dung |
+|---|---|
+| `/os` | 3 việc NOW · cam kết kỳ này · kỳ đã qua chưa chấm · 3 việc nền tảng (tick tại chỗ) · chuỗi ngày + lịch nhiệt · 1 nguyên tắc/ngày · lĩnh vực đang có việc |
+| `/os/a/[slug]` | 1 file cho 7 lĩnh vực × 5 tab: Mục tiêu · Nguyên tắc · Đang dùng · **Số đo** · Ký ức. **Tab rỗng bị ẩn**, nằm sau nút `+` kèm một dòng nói nó dùng để làm gì |
+| `/os/calendar` | Lịch tháng **đọc theo tuần**: ô ngày (đậm nhạt theo việc nền tảng) cạnh cam kết của chính tuần đó |
+| `/os/focus` | NOW/NEXT/LATER/NO · **trần NOW = 3 enforce ở SERVER** · sắp xếp lên/xuống |
+| `/os/log` | Danh sách kiểu app Journal, gộp nhật ký + ký ức cùng ngày |
+| `/os/log/[date]` | **Không có nút Lưu** — tick lưu ngay, ô chữ lưu khi rời ô |
+| `/os/goals` | Mọi mục tiêu xếp theo mốc tuổi |
+| `/os/journey` | Mọi ký ức theo dòng thời gian, có ảnh |
+| `/os/write` | Danh sách bài + nút **"viết thành bài"** từ ngày đã đánh dấu |
+| `/os/data` | Thống kê + tải backup JSON |
+
+### Mục tiêu — hai loại
+- **Cam kết có kỳ** (Tuần/Tháng): gắn `periodStart`, nhập ngày nào trong kỳ cũng được, server nắn về thứ Hai / ngày 1. Hết kỳ **chấm ba mức** (đạt · một phần · không đạt) + **ba câu tự sự** (chuyện gì · **vì sao** · kỳ sau đổi gì). Có nút **làm lại kỳ sau** (chống trùng).
+- **Mốc dài hạn** (Năm nay/Năm sau/Tuổi/Cả đời): tick xong, hoặc bỏ kèm lý do.
+- **Mốc tuổi tính sẵn** từ ngày sinh: chọn "30 tuổi" → hiện ngay "06/07/2033 · còn 6 năm 11 tháng". Ô chọn chỉ hiện đúng thứ cần dùng.
+
+### Số đo (tab «Số đo»)
+Một con số có tên/đơn vị/đích/**hướng tốt**, ghi lại theo thời gian, vẽ đường SVG **tự viết** (không cài thư viện biểu đồ — PLAN §3).
+- Trục X **tỉ lệ theo ngày thật**, không theo thứ tự bản ghi — hai lần đo cách nhau 3 tháng phải nhìn ra là xa nhau.
+- Màu đường theo **hướng**: chi tiêu tăng thì đỏ, điểm thi tăng thì xanh.
+- Ghi lại cùng một ngày là **đè lên** (`@@unique([metricId, date])`), không tạo dòng thứ hai.
+- Một bảng phục vụ cả điểm mock JLPT · cân nặng · chi tiêu tháng — thay vì ba module riêng (OS-DESIGN §1).
+
+### Đang dùng — bảng 3 cột
+Đang dùng · Muốn thử · Đã bỏ đặt cạnh nhau, đổi trạng thái bằng **một chạm**.
+**Cố ý không làm kéo–thả**: HTML5 drag không chạy trên cảm ứng mà Life OS là mobile-first (PLAN §6/§14.4), làm cho chạy phải thêm thư viện (dự án đang có 0 dependency giao diện), và người ta đổi trạng thái chừng một tháng một lần — PLAN §14.3.
+Ô kết luận chỉ chiếm chỗ khi **đã có nội dung**. Từ 6 điều khiển mỗi dòng xuống còn 2.
+
+### CRUD
+Thêm/sửa/xóa đầy đủ cho: Goal · Principle · Item · Metric · MetricEntry · Memory · Photo(caption) · FocusItem · Post · Tag.
+Mọi nút xóa **hỏi lại**, và nói rõ mất kèm bao nhiêu ảnh / bao nhiêu lần đo.
+
+### Công khai
+Home · `/now` (đọc `content/now.md`) · `/blog` (+`[slug]`, `/ja`, lọc theo chủ đề) · `/journey` · `/photos` (có lightbox) · `/projects` · `/about` · robots (chặn `/os`) · sitemap (chỉ bài đã công khai).
+
+### Đã kiểm chứng đầu-cuối (05/08, bản production)
+| Luồng | Kết quả |
+|---|---|
+| Khách vào `/os` · `/api/backup` | 307 → login · 404 |
+| Tiêu đề bài riêng tư lọt ra trang khách | 0/4 |
+| Chủ nhân thấy nhiều hơn khách | blog 6 vs 2 · ký ức 11 vs 6 |
+| Ký ức riêng → tick công khai → `/journey` | 6→7, hiện ngay, không cần build |
+| Ảnh riêng tư: khách / chủ nhân | 404 / 200 |
+| Leo thư mục · file mồ côi | 404 / 404 |
+| Nhật ký → nháp → xuất bản → blog + trang chủ + sitemap | ✅ |
+| Gỡ bài xuống → sitemap giảm, khách 404 | ✅ không cần build |
+| Cam kết tuần: tạo → chấm → tự sự → làm lại kỳ sau | ✅ |
+| MySQL restart 4 lần liên tiếp, cache xác thực nguội | ✅ 144–164ms |
+
+---
+
+## 6. 🟡 CHƯA HOÀN THIỆN
+
+| Thứ | Thiếu gì |
+|---|---|
+| **Lĩnh vực (Area)** | **Không có giao diện nào** — thêm/sửa/ẩn lĩnh vực phải qua `db:studio`. Cột `Area.active` tồn tại đúng để tắt bớt lĩnh vực chưa cần, nhưng không bật/tắt được từ web. Đáng làm nhất trong nhóm này (~1,5h). |
+| **Xóa nhật ký ngày** | Không có. Ghi nhầm sang ngày khác thì chỉ xóa trắng từng ô được. |
+| **Đổi lĩnh vực của ký ức** | `updateMemory` không sửa `areaId`. |
+| **Đổi tên chủ đề (Tag)** | Chỉ đổi được nếu gõ lại đúng slug cũ, không có nút sửa. |
+| **Sắp xếp ảnh trong ký ức** | Focus sắp xếp được; ảnh thì chưa. |
+| **`Goal.detail`** | Có cột, không có ô nhập (đã có `why` nên ít cần). |
+| **`Photo.bytes`** | Ghi vào DB nhưng không hiện ở đâu. |
+| **Cảnh báo "xây hệ thống thay vì dùng"** | `stats.ts:buildingTooMuch()` đo `itMin` — số phút **tự khai** là học IT — chứ không đo giờ code trang này. Cảm biến quan trọng nhất đang chỉ nhầm hướng. |
+| **`site.social`** | Cả 4 rỗng → footer chỉ còn link "Now". |
+| **`public/`** | Vẫn còn `next.svg`, `vercel.svg`… mặc định của Next. |
+
+---
+
+## 7. 🪤 SÁU CÁI BẪY ĐÃ VẤP — đừng vấp lại
+
+> Phần này là thứ giá trị nhất của file. Mỗi mục đều tốn thời gian thật để tìm ra,
+> và triệu chứng đều **không hề chỉ về nguyên nhân**.
+
+### 1. `pool timeout ... active=0 idle=0` sau mỗi lần MySQL restart
+**Không phải** database chết. MySQL 8.4 dùng `caching_sha2_password`; bộ đệm mật khẩu **rỗng sau mỗi lần restart**, nên lần đăng nhập đầu phải làm *full authentication* bằng khóa RSA — mà mặc định mariadb connector **không được phép xin khóa**. Kết quả là **treo im** chứ không báo lỗi.
+**Dấu hiệu nhận ra:** chạy `docker exec vancuong_mysql mysql -ucuong -pdevpass -e "SELECT 1"` một lần là app chạy lại ngay.
+**Đã sửa:** `allowPublicKeyRetrieval: true` trong `lib/db.ts`.
+**⚠️ Khi deploy:** tùy chọn này nhận khóa qua kênh chưa mã hóa. Cùng máy thì không sao; **MySQL ở máy khác thì phải dùng TLS (`ssl`)** thay cho nó.
+
+### 2. ⭐ Sửa schema trong lúc dev server đang chạy → Prisma client cũ
+
+**Đã dính HAI lần với hai triệu chứng khác hẳn nhau**, nên nhận mặt cho kỹ:
+
+```
+Unknown field `metrics` for include statement on model `Area`   ← thêm quan hệ
+Cannot convert undefined or null to object                       ← thêm enum
+```
+
+Cùng một gốc: `prisma generate` ghi vào `node_modules`, mà **Turbopack không theo dõi `node_modules`** — tiến trình `next dev` đang chạy giữ nguyên client cũ. Cực kỳ dễ đi tìm nhầm chỗ, vì code đúng, schema đúng, `npx tsc` sạch, `npm run build` sạch, client trên đĩa cũng đúng. **Chỉ có tiến trình đang chạy là cũ.**
+
+**Cách nhận ra trong 10 giây:**
+
+```bash
+node -e "console.log(require('@prisma/client').Prisma.dmmf.datamodel.models.find(m=>m.name==='Area').fields.map(f=>f.name).join(', '))"
+```
+
+Nếu trường bạn vừa thêm **có** trong kết quả mà app vẫn báo không có → chắc chắn là bẫy này.
+
+**Đã bịt:**
+- `predev` / `prestart` / `prebuild` đều chạy `prisma generate` trước → khởi động lại là chắc chắn sạch
+- `db:push` in lời nhắc khởi động lại (`scripts/after-db-push.mjs`)
+- Không dùng `Object.values` lên enum nữa; dùng `valuesOf<T>({...})` trong `formData.ts` — chỉ dùng *kiểu*, không dùng *giá trị* lúc chạy, và TypeScript bắt liệt kê đủ mọi nhánh
+
+**Vẫn gặp thì:** tắt dev server, `rm -rf .next/dev`, chạy lại. Nhớ tắt bằng PowerShell — xem bẫy §7.4.
+
+### 3. Sitemap đóng băng — bài mới không bao giờ vào Google
+Next dựng `sitemap.xml` thành route **tĩnh**, đóng băng ở thời điểm build; `next build` lần sau còn khôi phục từ cache (`x-nextjs-cache: HIT`). Bài xuất bản hiện đủ trên `/blog` và trang chủ nhưng **không có trong sitemap**.
+**Kiểu hỏng tệ nhất: không có lỗi nào để thấy, chỉ là mãi không ai vào đọc.**
+**Đã sửa:** `export const dynamic = "force-dynamic"` trong `app/sitemap.ts`.
+
+### 4. `pkill` không giết được process trên Windows
+`pkill -f "next start"` báo thành công nhưng process vẫn sống, cổng vẫn bị giữ, và `next start` mới **im lặng chết** vì `EADDRINUSE`. Kết quả: đo nhầm server cũ và tưởng bản sửa không ăn thua. Đã mắc bẫy này **hai lần**.
+**Cách đúng:**
+```powershell
+Get-NetTCPConnection -LocalPort 3000 -State Listen | Select-Object -Expand OwningProcess -Unique | ForEach-Object { Stop-Process -Id $_ -Force }
+```
+**Luôn kiểm tra log server mới có `EADDRINUSE` không trước khi tin kết quả đo.**
+
+### 5. Next 16 chỉ cho MỘT dev server mỗi thư mục
+Chạy `next dev` thứ hai (dù khác cổng) sẽ bị từ chối. Muốn test song song thì dùng `next start` với bản build.
+
+### 6. PowerShell chặn `npm`
+Execution policy `Restricted` (mặc định Windows) chặn `npm.ps1`. Dùng `npm.cmd`, hoặc đổi policy sang `RemoteSigned` cho `CurrentUser`.
+
+---
+
+## 8. 🔴 CHƯA LÀM
+
+### Chặn việc sử dụng
+| # | Việc | ~Giờ |
+|---|---|---|
+| 1 | **Đổi mật khẩu `/os`** — vẫn là mật khẩu tạm, **và nó nằm trong commit `62969cf` + README ở HEAD**. Chưa có remote nên chưa lộ. Phải đổi TRƯỚC khi push. | 5' |
+| 2 | **Xóa dữ liệu mẫu** — `npm.cmd run db:demo:clear` | 1' |
+| 3 | **Deploy** — GitHub → hosting có MySQL → domain → HTTPS | 4h |
+| 4 | **Commit đợt sửa 05/08** (commit cuối là `a8a70bf`, từ trước đợt đó) | 10' |
+
+### Module còn thiếu
+| Việc | ~Giờ | Ghi chú |
+|---|---|---|
+| **Giấy tờ Nhật: hạn visa/在留カード + cảnh báo trước 60 ngày** | 3h | **Rủi ro thật, không phải tính năng cho vui.** Đã đề xuất làm thành tab «Hạn» dùng chung như «Số đo» — chủ nhân chưa chọn làm (05/08). Đây là mục nên nhắc lại. |
+| Tiền: chi phí cố định + tổng kết tháng + tỷ lệ tiết kiệm | 4h | Hiện có 1 con số/ngày trong `DailyLog`, và tab «Số đo» đã đủ chỗ ghi tổng chi từng tháng. Còn thiếu phần chi phí cố định lặp lại. |
+| Cơ thể: ảnh tiến trình 1 tháng/lần | 1h | (cân nặng đã có chỗ ở tab «Số đo») |
+| Giao diện quản lý Lĩnh vực | 1,5h | Xem §6 — vẫn là mục đáng làm nhất còn lại trong nhóm này |
+| RSS · ảnh OG · dark mode | 4h | Đánh bóng |
+| Test cho `stats.ts` + `day.ts` + `period.ts` | 2h | Logic thuần, dễ test nhất, rủi ro cao nhất |
+
+### 🚫 CỐ Ý KHÔNG LÀM
+`Life Score` · `Identity` · `Knowledge` (second brain) · **lịch hẹn giờ** (Google Calendar là nguồn duy nhất — `/os/calendar` chỉ là cam kết tuần, không có ô giờ, không có sự kiện) · multi-user · Supabase · AI tự tóm tắt tuần.
+
+> Việc **chọn** cái gì đáng viết chính là phần có giá trị của quy trình.
+> Tự động hóa nó là bỏ mất phần đó.
+
+---
+
+## 9. 👉 LÀM GÌ TIẾP THEO
+
+**Thứ tự này quan trọng hơn nội dung từng việc.**
+
+```
+1. Đổi mật khẩu                          5 phút
+2. npm.cmd run db:demo:clear             1 phút
+3. Commit đợt sửa 05/08                 10 phút
+4. Deploy                                4 giờ
+5. ▶ DÙNG THẬT 21 NGÀY — 0 giờ code ◀
+6. Ngày 22: đọc lại, rồi mới quyết định làm gì
+```
+
+### Vì sao bước 5 mới là bước khó nhất
+
+Tính tới 05/08/2026: **0 ngày được ghi thật · 0 bài xuất bản · 0 điểm mock test.**
+Toàn bộ 67 ngày nhật ký, 11 ký ức, 13 ảnh trong database là **demo**.
+
+Hệ thống đang ở đúng trạng thái nguy hiểm nhất mà `OS-DESIGN.md` §9 gọi tên:
+**vừa đủ đẹp để hài lòng, chưa đủ dùng để có ích.**
+
+Chưa xóa dữ liệu mẫu thì mở `/os` sẽ thấy chuỗi ngày, lịch nhiệt, thống kê — **trông y hệt một hệ thống đang chạy**. Cảm giác đó thay thế mất việc thật.
+
+### Ngày 22 hỏi ba câu
+
+- Trường nào chưa bao giờ điền? → **xóa cột.**
+- Trang nào chưa bao giờ mở? → **xóa khỏi nav.**
+- Lúc nào muốn có thứ gì đó mà không có? → **đó** mới là backlog thật.
+
+Rất có thể danh sách §8 sẽ **ngắn đi** chứ không dài ra.
+
+---
+
+## 10. Lời nhắc cho AI đọc file này
+
+1. **Đừng thêm module mới trước khi bước 5 xong.** Chủ nhân có xu hướng muốn xây nhiều thứ cùng lúc và đã tự nhận điều đó; công việc của bạn là giúp phanh lại, không phải giúp tăng ga.
+2. **Đừng viết thêm tài liệu.** `PLAN.md` đã 700+ dòng cho một app một người dùng. Viết tài liệu cho cảm giác giống tiến bộ và rẻ hơn nhiều so với việc ghi ba dòng lúc 11 giờ đêm. Cập nhật file này khi trạng thái đổi là đủ.
+3. **Đừng tin dữ liệu trong DB là thật** — kiểm `prisma/.demo-days.json` và dấu `[demo]` trước khi kết luận "hệ thống đang được dùng".
+4. **Kiểm chứng, đừng khẳng định.** Bốn bug trong §7 đều có triệu chứng chỉ sai hướng. Chạy thử và đo, đừng suy luận từ tên file.
+5. **Không để lại dữ liệu bịa trong Life OS.** Nếu tạo bản ghi để test, xóa sạch sau đó — đây là nhật ký cá nhân thật, không phải môi trường sandbox.
+6. Ngân sách của chủ nhân cho dự án này là **6 giờ/tuần**, và website xếp **ưu tiên #7** sau tiếng Nhật, trường học, việc/tiền, ngủ/cơ thể, career. Nếu một tuần nào code web nhiều hơn học tiếng Nhật thì đó là **thất bại của hệ thống**, không phải thành tích.
