@@ -67,8 +67,19 @@ export default async function AreaPage({
     memories: area.memories.length,
   };
 
+  /**
+   * «Số đo» là tab DUY NHẤT được quét bằng mắt thay vì đọc thành dòng, nên nó
+   * dùng trọn bề ngang cột nội dung. Ba tab kia là chữ, mà 760px đã là ngưỡng
+   * trên của độ dài dòng dễ đọc — nới ra là hại chứ không lợi.
+   *
+   * Giới hạn đặt ở phần NỘI DUNG chứ không ở cả trang, để tiêu đề và thanh tab
+   * giữ nguyên bề ngang khi đổi tab — nếu không, mỗi lần bấm là thanh tab lại
+   * co giãn một nhịp.
+   */
+  const contentWidth = tab === "metrics" ? "" : "max-w-[760px]";
+
   return (
-    <div className="max-w-[760px] space-y-8">
+    <div className="space-y-8">
       <header>
         <h1 className="text-[24px] font-semibold tracking-[-0.02em]">
           {area.name}
@@ -80,25 +91,27 @@ export default async function AreaPage({
 
       <AreaTabs slug={slug} current={tab} counts={counts} />
 
-      {tab === "goals" && <GoalsTab slug={slug} goals={area.goals} />}
-      {tab === "principles" && (
-        <PrinciplesTab slug={slug} principles={area.principles} />
-      )}
-      {tab === "items" && <ItemsTab slug={slug} items={area.items} />}
-      {tab === "metrics" && <MetricsTab slug={slug} metrics={area.metrics} />}
-      {tab === "memories" && (
-        <div className="space-y-8">
-          {area.memories.length === 0 ? (
-            <EmptyNote>
-              Chưa có ký ức nào. Ngày để tự do nên ghi được cả chuyện hồi nhỏ,
-              không chỉ từ hôm nay trở đi.
-            </EmptyNote>
-          ) : (
-            <MemoryList memories={area.memories} areaSlug={slug} />
-          )}
-          <MemoryForm areaSlug={slug} />
-        </div>
-      )}
+      <div className={contentWidth}>
+        {tab === "goals" && <GoalsTab slug={slug} goals={area.goals} />}
+        {tab === "principles" && (
+          <PrinciplesTab slug={slug} principles={area.principles} />
+        )}
+        {tab === "items" && <ItemsTab slug={slug} items={area.items} />}
+        {tab === "metrics" && <MetricsTab slug={slug} metrics={area.metrics} />}
+        {tab === "memories" && (
+          <div className="space-y-8">
+            {area.memories.length === 0 ? (
+              <EmptyNote>
+                Chưa có ký ức nào. Ngày để tự do nên ghi được cả chuyện hồi nhỏ,
+                không chỉ từ hôm nay trở đi.
+              </EmptyNote>
+            ) : (
+              <MemoryList memories={area.memories} areaSlug={slug} />
+            )}
+            <MemoryForm areaSlug={slug} />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

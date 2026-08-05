@@ -101,9 +101,13 @@ export function MetricsTab({
                     <MicroLabel>{g.title}</MicroLabel>
                   </h3>
                 )}
-                {/* Hai cột từ md trở lên. Điện thoại vẫn một cột: ở đó thẻ hẹp
-                    lại sẽ cao lên chứ không thấp đi, vì ô ghi nhanh gãy hàng. */}
-                <ul className="grid items-start gap-4 md:grid-cols-2">
+                {/* Hai cột chỉ bật từ `xl`, không phải `md`.
+                    Cột nội dung của /os = khung 1280 − thanh bên 192 − khoảng
+                    cách 40 − đệm 64 = 984px. Chia đôi là 484px/thẻ, vừa đủ cho
+                    hàng ghi nhanh nằm gọn một dòng. Ở `md` (768px) cột nội dung
+                    chỉ còn 472px, chia đôi thành 228px — chật đến mức vô dụng.
+                    Dưới xl thì xếp hàng dọc, thẻ nào cũng đủ rộng. */}
+                <ul className="grid items-start gap-4 xl:grid-cols-2">
                   {g.items.map((m) => (
                     <li key={m.id}>
                       <MetricCard metric={m} slug={slug} />
@@ -239,11 +243,14 @@ function MetricCard({
           aria-label="Giá trị"
           className="w-24 rounded-[var(--radius-sm)] border border-line bg-bg px-2.5 py-1.5 text-[13px] tabular-nums outline-none focus:border-ink-3"
         />
+        {/* min-w-[9rem] chứ KHÔNG phải min-w-0: với min-w-0 thì flex cho ô này
+            co về gần 0 khi hàng chật, và ô ghi chú teo lại còn đúng một ký tự
+            thay vì xuống hàng. Có sàn thì nó tự rớt xuống dòng dưới. */}
         <input
           name="note"
           placeholder="ghi chú (không bắt buộc)"
           aria-label="Ghi chú lần đo"
-          className="min-w-0 flex-1 rounded-[var(--radius-sm)] border border-line bg-bg px-2.5 py-1.5 text-[13px] outline-none focus:border-ink-3"
+          className="min-w-[9rem] flex-1 rounded-[var(--radius-sm)] border border-line bg-bg px-2.5 py-1.5 text-[13px] outline-none focus:border-ink-3"
         />
         <SubmitButton>Ghi</SubmitButton>
       </form>
