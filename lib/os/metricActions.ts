@@ -34,6 +34,7 @@ function metricFields(fd: FormData) {
     target: str(fd, "target", 60),
     direction: enumOf(fd, "direction", DIRECTIONS, MetricDirection.UP),
     note: text(fd, "note", 500),
+    group: str(fd, "group", 40),
   };
 }
 

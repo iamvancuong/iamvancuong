@@ -11,6 +11,7 @@ import {
 import {
   ConfirmButton,
   EmptyNote,
+  MicroLabel,
   SubmitButton,
   inputCls,
   inputSmCls,
@@ -30,6 +31,35 @@ export type MetricWithEntries = Metric & { entries: MetricEntry[] };
  * Cùng một bộ code phục vụ điểm mock test, cân nặng, chi tiêu tháng — vì cả
  * ba đều là "một con số ghi lại theo thời gian" (OS-DESIGN §1).
  */
+/** Nhãn của số đo chưa đặt nhóm. Luôn xếp cuối, sau mọi nhóm có tên. */
+const UNGROUPED = "Chưa phân nhóm";
+
+/**
+ * Gom theo `group`, giữ nguyên thứ tự nhóm xuất hiện lần đầu.
+ *
+ * `Array.sort` ổn định nên chỉ cần đẩy nhóm không tên xuống cuối, phần còn lại
+ * tự giữ thứ tự `order` mà trang lĩnh vực đã sắp.
+ */
+function byGroup(metrics: MetricWithEntries[]) {
+  const map = new Map<string, MetricWithEntries[]>();
+  for (const m of metrics) {
+    const key = m.group?.trim() || UNGROUPED;
+    const bucket = map.get(key);
+    if (bucket) bucket.push(m);
+    else map.set(key, [m]);
+  }
+  return [...map.entries()]
+    .sort(([a], [b]) => (a === UNGROUPED ? 1 : b === UNGROUPED ? -1 : 0))
+    .map(([title, items]) => ({ title, items }));
+}
+
+/**
+ * Danh sách gợi ý cho ô nhóm, dùng chung một `<datalist>` cho mọi form trên
+ * trang. Đây là thứ bù lại nhược điểm của chuỗi tự do: gõ "JLPT" lần thứ hai
+ * thì trình duyệt tự gợi ý, đỡ đẻ ra nhóm trùng vì sai chính tả.
+ */
+const GROUP_LIST_ID = "metric-groups";
+
 export function MetricsTab({
   slug,
   metrics,
@@ -37,8 +67,17 @@ export function MetricsTab({
   slug: string;
   metrics: MetricWithEntries[];
 }) {
+  const groups = byGroup(metrics);
+  const names = [...new Set(metrics.map((m) => m.group?.trim()).filter(Boolean))];
+
   return (
     <div className="space-y-8">
+      <datalist id={GROUP_LIST_ID}>
+        {names.map((n) => (
+          <option key={n} value={n} />
+        ))}
+      </datalist>
+
       {metrics.length === 0 ? (
         <EmptyNote>
           Chưa đo gì ở đây — chưa cần thiết. Chỉ thêm khi có con số bạn thật sự
@@ -46,13 +85,35 @@ export function MetricsTab({
           <em>chi tiêu tháng</em>. Đừng đo thứ mình không định thay đổi.
         </EmptyNote>
       ) : (
-        <ul className="space-y-8">
-          {metrics.map((m) => (
-            <li key={m.id}>
-              <MetricCard metric={m} slug={slug} />
-            </li>
-          ))}
-        </ul>
+        <>
+          {/* Nói MỘT lần cho cả tab. Trước đây câu này in lại trên từng thẻ —
+              tới số đo thứ mười thì đó là mười bản cùng một câu. */}
+          <p className="text-[12px] leading-relaxed text-ink-3">
+            Ghi lại cùng một ngày là đè lên giá trị cũ, không tạo dòng thứ hai.
+          </p>
+
+          <div className="space-y-10">
+            {groups.map((g) => (
+              <section key={g.title}>
+                {/* Một nhóm duy nhất thì tiêu đề chỉ là tiếng ồn */}
+                {groups.length > 1 && (
+                  <h3 className="mb-3 border-b border-line-soft pb-2">
+                    <MicroLabel>{g.title}</MicroLabel>
+                  </h3>
+                )}
+                {/* Hai cột từ md trở lên. Điện thoại vẫn một cột: ở đó thẻ hẹp
+                    lại sẽ cao lên chứ không thấp đi, vì ô ghi nhanh gãy hàng. */}
+                <ul className="grid items-start gap-4 md:grid-cols-2">
+                  {g.items.map((m) => (
+                    <li key={m.id}>
+                      <MetricCard metric={m} slug={slug} />
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </div>
+        </>
       )}
 
       <Disclosure label="+ Thêm số đo">
@@ -186,14 +247,19 @@ function MetricCard({
         />
         <SubmitButton>Ghi</SubmitButton>
       </form>
-      <p className="mt-1.5 text-[12px] text-ink-3">
-        Ghi lại cùng một ngày là đè lên giá trị cũ, không tạo dòng thứ hai.
-      </p>
 
-      {entries.length > 0 && (
-        <Disclosure label={`Các lần đo (${entries.length})`} small>
-          <ul className="divide-y divide-line-soft">
-            {[...entries].reverse().map((e) => (
+      {/* MỘT ngăn kéo cho cả "các lần đo" lẫn "sửa": hai ngăn riêng ăn hai hàng
+          trên mỗi thẻ, mà cả hai đều là việc thỉnh thoảng mới làm. */}
+      <Disclosure
+        label={
+          entries.length > 0 ? `Chi tiết · ${entries.length} lần đo` : "Chi tiết"
+        }
+        small
+      >
+        <div className="space-y-3">
+          {entries.length > 0 && (
+            <ul className="divide-y divide-line-soft">
+              {[...entries].reverse().map((e) => (
               <li
                 key={e.id}
                 className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-2"
@@ -222,34 +288,33 @@ function MetricCard({
                   </ConfirmButton>
                 </form>
               </li>
-            ))}
-          </ul>
-        </Disclosure>
-      )}
+              ))}
+            </ul>
+          )}
 
-      <Disclosure label="Sửa số đo" small>
-        <div className="space-y-3 rounded-[var(--radius-lg)] border border-line p-3">
-          <form
-            action={updateMetric.bind(null, m.id, slug)}
-            className="space-y-2"
-          >
-            <MetricFields metric={m} />
-            <div className="flex justify-end">
-              <SubmitButton>Lưu</SubmitButton>
-            </div>
-          </form>
-          <form
-            action={deleteMetric.bind(null, m.id, slug)}
-            className="border-t border-line-soft pt-3"
-          >
-            <ConfirmButton
-              label={`Xóa số đo ${m.name}`}
-              confirm={`Xóa "${m.name}"? ${entries.length} lần đo cũng mất theo. Không hoàn tác được.`}
-              className="text-[12px] text-ink-3 hover:text-down"
+          <div className="space-y-3 rounded-[var(--radius-lg)] border border-line p-3">
+            <form
+              action={updateMetric.bind(null, m.id, slug)}
+              className="space-y-2"
             >
-              Xóa số đo này
-            </ConfirmButton>
-          </form>
+              <MetricFields metric={m} />
+              <div className="flex justify-end">
+                <SubmitButton>Lưu</SubmitButton>
+              </div>
+            </form>
+            <form
+              action={deleteMetric.bind(null, m.id, slug)}
+              className="border-t border-line-soft pt-3"
+            >
+              <ConfirmButton
+                label={`Xóa số đo ${m.name}`}
+                confirm={`Xóa "${m.name}"? ${entries.length} lần đo cũng mất theo. Không hoàn tác được.`}
+                className="text-[12px] text-ink-3 hover:text-down"
+              >
+                Xóa số đo này
+              </ConfirmButton>
+            </form>
+          </div>
         </div>
       </Disclosure>
     </section>
@@ -266,6 +331,16 @@ function MetricFields({ metric }: { metric?: Metric }) {
         defaultValue={metric?.name ?? ""}
         placeholder="Đo cái gì? — vd: điểm mock N3"
         className={inputCls}
+      />
+      {/* Chuỗi tự do + gợi ý từ các nhóm đã có trong lĩnh vực này, nên gõ
+          "JLPT" lần thứ hai là trình duyệt tự đề xuất — đỡ đẻ nhóm trùng. */}
+      <input
+        name="group"
+        list={GROUP_LIST_ID}
+        defaultValue={metric?.group ?? ""}
+        placeholder="nhóm — JLPT, Trên lớp, Ra thị trường (để trống cũng được)"
+        aria-label="Nhóm"
+        className={inputSmCls}
       />
       <div className="flex flex-col gap-2 sm:flex-row">
         <input

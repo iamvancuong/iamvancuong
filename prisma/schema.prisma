@@ -200,6 +200,19 @@ model Metric {
   direction MetricDirection @default(UP)
   note      String?         @db.Text
 
+  /// Nhóm số đo TRONG một lĩnh vực: "JLPT" · "Trên lớp" · "Ra thị trường".
+  ///
+  /// Chuỗi tự do, cùng khuôn với `Item.kind` — site một người dùng thì một
+  /// bảng riêng kèm CRUD riêng không đáng (OS-DESIGN §1). Đánh đổi là gõ sai
+  /// chính tả sinh nhóm trùng; đã chấp nhận đánh đổi đó ở `Item.kind` rồi.
+  ///
+  /// Tác dụng chính KHÔNG phải gọn mắt mà là **nói rõ cái gì không so được
+  /// với cái gì**: điểm thi thử thang /180 mỗi tháng và điểm kiểm tra trên lớp
+  /// mỗi tuần để chung một chỗ thì mắt sẽ tự so hai đường, mà so là vô nghĩa.
+  ///
+  /// Để trống = rơi vào nhóm "Chưa phân nhóm", luôn xếp cuối.
+  group String?
+
   entries MetricEntry[]
 
   order     Int      @default(0)
