@@ -286,6 +286,11 @@ model Photo {
   caption String?   @db.Text
   takenAt DateTime?
 
+  /// Thứ tự ảnh TRONG một ký ức. Focus sắp xếp được từ lâu, ảnh thì chưa —
+  /// nên tấm đại diện của một ký ức là tấm tình cờ up trước, không phải tấm
+  /// đáng nhìn nhất. Hai nút lên/xuống, cùng cách với `reorderFocusItem`.
+  order Int @default(0)
+
   memoryId String?
   memory   Memory? @relation(fields: [memoryId], references: [id], onDelete: Cascade)
   areaId   String?
@@ -337,6 +342,17 @@ model DailyLog {
   jpMin   Int     @default(0)
   itMin   Int     @default(0)
   spend   Int? // ¥
+
+  /// Phút BỎ VÀO CHÍNH TRANG NÀY hôm nay.
+  ///
+  /// Tách khỏi `itMin` vì hai thứ khác hẳn nhau: `itMin` là học IT — có ích cho
+  /// mục tiêu việc làm; `webMin` là xây công cụ để quản lý việc học — thứ cho
+  /// CẢM GIÁC tiến bộ mà không đẩy mục tiêu nào đi.
+  ///
+  /// `buildingTooMuch()` xưa nay so `itMin` với `jpMin`, tức là nó phạt nhầm
+  /// việc học IT và hoàn toàn mù trước việc ngồi code cái web này — đúng thứ
+  /// nó sinh ra để bắt. Cột này là cảm biến thật của cảnh báo đó.
+  webMin Int @default(0)
 
   kSleep    Boolean @default(false) // ngủ trước 00:00
   kJapanese Boolean @default(false) // tiếng Nhật ≥ 60 phút

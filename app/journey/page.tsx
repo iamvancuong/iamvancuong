@@ -28,7 +28,10 @@ export default async function PublicJourneyPage() {
     where: { visibility: Visibility.PUBLIC },
     orderBy: { date: "desc" },
     include: {
-      photos: { where: { visibility: Visibility.PUBLIC } },
+      photos: {
+        where: { visibility: Visibility.PUBLIC },
+        orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+      },
       area: { select: { name: true } },
     },
   });

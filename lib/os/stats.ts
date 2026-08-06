@@ -11,6 +11,7 @@ export type Trend = "up" | "flat" | "down";
 export type WeekStats = {
   jpMin: number;
   itMin: number;
+  webMin: number;
   workouts: number;
   daysLogged: number;
   keystoneDays: number;
@@ -35,6 +36,7 @@ export function weekStats(logs: DailyLog[], offset = 0): WeekStats {
   return {
     jpMin: week.reduce((s, l) => s + l.jpMin, 0),
     itMin: week.reduce((s, l) => s + l.itMin, 0),
+    webMin: week.reduce((s, l) => s + l.webMin, 0),
     workouts: week.filter((l) => l.workout).length,
     daysLogged: week.length,
     keystoneDays: week.filter((l) => l.kSleep && l.kJapanese && l.kEat).length,
@@ -143,7 +145,15 @@ export function periodStats(
 /**
  * Cảnh báo quan trọng nhất của cả hệ thống: tiếng Nhật là ưu tiên #1,
  * website là #7. Nếu ngược lại thì hệ thống đang phản chủ.
+ *
+ * ⚠️ Trước đây hàm này so `itMin` với `jpMin`, và **đo nhầm cả hai đầu**:
+ * `itMin` là phút HỌC IT — thứ phục vụ thẳng mục tiêu việc làm, nên phạt nó
+ * là sai; còn giờ ngồi xây chính cái web này thì không cột nào ghi lại, tức
+ * là cảm biến hoàn toàn mù trước đúng thứ nó sinh ra để bắt.
+ *
+ * Giờ nó so `webMin` với `jpMin`. Ngưỡng 120 phút/tuần để một buổi sửa vặt
+ * không bật cảnh báo — thứ cần bắt là cái tuần trôi mất, không phải một tối.
  */
 export function buildingTooMuch(w: WeekStats): boolean {
-  return w.itMin > w.jpMin * 2 && w.itMin >= 180;
+  return w.webMin > w.jpMin && w.webMin >= 120;
 }

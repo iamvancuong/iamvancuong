@@ -3,7 +3,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ChevronLeft, ChevronRight, List } from "lucide-react";
 import { db } from "@/lib/db";
+import { deleteDailyLog } from "@/lib/os/dayActions";
 import { DailyLogForm } from "@/components/os/DailyLogForm";
+import { ConfirmButton } from "@/components/os/formBits";
 import {
   addDaysISO,
   dayUTC,
@@ -64,11 +66,28 @@ export default async function LogDayPage({
 
       <DailyLogForm iso={iso} log={log} />
 
-      <p className="border-t border-line pt-6 text-[13px] leading-relaxed text-ink-3">
-        Ô tick lưu ngay khi bấm, ô chữ lưu khi bạn rời khỏi ô — không có nút
-        Lưu. Nếu ngày nào bạn thấy điền cái này mất quá ba phút thì đó là lỗi
-        thiết kế: bớt trường đi, đừng cố chịu đựng.
-      </p>
+      <div className="space-y-4 border-t border-line pt-6">
+        <p className="text-[13px] leading-relaxed text-ink-3">
+          Ô tick lưu ngay khi bấm, ô chữ lưu khi bạn rời khỏi ô — không có nút
+          Lưu. Nếu ngày nào bạn thấy điền cái này mất quá ba phút thì đó là lỗi
+          thiết kế: bớt trường đi, đừng cố chịu đựng.
+        </p>
+
+        {/* Chính vì lưu-ngay mà cần nút này: ghi nhầm sang ngày khác thì bản
+            ghi đã nằm trong database rồi, xóa trắng từng ô không gỡ được nó
+            khỏi thống kê. Chỉ hiện khi ngày đó thật sự có bản ghi. */}
+        {log && (
+          <form action={deleteDailyLog.bind(null, iso)}>
+            <ConfirmButton
+              label={`Xóa nhật ký ngày ${fmtDateVN(iso)}`}
+              confirm={`Xóa nhật ký ngày ${fmtDateVN(iso)}? Mọi ô đã điền và ba việc nền tảng của ngày này mất hết, và ngày đó thôi được tính trong chuỗi ngày. Ký ức cùng ngày KHÔNG mất theo. Không hoàn tác được.`}
+              className="text-[12px] text-ink-3 hover:text-down"
+            >
+              Xóa nhật ký ngày này
+            </ConfirmButton>
+          </form>
+        )}
+      </div>
     </div>
   );
 }

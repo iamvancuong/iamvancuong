@@ -283,6 +283,12 @@ function GoalRow({
           <p className="mt-1.5 text-[13px] leading-relaxed text-ink-2">{g.why}</p>
         )}
 
+        {g.detail && (
+          <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed text-ink-3">
+            {g.detail}
+          </p>
+        )}
+
         {/* Cách đo — chỉ hiện khi mục tiêu này thật sự đo được bằng số.
             Mục tiêu không có ô đo vẫn hợp lệ, không phải mọi thứ đều đếm được. */}
         {g.metric && (
@@ -405,6 +411,17 @@ function GoalFields({
         defaultValue={goal?.why ?? ""}
         placeholder="Vì sao nó quan trọng với mình? (không bắt buộc)"
         className={inputSmCls}
+      />
+      {/* `detail` có cột từ đầu nhưng chưa từng có ô nhập. Để textarea chứ
+          không phải input vì đây là chỗ ghi kế hoạch nhiều dòng — `why` đã
+          nhận phần một câu rồi. */}
+      <textarea
+        name="detail"
+        rows={2}
+        defaultValue={goal?.detail ?? ""}
+        placeholder="Định làm thế nào? Chia nhỏ ra sao? (không bắt buộc)"
+        aria-label="Chi tiết"
+        className="w-full resize-y rounded-[var(--radius-sm)] border border-line bg-bg px-3 py-2 text-[14px] leading-relaxed outline-none focus:border-ink-3"
       />
 
       <HorizonPicker

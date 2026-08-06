@@ -54,8 +54,8 @@ export function TodayPanel({
             Bạn đang xây hệ thống thay vì dùng hệ thống.
           </strong>{" "}
           <span className="text-ink-2">
-            Tuần này IT {fmtH(week.itMin)} · Tiếng Nhật {fmtH(week.jpMin)}. Tiếng
-            Nhật là ưu tiên số 1, không phải IT.
+            Tuần này xây web {fmtH(week.webMin)} · Tiếng Nhật {fmtH(week.jpMin)}.
+            Xây công cụ để quản lý việc học không phải là học.
           </span>
         </p>
       )}

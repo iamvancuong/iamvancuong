@@ -158,6 +158,7 @@ export async function saveDailyLog(iso: string, fd: FormData) {
     // Kẹp ở 24 giờ. Gõ thừa một số 0 thì thống kê tuần hỏng mà không ai nhận ra.
     jpMin: num(fd, "jpMin", { min: 0, max: MINUTES_IN_DAY }) ?? 0,
     itMin: num(fd, "itMin", { min: 0, max: MINUTES_IN_DAY }) ?? 0,
+    webMin: num(fd, "webMin", { min: 0, max: MINUTES_IN_DAY }) ?? 0,
     spend: num(fd, "spend", { min: 0, max: 10_000_000 }),
     kSleep: bool(fd, "kSleep"),
     kJapanese: bool(fd, "kJapanese"),
@@ -174,6 +175,28 @@ export async function saveDailyLog(iso: string, fd: FormData) {
     update: data,
     create: { date: dayUTC(iso), ...data },
   });
+
+  revalidatePath("/os/log");
+  revalidatePath("/os");
+  revalidatePath("/os/write");
+}
+
+/**
+ * Xóa hẳn nhật ký của một ngày.
+ *
+ * Cần vì trang nhật ký lưu ngay khi rời ô, không có nút Lưu — nên ghi nhầm
+ * sang ngày khác là đã nằm trong database rồi. Trước đây chỉ xóa trắng được
+ * từng ô một, mà bản ghi vẫn còn: ngày đó vẫn tính là "đã ghi" trong thống kê
+ * và vẫn hiện trong danh sách.
+ *
+ * Chỉ đụng DailyLog. Ký ức cùng ngày là bảng khác, không mất theo.
+ */
+export async function deleteDailyLog(iso: string) {
+  await assertOwner();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
+
+  // deleteMany chứ không delete: ngày chưa từng ghi thì delete ném lỗi.
+  await db.dailyLog.deleteMany({ where: { date: dayUTC(iso) } });
 
   revalidatePath("/os/log");
   revalidatePath("/os");

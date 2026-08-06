@@ -525,6 +525,25 @@ export async function updateMemory(
 
   const existing = await db.memory.findUniqueOrThrow({ where: { id } });
 
+  /**
+   * Đổi lĩnh vực của ký ức.
+   *
+   * Trước đây `updateMemory` không đụng `areaId`, nên ghi nhầm lĩnh vực là
+   * phải xóa đi ghi lại — kéo theo mất luôn ảnh đã up. Chuỗi rỗng nghĩa là
+   * "không thuộc lĩnh vực nào" (cột này nullable), khác hẳn với "không gửi
+   * trường này lên" — nên phải phân biệt bằng `has`, không dùng `str()`.
+   */
+  const rawArea = fd.get("areaId");
+  const areaId =
+    typeof rawArea === "string"
+      ? rawArea === ""
+        ? null
+        : ((await db.area.findUnique({
+            where: { id: rawArea },
+            select: { id: true },
+          }))?.id ?? existing.areaId)
+      : existing.areaId;
+
   const files = fd.getAll("photos").filter((f): f is File => f instanceof File);
   const saved = [];
   for (const f of files) {
@@ -538,6 +557,7 @@ export async function updateMemory(
       data: {
         date,
         title,
+        areaId,
         body: text(fd, "body"),
         learned: text(fd, "learned"),
         place: str(fd, "place", 120),
@@ -550,7 +570,7 @@ export async function updateMemory(
             height: s.height,
             bytes: s.bytes,
             takenAt: s.takenAt,
-            areaId: existing.areaId,
+            areaId,
             visibility: existing.visibility, // ảnh mới theo quyền của ký ức
           })),
         },
@@ -623,6 +643,49 @@ export async function setPhotoCaption(
 }
 
 /** Xóa một tấm ảnh khỏi ký ức, kèm file thật trên đĩa. */
+/**
+ * Đổi chỗ ảnh với tấm liền kề TRONG CÙNG một ký ức.
+ *
+ * Focus sắp xếp được từ lâu, ảnh thì chưa — nên tấm đại diện của một ký ức
+ * (và tấm đứng đầu trên /journey, /photos) là tấm tình cờ up trước, không phải
+ * tấm đáng nhìn nhất. Cùng cách làm với `reorderFocusItem`: gán lại cả cột
+ * `order` theo vị trí, vì dữ liệu cũ đang cùng `order = 0` hết.
+ */
+export async function reorderPhoto(
+  id: string,
+  areaSlug: string | null,
+  dir: "up" | "down",
+) {
+  await assertOwner();
+
+  const photo = await db.photo.findUniqueOrThrow({
+    where: { id },
+    select: { memoryId: true },
+  });
+  if (!photo.memoryId) return; // ảnh rời, không thuộc ký ức nào thì không có hàng để xếp
+
+  const siblings = await db.photo.findMany({
+    where: { memoryId: photo.memoryId },
+    orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+    select: { id: true },
+  });
+
+  const i = siblings.findIndex((s) => s.id === id);
+  const j = dir === "up" ? i - 1 : i + 1;
+  if (i === -1 || j < 0 || j >= siblings.length) return;
+
+  const next = [...siblings];
+  [next[i], next[j]] = [next[j], next[i]];
+
+  await db.$transaction(
+    next.map((s, idx) =>
+      db.photo.update({ where: { id: s.id }, data: { order: idx } }),
+    ),
+  );
+
+  revalidateMemory(areaSlug ?? undefined);
+}
+
 export async function deletePhoto(id: string, areaSlug: string | null) {
   await assertOwner();
 

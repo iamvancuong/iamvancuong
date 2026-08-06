@@ -17,9 +17,17 @@ export default async function JourneyPage() {
   const memories = await db.memory.findMany({
     orderBy: { date: "desc" },
     include: {
-      photos: true,
+      photos: { orderBy: [{ order: "asc" }, { createdAt: "asc" }] },
       area: { select: { name: true, slug: true } },
     },
+  });
+
+  // Cho form sửa đổi được lĩnh vực của ký ức. Lấy cả lĩnh vực đang ẩn: ký ức
+  // cũ có thể đang thuộc một lĩnh vực đã tạm gác, và không được để việc mở form
+  // sửa âm thầm gỡ nó ra khỏi lĩnh vực đó.
+  const areas = await db.area.findMany({
+    orderBy: { order: "asc" },
+    select: { id: true, name: true },
   });
 
   const birthYear = new Date(site.birthDate).getFullYear();
@@ -67,7 +75,7 @@ export default async function JourneyPage() {
                   {year - birthYear} tuổi · {list.length} ký ức
                 </span>
               </div>
-              <MemoryList memories={list} showArea />
+              <MemoryList memories={list} showArea areas={areas} />
             </section>
           ))
       )}

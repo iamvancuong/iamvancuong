@@ -19,10 +19,17 @@ import { isoUTC } from "@/lib/os/day";
 export function MemoryForm({
   areaSlug,
   memory,
+  areas,
 }: {
   areaSlug: string | null;
   /** Có thì là sửa; không có thì là tạo mới. */
   memory?: Memory;
+  /**
+   * Chỉ dùng khi SỬA, để đổi lĩnh vực của ký ức. Lúc tạo mới thì lĩnh vực do
+   * trang quyết định (trang lĩnh vực → chính nó; Hành trình → không thuộc
+   * lĩnh vực nào), nên bày thêm ô chọn ở đó chỉ là một quyết định thừa.
+   */
+  areas?: { id: string; name: string }[];
 }) {
   const editing = memory != null;
 
@@ -104,6 +111,22 @@ export function MemoryForm({
         aria-label="Học được gì"
         className="w-full rounded-[var(--radius-sm)] border border-line px-3 py-2 text-[14px] outline-none focus:border-ink-3"
       />
+
+      {editing && areas && areas.length > 0 && (
+        <select
+          name="areaId"
+          defaultValue={memory.areaId ?? ""}
+          aria-label="Lĩnh vực"
+          className="w-full rounded-[var(--radius-sm)] border border-line bg-bg px-3 py-2 text-[14px] outline-none focus:border-ink-3"
+        >
+          <option value="">— không thuộc lĩnh vực nào —</option>
+          {areas.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.name}
+            </option>
+          ))}
+        </select>
+      )}
 
       <div className="flex flex-col gap-2 sm:flex-row">
         <input

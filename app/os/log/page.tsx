@@ -34,7 +34,9 @@ export default async function LogListPage() {
     db.memory.findMany({
       where: { date: { gte: since } },
       orderBy: { date: "desc" },
-      include: { photos: true },
+      include: {
+        photos: { orderBy: [{ order: "asc" }, { createdAt: "asc" }] },
+      },
     }),
     db.dailyLog.findMany({
       where: { date: { gte: dayUTC(addDaysISO(today, -400)) } },

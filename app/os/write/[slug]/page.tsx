@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { listTags } from "@/lib/posts";
 import {
   createTag,
+  updateTag,
   deletePost,
   deleteTag,
   savePost,
@@ -87,7 +88,20 @@ export default async function EditPostPage({
               key={t.id}
               className="flex items-center gap-1 rounded-[var(--radius-sm)] border border-line-soft bg-surface px-2 py-1 text-[12px] text-ink-2"
             >
-              {t.name}
+              {/* Sửa tại chỗ: gõ tên mới rồi Enter. Trước đây đổi tên chỉ làm
+                  được bằng cách gõ lại vào ô "chủ đề mới" đúng một tên sinh ra
+                  cùng slug cũ — lệch một chữ là đẻ chủ đề thứ hai. `slug` giữ
+                  nguyên vì nó nằm trong địa chỉ bộ lọc của /blog. */}
+              <form action={updateTag.bind(null, t.id)}>
+                <input
+                  name="name"
+                  defaultValue={t.name}
+                  aria-label={`Đổi tên chủ đề ${t.name}`}
+                  title={`/${t.slug} — đổi tên rồi Enter`}
+                  size={Math.max(t.name.length, 4)}
+                  className="bg-transparent text-[12px] text-ink-2 outline-none focus:text-ink"
+                />
+              </form>
               <form action={deleteTag.bind(null, t.id)}>
                 <button
                   type="submit"

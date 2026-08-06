@@ -77,6 +77,19 @@ export function DailyLogForm({
               className={inputCls}
             />
           </Field>
+          {/* Tách khỏi «IT»: học IT đẩy mục tiêu việc làm đi, còn xây cái web
+              này thì không. Đây là cảm biến của cảnh báo ở Hôm nay. */}
+          <Field label="Xây web này" suffix="phút">
+            <input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              name="webMin"
+              defaultValue={log?.webMin || ""}
+              onBlur={submit}
+              className={inputCls}
+            />
+          </Field>
         </div>
       </section>
 

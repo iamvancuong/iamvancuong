@@ -53,11 +53,22 @@ export default async function AreaPage({
         orderBy: [{ order: "asc" }, { createdAt: "asc" }],
         include: { entries: { orderBy: { date: "asc" } } },
       },
-      memories: { orderBy: { date: "desc" }, take: 20, include: { photos: true } },
+      memories: {
+        orderBy: { date: "desc" },
+        take: 20,
+        include: { photos: { orderBy: [{ order: "asc" }, { createdAt: "asc" }] } },
+      },
     },
   });
 
   if (!area) notFound();
+
+  // Cho form sửa ký ức đổi được lĩnh vực. Lấy cả lĩnh vực đang ẩn — xem chú
+  // thích cùng chỗ ở /os/journey.
+  const allAreas = await db.area.findMany({
+    orderBy: { order: "asc" },
+    select: { id: true, name: true },
+  });
 
   const counts = {
     goals: area.goals.filter((g) => g.status !== "DROPPED").length,
@@ -106,7 +117,11 @@ export default async function AreaPage({
                 không chỉ từ hôm nay trở đi.
               </EmptyNote>
             ) : (
-              <MemoryList memories={area.memories} areaSlug={slug} />
+              <MemoryList
+              memories={area.memories}
+              areaSlug={slug}
+              areas={allAreas}
+            />
             )}
             <MemoryForm areaSlug={slug} />
           </div>

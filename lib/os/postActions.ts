@@ -152,6 +152,28 @@ export async function createTag(fd: FormData) {
   revalidatePath("/blog");
 }
 
+/**
+ * Đổi TÊN hiển thị của chủ đề, giữ nguyên `slug`.
+ *
+ * Trước đây chỉ đổi được bằng cách gõ lại vào form "thêm chủ đề" đúng một tên
+ * sinh ra cùng slug cũ — tức là phải tự đoán `slugify` làm gì. Gõ lệch một
+ * chữ là đẻ ra chủ đề thứ hai chứ không phải sửa cái đang có.
+ *
+ * Không đổi `slug` vì nó nằm trong địa chỉ bộ lọc của /blog; đổi là làm chết
+ * link đã chia sẻ. Cùng lý do với `Area.slug`.
+ */
+export async function updateTag(id: string, fd: FormData) {
+  await assertOwner();
+
+  const name = str(fd, "name", 60);
+  if (!name) return;
+
+  await db.tag.update({ where: { id }, data: { name } });
+
+  revalidatePath("/os/write", "layout");
+  revalidatePath("/blog");
+}
+
 export async function deleteTag(id: string) {
   await assertOwner();
   // Xóa chủ đề KHÔNG xóa bài — quan hệ nhiều-nhiều nên bài chỉ mất nhãn đó.

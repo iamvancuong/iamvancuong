@@ -1,9 +1,10 @@
 import Image from "next/image";
-import { Eye, EyeOff, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Eye, EyeOff, X } from "lucide-react";
 import { Visibility, type Memory, type Photo } from "@prisma/client";
 import {
   deleteMemory,
   deletePhoto,
+  reorderPhoto,
   setPhotoCaption,
   toggleMemoryVisibility,
 } from "@/lib/os/actions";
@@ -29,10 +30,13 @@ export function MemoryList({
   memories,
   areaSlug,
   showArea = false,
+  areas,
 }: {
   memories: MemoryWithPhotos[];
   areaSlug?: string;
   showArea?: boolean;
+  /** Chuyển thẳng xuống form sửa, để đổi được lĩnh vực của ký ức. */
+  areas?: { id: string; name: string }[];
 }) {
   return (
     <ul className="space-y-10">
@@ -117,7 +121,11 @@ export function MemoryList({
 
               <Disclosure label="Sửa" small>
                 <div className="space-y-3">
-                  <MemoryForm areaSlug={areaSlug ?? null} memory={m} />
+                  <MemoryForm
+                    areaSlug={areaSlug ?? null}
+                    memory={m}
+                    areas={areas}
+                  />
                   {m.photos.length > 0 && (
                     <PhotoManager photos={m.photos} areaSlug={areaSlug ?? null} />
                   )}
@@ -145,14 +153,21 @@ function PhotoManager({
   photos: Photo[];
   areaSlug: string | null;
 }) {
+  const totalBytes = photos.reduce((s, p) => s + (p.bytes ?? 0), 0);
+
   return (
     <section className="rounded-[var(--radius-lg)] border border-line p-3">
       <div className="mb-2">
         <MicroLabel>Ảnh — {photos.length} tấm</MicroLabel>
       </div>
 
+      <p className="mb-2 text-[12px] text-ink-3">
+        Tấm đầu tiên là tấm đại diện — nó đứng đầu ở Hành trình và ở trang Ảnh.
+        {totalBytes > 0 && <> Cả {photos.length} tấm: {fmtBytes(totalBytes)}.</>}
+      </p>
+
       <ul className="space-y-2">
-        {photos.map((p) => (
+        {photos.map((p, i) => (
           <li key={p.id} className="flex items-center gap-2">
             <Image
               src={p.thumbUrl ?? p.url}
@@ -167,17 +182,40 @@ function PhotoManager({
               action={setPhotoCaption.bind(null, p.id, areaSlug)}
               className="flex min-w-0 flex-1 items-center gap-2"
             >
-              <input
-                name="caption"
-                defaultValue={p.caption ?? ""}
-                placeholder="Chú thích ảnh…"
-                aria-label="Chú thích ảnh"
-                className="min-w-0 flex-1 rounded-[var(--radius-sm)] border border-line-soft bg-surface px-2.5 py-1.5 text-[13px] outline-none focus:border-ink-3 focus:bg-bg"
-              />
+              <div className="min-w-0 flex-1">
+                <input
+                  name="caption"
+                  defaultValue={p.caption ?? ""}
+                  placeholder="Chú thích ảnh…"
+                  aria-label="Chú thích ảnh"
+                  className="w-full rounded-[var(--radius-sm)] border border-line-soft bg-surface px-2.5 py-1.5 text-[13px] outline-none focus:border-ink-3 focus:bg-bg"
+                />
+                {/* `bytes` được ghi vào database từ đầu nhưng chưa từng hiện ở
+                    đâu — mà nó là thứ duy nhất nói cho bạn biết thư mục uploads
+                    đang phình ra vì tấm nào. */}
+                <div className="mt-0.5 text-[11px] tabular-nums text-ink-3">
+                  {[
+                    i === 0 ? "đại diện" : null,
+                    p.width && p.height ? `${p.width}×${p.height}` : null,
+                    p.bytes ? fmtBytes(p.bytes) : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </div>
+              </div>
               <SubmitButton variant="quiet" pendingLabel="…">
                 lưu
               </SubmitButton>
             </form>
+
+            <div className="flex shrink-0 items-center">
+              <form action={reorderPhoto.bind(null, p.id, areaSlug, "up")}>
+                <PhotoMoveButton dir="up" disabled={i === 0} />
+              </form>
+              <form action={reorderPhoto.bind(null, p.id, areaSlug, "down")}>
+                <PhotoMoveButton dir="down" disabled={i === photos.length - 1} />
+              </form>
+            </div>
 
             <form action={deletePhoto.bind(null, p.id, areaSlug)}>
               <ConfirmButton
@@ -193,4 +231,31 @@ function PhotoManager({
       </ul>
     </section>
   );
+}
+
+function PhotoMoveButton({
+  dir,
+  disabled,
+}: {
+  dir: "up" | "down";
+  disabled: boolean;
+}) {
+  const Icon = dir === "up" ? ChevronUp : ChevronDown;
+  return (
+    <button
+      type="submit"
+      disabled={disabled}
+      aria-label={dir === "up" ? "Đưa ảnh lên trước" : "Đưa ảnh xuống sau"}
+      className="p-1 text-ink-3 transition-colors hover:text-ink disabled:opacity-25 disabled:hover:text-ink-3"
+    >
+      <Icon size={14} strokeWidth={2} />
+    </button>
+  );
+}
+
+/** Dung lượng gọn: 812 KB · 1,4 MB. Dấu phẩy thập phân kiểu Việt. */
+function fmtBytes(n: number): string {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1).replace(".", ",")} MB`;
 }
