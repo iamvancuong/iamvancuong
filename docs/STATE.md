@@ -1,6 +1,6 @@
 # STATE.md — dự án đang đứng ở đâu
 
-> **Đọc file này TRƯỚC.** Đây là trạng thái thật, cập nhật **2026-08-05**.
+> **Đọc file này TRƯỚC.** Đây là trạng thái thật, cập nhật **2026-08-06**.
 > `PLAN.md` là lý do đằng sau các quyết định · `OS-DESIGN.md` là thiết kế Life OS.
 > Hai file kia giải thích *vì sao*; file này nói *đang ở đâu và làm gì tiếp*.
 
@@ -8,10 +8,10 @@
 
 ## 0. Nếu chỉ đọc được 5 dòng
 
-1. **Code gần như xong. Sản phẩm chưa được dùng ngày nào.** Toàn bộ dữ liệu trong database là **demo do script sinh ra**, không phải của chủ nhân.
-2. **Chưa deploy.** Không có git remote. Chỉ chạy trên một máy.
-3. **Mật khẩu `/os` vẫn là mật khẩu tạm, và nó nằm trong lịch sử git.** Phải đổi trước khi push.
-4. **Toàn bộ đợt sửa ngày 05/08 chưa commit.** Commit cuối cùng là `a8a70bf`, từ trước đợt đó. Chạy `git status` để xem hiện trạng.
+1. **Code xong. Sản phẩm gần như chưa được dùng.** Dữ liệu mẫu đã xóa sạch (06/08). Hiện có **1 ngày nhật ký thật**, 0 lần ghi số đo, 0 ký ức. 7 số đo đã lập nhưng chưa nhập con số nào.
+2. **Đã lên GitHub**, repo `iamvancuong/iamvancuong` **công khai**. **Chưa deploy** — vẫn chỉ chạy trên một máy.
+3. 🔴 **Mật khẩu `/os` vẫn là mật khẩu tạm.** Nó *không* nằm trong repo (`.env` bị gitignore, lịch sử cũ đã mất), nhưng phải đổi **trước khi deploy**: `npm.cmd run hash-password` rồi thay dòng trong `.env` **và khởi động lại server** — Next chỉ đọc `.env` lúc tiến trình khởi động.
+4. Đợt 05–06/08 đã commit và push đủ. `git log` để xem.
 5. Việc tiếp theo **không phải là code** — xem §9.
 
 ---
@@ -46,9 +46,10 @@ Sống → ghi vào /os → chọn cái đáng kể → viết thành bài → c
 | CSS | Tailwind **v4** (token trong `app/globals.css`, không dùng UI framework) |
 | DB | MySQL **8.4** trong Docker · Prisma **7.9.1** + `@prisma/adapter-mariadb` |
 | Khác | `jose` + `bcryptjs` (đăng nhập) · `sharp` (ảnh) · `remark` (Markdown) · `lucide-react` |
-| Không có | test framework · CI · git remote · dark mode · RSS |
+| Test | `npm run test` — 77 phép kiểm, **không dùng framework** (xem `scripts/test.ts`) |
+| Không có | CI · nút bật/tắt dark mode (đi theo cài đặt hệ điều hành) |
 
-**Quy mô:** 85 file nguồn, ~10.400 dòng. 21 trang, 5 API route, 42 server action, 12 bảng, 8 enum.
+**Quy mô:** ~95 file nguồn. 23 trang, 6 API route (+ `/feed.xml`), 56 server action, 15 bảng, 9 enum.
 
 ---
 
@@ -187,18 +188,20 @@ Home · `/now` (đọc `content/now.md`) · `/blog` (+`[slug]`, `/ja`, lọc the
 
 ## 6. 🟡 CHƯA HOÀN THIỆN
 
-| Thứ | Thiếu gì |
+Toàn bộ nhóm này **đã đóng ngày 06/08**, trừ đúng một mục:
+
+| Thứ | Trạng thái |
 |---|---|
-| **Lĩnh vực (Area)** | **Không có giao diện nào** — thêm/sửa/ẩn lĩnh vực phải qua `db:studio`. Cột `Area.active` tồn tại đúng để tắt bớt lĩnh vực chưa cần, nhưng không bật/tắt được từ web. Đáng làm nhất trong nhóm này (~1,5h). |
-| **Xóa nhật ký ngày** | Không có. Ghi nhầm sang ngày khác thì chỉ xóa trắng từng ô được. |
-| **Đổi lĩnh vực của ký ức** | `updateMemory` không sửa `areaId`. |
-| **Đổi tên chủ đề (Tag)** | Chỉ đổi được nếu gõ lại đúng slug cũ, không có nút sửa. |
-| **Sắp xếp ảnh trong ký ức** | Focus sắp xếp được; ảnh thì chưa. |
-| **`Goal.detail`** | Có cột, không có ô nhập (đã có `why` nên ít cần). |
-| **`Photo.bytes`** | Ghi vào DB nhưng không hiện ở đâu. |
-| **Cảnh báo "xây hệ thống thay vì dùng"** | `stats.ts:buildingTooMuch()` đo `itMin` — số phút **tự khai** là học IT — chứ không đo giờ code trang này. Cảm biến quan trọng nhất đang chỉ nhầm hướng. |
-| **`site.social`** | Cả 4 rỗng → footer chỉ còn link "Now". |
-| **`public/`** | Vẫn còn `next.svg`, `vercel.svg`… mặc định của Next. |
+| **`site.social`** | 🔴 **Còn thiếu.** Cả 4 rỗng → footer chỉ còn link "Now". Cần dữ liệu thật của chủ nhân, không bịa được. |
+| ~~Giao diện Lĩnh vực~~ | ✅ `/os/data` — thêm · sửa · ẩn/hiện · đổi thứ tự · xóa. `slug` cố ý không sửa được (là địa chỉ trang). |
+| ~~Xóa nhật ký ngày~~ | ✅ Nút ở cuối `/os/log/[date]`, chỉ hiện khi ngày đó có bản ghi. |
+| ~~Đổi lĩnh vực của ký ức~~ | ✅ Ô chọn trong form sửa ký ức. |
+| ~~Đổi tên chủ đề (Tag)~~ | ✅ Sửa tại chỗ ở `/os/write/[slug]`; `slug` giữ nguyên. |
+| ~~Sắp xếp ảnh trong ký ức~~ | ✅ `Photo.order` + nút lên/xuống. ⚠️ Phải có `orderBy` ở **cả bốn** truy vấn ảnh. |
+| ~~`Goal.detail`~~ | ✅ Có textarea, hiện ở dòng mục tiêu. |
+| ~~`Photo.bytes`~~ | ✅ Hiện kích thước + dung lượng từng tấm và tổng cả ký ức. |
+| ~~`buildingTooMuch()`~~ | ✅ Thêm `DailyLog.webMin`. Nó từng so `itMin` với `jpMin` — **đo nhầm cả hai đầu**: phạt việc học IT (thứ phục vụ mục tiêu việc làm) và mù hoàn toàn trước giờ ngồi xây chính cái web này. |
+| ~~`public/`~~ | ✅ Đã xóa 5 file svg mặc định của Next. |
 
 ---
 
@@ -265,20 +268,27 @@ Execution policy `Restricted` (mặc định Windows) chặn `npm.ps1`. Dùng `n
 ### Chặn việc sử dụng
 | # | Việc | ~Giờ |
 |---|---|---|
-| 1 | **Đổi mật khẩu `/os`** — vẫn là mật khẩu tạm, **và nó nằm trong commit `62969cf` + README ở HEAD**. Chưa có remote nên chưa lộ. Phải đổi TRƯỚC khi push. | 5' |
-| 2 | **Xóa dữ liệu mẫu** — `npm.cmd run db:demo:clear` | 1' |
-| 3 | **Deploy** — GitHub → hosting có MySQL → domain → HTTPS | 4h |
-| 4 | **Commit đợt sửa 05/08** (commit cuối là `a8a70bf`, từ trước đợt đó) | 10' |
+| 1 | 🔴 **Đổi mật khẩu `/os`** — vẫn là bản tạm. Không nằm trong repo, nhưng repo đã công khai nên phải đổi TRƯỚC khi deploy. Nhớ **khởi động lại server** sau khi sửa `.env`, nếu không tiến trình vẫn giữ giá trị cũ và triệu chứng là "đổi rồi mà vẫn sai". | 5' |
+| 2 | 🔴 **Điền `site.social`** — 4 link, footer đang trống. | 5' |
+| 3 | 🔴 **Deploy** — hosting có MySQL → domain → HTTPS. ⚠️ MySQL ở máy khác thì phải bật TLS thay cho `allowPublicKeyRetrieval` (xem §7.1). | 4h |
+| ~~4~~ | ~~Xóa dữ liệu mẫu~~ ✅ 06/08 · ~~Commit + push~~ ✅ 06/08 | |
 
 ### Module còn thiếu
 | Việc | ~Giờ | Ghi chú |
 |---|---|---|
-| **Giấy tờ Nhật: hạn visa/在留カード + cảnh báo trước 60 ngày** | 3h | **Rủi ro thật, không phải tính năng cho vui.** Đã đề xuất làm thành tab «Hạn» dùng chung như «Số đo» — chủ nhân chưa chọn làm (05/08). Đây là mục nên nhắc lại. |
-| Tiền: chi phí cố định + tổng kết tháng + tỷ lệ tiết kiệm | 4h | Hiện có 1 con số/ngày trong `DailyLog`, và tab «Số đo» đã đủ chỗ ghi tổng chi từng tháng. Còn thiếu phần chi phí cố định lặp lại. |
-| Cơ thể: ảnh tiến trình 1 tháng/lần | 1h | (cân nặng đã có chỗ ở tab «Số đo») |
-| Giao diện quản lý Lĩnh vực | 1,5h | Xem §6 — vẫn là mục đáng làm nhất còn lại trong nhóm này |
-| RSS · ảnh OG · dark mode | 4h | Đánh bóng |
-| Test cho `stats.ts` + `day.ts` + `period.ts` | 2h | Logic thuần, dễ test nhất, rủi ro cao nhất |
+| ~~Tiền: chi phí cố định + tổng kết tháng + tỷ lệ tiết kiệm~~ | ✅ | `/os/money`. `FixedCost` + `MonthBudget`. Tính toán ở `lib/os/money.ts`, không chạm database. |
+| ~~Cơ thể: ảnh tiến trình~~ | ✅ | Tab «Tiến trình» của lĩnh vực, xếp cũ → mới, ghi "+N ngày" giữa hai tấm. |
+| ~~Giao diện quản lý Lĩnh vực~~ | ✅ | `/os/data` |
+| ~~RSS · ảnh OG · dark mode~~ | ✅ | `/feed.xml` · `opengraph-image.tsx` · dark mode theo hệ điều hành |
+| ~~Test cho `stats.ts` + `day.ts` + `period.ts`~~ | ✅ | `npm run test` — 77 phép, thêm cả `money.ts` |
+| **Giấy tờ Nhật: hạn visa/在留カード + cảnh báo trước 60 ngày** | 3h | Đã đề xuất 05/08. **Chủ nhân từ chối ngày 06/08**: *"cái đó tôi tự viết blog chứ sao lại code"*. Ghi lại để lần sau đừng đề xuất lại — nhưng rủi ro thì vẫn là rủi ro thật, chỉ là chủ nhân chọn xử lý ngoài hệ thống. |
+
+### Tầng 2 của Số đo — chưa làm, đòn bẩy lớn nhất còn lại
+Nối `DailyLog` ↔ `Metric`: cho một số đo khai báo nó **tự lấy số từ trường nào
+của DailyLog** (`jpMin`, `spend`, `workout`). Ghi nhật ký một lần là nhiều lĩnh
+vực tự cập nhật, hết cảnh nhập hai nơi. ~3h. **Cố ý đợi**: chưa biết chủ nhân
+thật sự ghi số nào mỗi ngày thì không nên xây đường ống cho một dòng chảy chưa
+tồn tại.
 
 ### 🚫 CỐ Ý KHÔNG LÀM
 `Life Score` · `Identity` · `Knowledge` (second brain) · **lịch hẹn giờ** (Google Calendar là nguồn duy nhất — `/os/calendar` chỉ là cam kết tuần, không có ô giờ, không có sự kiện) · multi-user · Supabase · AI tự tóm tắt tuần.
@@ -293,25 +303,33 @@ Execution policy `Restricted` (mặc định Windows) chặn `npm.ps1`. Dùng `n
 **Thứ tự này quan trọng hơn nội dung từng việc.**
 
 ```
-1. Đổi mật khẩu                          5 phút
-2. npm.cmd run db:demo:clear             1 phút
-3. Commit đợt sửa 05/08                 10 phút
-4. Deploy                                4 giờ
-5. ▶ DÙNG THẬT 21 NGÀY — 0 giờ code ◀
-6. Ngày 22: đọc lại, rồi mới quyết định làm gì
+1. Đổi mật khẩu                          5 phút   ← CHƯA XONG
+2. Điền site.social (4 link)             5 phút   ← CHƯA XONG
+3. Deploy                                4 giờ    ← CHƯA XONG
+4. ▶ DÙNG THẬT 1 THÁNG — 0 giờ code ◀
+5. Sau đó: đọc lại, rồi mới quyết định làm gì
 ```
 
-### Vì sao bước 5 mới là bước khó nhất
+> **Ghi lại cho trung thực:** ngày 06/08 chủ nhân yêu cầu làm HẾT mọi tính năng
+> trước rồi mới dùng, với lý do *"sau 1 tháng tôi sẽ biết web app cần update hay
+> sửa gì"*. Điều đó đã làm xong. Nghĩa là §9 giờ chỉ còn đúng một việc thật:
+> **dùng nó**. Không còn tính năng nào để trốn vào nữa.
 
-Tính tới 05/08/2026: **0 ngày được ghi thật · 0 bài xuất bản · 0 điểm mock test.**
-Toàn bộ 67 ngày nhật ký, 11 ký ức, 13 ảnh trong database là **demo**.
+### Vì sao bước 4 mới là bước khó nhất
 
-Hệ thống đang ở đúng trạng thái nguy hiểm nhất mà `OS-DESIGN.md` §9 gọi tên:
-**vừa đủ đẹp để hài lòng, chưa đủ dùng để có ích.**
+Tính tới 06/08/2026: **1 ngày được ghi thật · 0 bài xuất bản · 0 điểm mock test
+· 0 lần ghi số đo** (7 số đo đã lập). Dữ liệu mẫu đã xóa sạch, nên `/os` bây giờ
+gần như trống — và **đó là trạng thái đúng**.
 
-Chưa xóa dữ liệu mẫu thì mở `/os` sẽ thấy chuỗi ngày, lịch nhiệt, thống kê — **trông y hệt một hệ thống đang chạy**. Cảm giác đó thay thế mất việc thật.
+`OS-DESIGN.md` §9 gọi tên đúng cái bẫy ở đây: **vừa đủ đẹp để hài lòng, chưa đủ
+dùng để có ích.** Hai ngày qua đã thêm rất nhiều tính năng; không tính năng nào
+trong số đó tự nhập một con số cân nặng hộ chủ nhân.
 
-### Ngày 22 hỏi ba câu
+Phép thử rẻ nhất cho toàn bộ thiết kế số đo: **ghi một con số thật vào một số đo
+bất kỳ.** Nếu việc đó thấy phiền thì tầng 2 (nối tự động từ `DailyLog`) mới đáng
+làm; nếu thấy nhẹ thì không cần làm gì thêm.
+
+### Sau một tháng, hỏi ba câu
 
 - Trường nào chưa bao giờ điền? → **xóa cột.**
 - Trang nào chưa bao giờ mở? → **xóa khỏi nav.**

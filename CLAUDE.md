@@ -35,8 +35,20 @@ npm.cmd run dev
 Trên PowerShell phải là `npm.cmd`, không phải `npm` (execution policy chặn
 `npm.ps1`). Cần Docker Desktop bật; `predev` tự khởi động MySQL và chờ healthy.
 
+## Chạy test
+
+```bash
+npm.cmd run test
+```
+
+77 phép kiểm cho `day` · `period` · `stats` · `money` — logic thuần, không
+framework, không chạm database. Chạy nó trước khi đụng vào bốn file đó: đây là
+chỗ sai **âm thầm** nhất, sai một phép cộng ngày thì không có lỗi nào hiện ra,
+chỉ có một con số trông hợp lý mà sai.
+
 ## Trước khi thêm tính năng mới
 
-Dự án **chưa được dùng ngày nào** — dữ liệu trong database toàn là demo. Việc
-tiếp theo không phải là code; xem `STATE.md` §9. Ngân sách là 6 giờ/tuần và
-website xếp ưu tiên #7 sau tiếng Nhật.
+Tính năng đã làm hết theo yêu cầu ngày 06/08 (`STATE.md` §8 gần như trống).
+Sản phẩm **vẫn gần như chưa được dùng**: 1 ngày nhật ký thật, 0 lần ghi số đo.
+Việc tiếp theo không phải là code; xem `STATE.md` §9. Ngân sách là 6 giờ/tuần
+và website xếp ưu tiên #7 sau tiếng Nhật.
