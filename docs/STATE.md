@@ -188,11 +188,11 @@ Home · `/now` (đọc `content/now.md`) · `/blog` (+`[slug]`, `/ja`, lọc the
 
 ## 6. 🟡 CHƯA HOÀN THIỆN
 
-Toàn bộ nhóm này **đã đóng ngày 06/08**, trừ đúng một mục:
+Toàn bộ nhóm này **đã đóng ngày 06/08**. Không còn mục nào.
 
 | Thứ | Trạng thái |
 |---|---|
-| **`site.social`** | 🔴 **Còn thiếu.** Cả 4 rỗng → footer chỉ còn link "Now". Cần dữ liệu thật của chủ nhân, không bịa được. |
+| ~~`site.social`~~ | ✅ 6 link (GitHub · LinkedIn · Email · Instagram · YouTube · Facebook). Thứ tự khai trong `site.ts` = thứ tự hiện ở footer, xếp theo mức liên quan tới việc IT. |
 | ~~Giao diện Lĩnh vực~~ | ✅ `/os/data` — thêm · sửa · ẩn/hiện · đổi thứ tự · xóa. `slug` cố ý không sửa được (là địa chỉ trang). |
 | ~~Xóa nhật ký ngày~~ | ✅ Nút ở cuối `/os/log/[date]`, chỉ hiện khi ngày đó có bản ghi. |
 | ~~Đổi lĩnh vực của ký ức~~ | ✅ Ô chọn trong form sửa ký ức. |
@@ -269,9 +269,8 @@ Execution policy `Restricted` (mặc định Windows) chặn `npm.ps1`. Dùng `n
 | # | Việc | ~Giờ |
 |---|---|---|
 | 1 | 🔴 **Đổi mật khẩu `/os`** — vẫn là bản tạm. Không nằm trong repo, nhưng repo đã công khai nên phải đổi TRƯỚC khi deploy. Nhớ **khởi động lại server** sau khi sửa `.env`, nếu không tiến trình vẫn giữ giá trị cũ và triệu chứng là "đổi rồi mà vẫn sai". | 5' |
-| 2 | 🔴 **Điền `site.social`** — 4 link, footer đang trống. | 5' |
-| 3 | 🔴 **Deploy** — hosting có MySQL → domain → HTTPS. ⚠️ MySQL ở máy khác thì phải bật TLS thay cho `allowPublicKeyRetrieval` (xem §7.1). | 4h |
-| ~~4~~ | ~~Xóa dữ liệu mẫu~~ ✅ 06/08 · ~~Commit + push~~ ✅ 06/08 | |
+| 2 | 🔴 **Deploy** — hosting có MySQL → domain → HTTPS. ⚠️ MySQL ở máy khác thì phải bật TLS thay cho `allowPublicKeyRetrieval` (xem §7.1). | 4h |
+| ~~3~~ | ~~Xóa dữ liệu mẫu~~ ✅ · ~~Commit + push~~ ✅ · ~~Điền `site.social`~~ ✅ — tất cả 06/08 | |
 
 ### Module còn thiếu
 | Việc | ~Giờ | Ghi chú |
@@ -304,10 +303,9 @@ tồn tại.
 
 ```
 1. Đổi mật khẩu                          5 phút   ← CHƯA XONG
-2. Điền site.social (4 link)             5 phút   ← CHƯA XONG
-3. Deploy                                4 giờ    ← CHƯA XONG
-4. ▶ DÙNG THẬT 1 THÁNG — 0 giờ code ◀
-5. Sau đó: đọc lại, rồi mới quyết định làm gì
+2. Deploy                                4 giờ    ← CHƯA XONG
+3. ▶ DÙNG THẬT 1 THÁNG — 0 giờ code ◀
+4. Sau đó: đọc lại, rồi mới quyết định làm gì
 ```
 
 > **Ghi lại cho trung thực:** ngày 06/08 chủ nhân yêu cầu làm HẾT mọi tính năng

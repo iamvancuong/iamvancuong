@@ -211,14 +211,28 @@ sang OneDrive.
 
 ---
 
-## 9. Giao diện tối
+## 9. Sửa thông tin cá nhân
+
+Tất cả nằm trong **`lib/site.ts`** — tên, tagline, mô tả, ngày sinh, và 6 link
+mạng xã hội ở footer. Sửa một dòng ở đó là cả site đổi theo: footer, thẻ chia sẻ
+lên Messenger/Zalo, RSS, và các mốc tuổi trong `/os`.
+
+Link nào để **chuỗi rỗng** thì tự biến mất khỏi footer. Thứ tự khai trong file
+chính là thứ tự hiện ra.
+
+⚠️ Ngày sinh (`birthDate`) dùng để tính tuổi và mọi mốc "25 tuổi / 30 tuổi" —
+sửa nó là các mục tiêu theo tuổi đổi ngày theo.
+
+---
+
+## 10. Giao diện tối
 
 Tự đi theo cài đặt của máy — **không có nút bật/tắt**. Đổi trong Cài đặt của
 Windows / iOS / Android là trang đổi theo.
 
 ---
 
-## 10. Ba điều dễ nhầm
+## 11. Ba điều dễ nhầm
 
 **① Sửa `.env` xong phải khởi động lại server.** Áp dụng cho mật khẩu và mọi
 biến khác. Không khởi động lại thì giá trị cũ vẫn được dùng.
@@ -231,7 +245,7 @@ thì chi tiêu bằng 0 — đó là *chưa ghi*, không phải *không tiêu*.
 
 ---
 
-## 11. Sao lưu
+## 12. Sao lưu
 
 Vào **Dữ liệu & lĩnh vực** → **Tải JSON toàn bộ**. Kèm theo copy thư mục
 `uploads`. Mức thấp hơn:
@@ -242,7 +256,7 @@ docker exec vancuong_mysql mysqldump -ucuong -pdevpass iamvancuong > backup.sql
 
 ---
 
-## 12. Nếu chỉ nhớ được một điều
+## 13. Nếu chỉ nhớ được một điều
 
 Hệ thống này **không tự làm gì cho bạn**. Nó chỉ có ích khi có dữ liệu thật, mà
 dữ liệu thật chỉ đến từ hai phút mỗi tối.
