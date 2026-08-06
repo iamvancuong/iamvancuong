@@ -6,6 +6,7 @@ import {
   CalendarCheck,
   CalendarDays,
   Crosshair,
+  Database,
   LayoutDashboard,
   LogOut,
   PenLine,
@@ -97,14 +98,32 @@ export function OsNav({ areas }: { areas: NavArea[] }) {
             </ul>
           </div>
 
-          <button
-            type="button"
-            onClick={logout}
-            className="flex items-center gap-2.5 px-2.5 py-1.5 text-[13px] text-ink-3 transition-colors hover:text-ink"
-          >
-            <LogOut size={14} strokeWidth={1.75} />
-            Đăng xuất
-          </button>
+          {/* Dưới cùng, chữ nhỏ, KHÔNG vào thanh dưới của điện thoại: quản lý
+              lĩnh vực và tải sao lưu là việc vài lần một năm. Trước đây /os/data
+              không có link nào trỏ tới — trang mồ côi, chỉ vào được bằng cách
+              tự gõ địa chỉ. */}
+          <div className="space-y-1 border-t border-line-soft pt-3">
+            <Link
+              href="/os/data"
+              className={`flex items-center gap-2.5 px-2.5 py-1.5 text-[13px] transition-colors ${
+                pathname === "/os/data"
+                  ? "font-medium text-ink"
+                  : "text-ink-3 hover:text-ink"
+              }`}
+            >
+              <Database size={14} strokeWidth={1.75} />
+              Dữ liệu &amp; lĩnh vực
+            </Link>
+
+            <button
+              type="button"
+              onClick={logout}
+              className="flex items-center gap-2.5 px-2.5 py-1.5 text-[13px] text-ink-3 transition-colors hover:text-ink"
+            >
+              <LogOut size={14} strokeWidth={1.75} />
+              Đăng xuất
+            </button>
+          </div>
         </div>
       </nav>
 

@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import { Download } from "lucide-react";
 import { db } from "@/lib/db";
 import { uploadRoot } from "@/lib/os/upload";
+import {
+  AreasSection,
+  type AreaWithCounts,
+} from "@/components/os/AreasSection";
 
 export const metadata: Metadata = { title: "Dữ liệu" };
 
@@ -18,6 +22,45 @@ export default async function DataPage() {
       db.focusItem.count(),
       db.post.count(),
     ]);
+
+  /**
+   * Đếm bằng `_count` trong một lượt thay vì bảy truy vấn mỗi lĩnh vực: câu
+   * hỏi lại trước khi xóa phải nói đúng con số, mà bảy lĩnh vực × bảy quan hệ
+   * là bốn mươi chín lượt gọi cho một trang gần như không ai mở.
+   */
+  const areaRows = await db.area.findMany({
+    orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+    include: {
+      _count: {
+        select: {
+          goals: true,
+          principles: true,
+          items: true,
+          metrics: true,
+          memories: true,
+          photos: true,
+          focusItems: true,
+        },
+      },
+    },
+  });
+
+  const areasWithCounts: AreaWithCounts[] = areaRows.map(({ _count, ...a }) => ({
+    ...a,
+    counts: {
+      cascade: {
+        goals: _count.goals,
+        principles: _count.principles,
+        items: _count.items,
+        metrics: _count.metrics,
+      },
+      orphan: {
+        memories: _count.memories,
+        photos: _count.photos,
+        focusItems: _count.focusItems,
+      },
+    },
+  }));
 
   const stats = [
     { label: "Lĩnh vực", value: areas },
@@ -56,6 +99,8 @@ export default async function DataPage() {
           ))}
         </div>
       </section>
+
+      <AreasSection areas={areasWithCounts} />
 
       <section>
         <h2 className="mb-3 text-[12px] font-medium uppercase tracking-[0.08em] text-ink-3">
