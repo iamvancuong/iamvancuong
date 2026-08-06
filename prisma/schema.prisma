@@ -241,6 +241,59 @@ model MetricEntry {
   @@index([metricId, date])
 }
 
+/// Chu kỳ của một khoản chi cố định.
+enum CostCycle {
+  MONTH
+  YEAR // quy về tháng bằng cách chia 12 — bảo hiểm, phí gia hạn tên miền...
+}
+
+/// Chi phí cố định lặp lại: tiền nhà, điện thoại, bảo hiểm, vé tàu tháng.
+///
+/// Vì sao KHÔNG gộp vào `DailyLog.spend`: những khoản này không phải quyết
+/// định hằng ngày. Ghi chúng vào ngày bị trừ tiền sẽ làm tháng đó trông như
+/// một tháng tiêu hoang, trong khi thứ thật sự đáng nhìn — mình tiêu bao nhiêu
+/// vào những thứ CHỌN được — lại bị chôn dưới tiền nhà.
+///
+/// Chia đôi như vậy thì tổng tháng vẫn đúng, mà vẫn trả lời được câu hỏi khác
+/// hẳn: "sàn cố định mỗi tháng của mình là bao nhiêu, và cần bao nhiêu tháng
+/// sàn đó để thành quỹ khẩn cấp?"
+model FixedCost {
+  id     String    @id @default(cuid())
+  name   String
+  amount Int // ¥ mỗi kỳ
+  cycle  CostCycle @default(MONTH)
+  note   String?   @db.Text
+
+  /// Khoảng còn hiệu lực. `endedAt` null = vẫn đang trả.
+  /// Có hai cột này thì tháng 3 năm ngoái vẫn tính đúng theo hợp đồng hồi đó,
+  /// thay vì lấy giá hiện tại áp ngược cho cả quá khứ.
+  startedAt DateTime? @db.Date
+  endedAt   DateTime? @db.Date
+
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Một tháng tài chính. Chỉ giữ thứ KHÔNG suy ra được từ chỗ khác.
+///
+/// Chi tiêu không nằm ở đây: nó cộng từ `DailyLog.spend` + `FixedCost`. Chỉ
+/// thu nhập là con số phải tự khai, vì hệ thống không có cách nào biết.
+model MonthBudget {
+  id String @id @default(cuid())
+
+  /// Ngày 1 của tháng, nửa đêm UTC — cùng quy ước với mọi cột @db.Date khác.
+  month DateTime @unique @db.Date
+
+  income Int? // ¥ thực nhận
+  note   String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([month])
+}
+
 enum Visibility {
   PRIVATE // mặc định — chỉ mình xem
   PUBLIC // đã tick "cho người khác xem"

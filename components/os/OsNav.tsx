@@ -12,6 +12,7 @@ import {
   PenLine,
   Route,
   Target,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 import * as icons from "lucide-react";
@@ -31,6 +32,7 @@ const MAIN = [
   { href: "/os/log", label: "Nhật ký", icon: CalendarCheck, mobile: true },
   { href: "/os/calendar", label: "Lịch", icon: CalendarDays, mobile: true },
   { href: "/os/focus", label: "Focus", icon: Crosshair, mobile: true },
+  { href: "/os/money", label: "Tiền", icon: Wallet, mobile: false },
   { href: "/os/goals", label: "Muốn hướng tới", icon: Target, mobile: false },
   { href: "/os/journey", label: "Hành trình", icon: Route, mobile: false },
   { href: "/os/write", label: "Viết", icon: PenLine, mobile: false },
