@@ -225,10 +225,21 @@ sửa nó là các mục tiêu theo tuổi đổi ngày theo.
 
 ---
 
-## 10. Giao diện tối
+## 10. Giao diện sáng / tối
 
-Tự đi theo cài đặt của máy — **không có nút bật/tắt**. Đổi trong Cài đặt của
-Windows / iOS / Android là trang đổi theo.
+Nút ở góc phải trên, cạnh nút **Life OS**. Bấm để đi vòng qua **ba** trạng thái:
+
+| Icon | Nghĩa |
+|---|---|
+| 🖥 màn hình | **Theo hệ thống** — mặc định. Máy chuyển tối buổi tối thì trang chuyển theo. |
+| ☀️ mặt trời | **Luôn sáng**, kể cả khi máy đang để tối |
+| 🌙 mặt trăng | **Luôn tối**, kể cả khi máy đang để sáng |
+
+Ba trạng thái chứ không phải hai: nếu chỉ bật/tắt thì lần đầu bấm là mất luôn
+khả năng đi theo cài đặt máy — mà đó mới là thứ đúng phần lớn thời gian.
+
+Lựa chọn nhớ trong trình duyệt và **không chớp màu khi tải lại**. Mỗi trình
+duyệt / mỗi máy nhớ riêng, vì nó là lựa chọn hiển thị chứ không phải dữ liệu.
 
 ---
 

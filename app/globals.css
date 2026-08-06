@@ -65,9 +65,22 @@
    nên `@theme` đặt trong media query vẫn áp VÔ ĐIỀU KIỆN — hậu quả là trang
    luôn tối kể cả khi hệ điều hành để sáng. Đã dính thật và chỉ lộ ra khi đo
    `getComputedStyle` ở chế độ sáng; nhìn bằng mắt ở chế độ tối thì thấy đúng.
-   `@theme` ở trên vẫn là nguồn khai báo biến; đây chỉ là ghi đè giá trị. */
+   `@theme` ở trên vẫn là nguồn khai báo biến; đây chỉ là ghi đè giá trị.
+
+   BA TRẠNG THÁI, hai luật:
+     data-theme="dark"   → tối,  bất kể hệ điều hành
+     data-theme="light"  → sáng, bất kể hệ điều hành (chính là mặc định ở trên,
+                           nên không cần khai lại — chỉ cần media query TRÁNH nó)
+     không có thuộc tính → theo hệ điều hành
+
+   Danh sách token tối phải viết hai lần vì CSS không cho gộp một `@media` với
+   một bộ chọn thuộc tính trong cùng một luật. Sửa một bên thì nhớ sửa bên kia. */
+
+/* 1. Chưa chọn tay → theo hệ điều hành */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
     --color-bg: #0f0f0f;
     --color-surface: #171717;
     --color-surface-2: #1f1f1f;
@@ -86,6 +99,35 @@
     --color-flat: #737373;
     --color-down: #f87171;
   }
+}
+
+/* 2. Chọn tay «Tối» → thắng cả hệ điều hành.
+      Bộ chọn có thuộc tính nên trọng số cao hơn `:root` ở @theme, thắng bất kể
+      thứ tự khai. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-bg: #0f0f0f;
+  --color-surface: #171717;
+  --color-surface-2: #1f1f1f;
+
+  --color-ink: #ededed;
+  --color-ink-2: #a3a3a3;
+  --color-ink-3: #737373;
+
+  --color-line: #2a2a2a;
+  --color-line-soft: #1f1f1f;
+
+  --color-accent: #60a5fa;
+
+  --color-up: #4ade80;
+  --color-flat: #737373;
+  --color-down: #f87171;
+}
+
+/* 3. Chọn tay «Sáng» → chỉ cần nói lại color-scheme; token sáng đã là mặc định */
+:root[data-theme="light"] {
+  color-scheme: light;
 }
 
 /* ============================================================

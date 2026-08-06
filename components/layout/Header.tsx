@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Container } from "./Container";
 import { nav, site } from "@/lib/site";
 import { OsLink } from "./OsLink";
+import { ThemeToggle } from "./ThemeToggle";
 
 export function Header() {
   return (
@@ -28,6 +29,7 @@ export function Header() {
               </Link>
             ))}
             <span className="h-4 w-px bg-line" aria-hidden />
+            <ThemeToggle />
             <OsLink />
           </nav>
         </div>

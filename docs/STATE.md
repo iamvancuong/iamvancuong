@@ -47,7 +47,7 @@ Sống → ghi vào /os → chọn cái đáng kể → viết thành bài → c
 | DB | MySQL **8.4** trong Docker · Prisma **7.9.1** + `@prisma/adapter-mariadb` |
 | Khác | `jose` + `bcryptjs` (đăng nhập) · `sharp` (ảnh) · `remark` (Markdown) · `lucide-react` |
 | Test | `npm run test` — 77 phép kiểm, **không dùng framework** (xem `scripts/test.ts`) |
-| Không có | CI · nút bật/tắt dark mode (đi theo cài đặt hệ điều hành) |
+| Không có | CI |
 
 **Quy mô:** ~95 file nguồn. 23 trang, 6 API route (+ `/feed.xml`), 56 server action, 15 bảng, 9 enum.
 
