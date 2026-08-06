@@ -42,7 +42,7 @@ export default function OsError({
         {signedOut ? (
           <Link
             href="/login"
-            className="rounded-[var(--radius-md)] bg-ink px-4 py-2.5 text-[14px] font-medium text-white"
+            className="rounded-[var(--radius-md)] bg-ink px-4 py-2.5 text-[14px] font-medium text-bg"
           >
             Đăng nhập lại
           </Link>
@@ -50,7 +50,7 @@ export default function OsError({
           <button
             type="button"
             onClick={reset}
-            className="rounded-[var(--radius-md)] bg-ink px-4 py-2.5 text-[14px] font-medium text-white"
+            className="rounded-[var(--radius-md)] bg-ink px-4 py-2.5 text-[14px] font-medium text-bg"
           >
             Thử lại
           </button>

@@ -85,7 +85,7 @@ export default async function LogListPage() {
 
         <Link
           href={`/os/log/${today}`}
-          className="flex items-center gap-1.5 rounded-[var(--radius-md)] bg-ink px-4 py-2 text-[14px] font-medium text-white"
+          className="flex items-center gap-1.5 rounded-[var(--radius-md)] bg-ink px-4 py-2 text-[14px] font-medium text-bg"
         >
           <PenLine size={15} strokeWidth={2} />
           {hasToday ? "Sửa hôm nay" : "Ghi hôm nay"}

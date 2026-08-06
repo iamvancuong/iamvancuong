@@ -57,7 +57,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={busy || !password}
-        className="w-full rounded-[var(--radius-md)] bg-ink py-2.5 text-[14px] font-medium text-white transition-opacity disabled:opacity-30"
+        className="w-full rounded-[var(--radius-md)] bg-ink py-2.5 text-[14px] font-medium text-bg transition-opacity disabled:opacity-30"
       >
         {busy ? "Đang kiểm tra…" : "Vào"}
       </button>

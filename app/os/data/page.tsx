@@ -108,7 +108,7 @@ export default async function DataPage() {
         </h2>
         <a
           href="/api/backup"
-          className="inline-flex items-center gap-2 rounded-[var(--radius-md)] bg-ink px-4 py-2.5 text-[14px] font-medium text-white"
+          className="inline-flex items-center gap-2 rounded-[var(--radius-md)] bg-ink px-4 py-2.5 text-[14px] font-medium text-bg"
         >
           <Download size={15} strokeWidth={2} />
           Tải JSON toàn bộ

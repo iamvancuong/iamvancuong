@@ -47,7 +47,7 @@ export function OutcomeButtons({
               aria-pressed={on}
               className={`flex items-center gap-1 rounded-[var(--radius-md)] border px-2.5 py-1 text-[12px] transition-colors ${
                 on
-                  ? "border-ink bg-ink text-white"
+                  ? "border-ink bg-ink text-bg"
                   : `border-line hover:border-ink-3 ${m.cls}`
               }`}
             >
@@ -116,7 +116,7 @@ export function ReviewForm({ goal, slug }: { goal: Goal; slug: string }) {
               return (
                 <label
                   key={o}
-                  className="flex cursor-pointer items-center gap-1.5 rounded-[var(--radius-md)] border border-line px-3 py-1.5 text-[13px] transition-colors hover:border-ink-3 has-checked:border-ink has-checked:bg-ink has-checked:text-white"
+                  className="flex cursor-pointer items-center gap-1.5 rounded-[var(--radius-md)] border border-line px-3 py-1.5 text-[13px] transition-colors hover:border-ink-3 has-checked:border-ink has-checked:bg-ink has-checked:text-bg"
                 >
                   <input
                     type="radio"

@@ -45,17 +45,21 @@
 }
 
 /* ============================================================
-   DARK MODE — theo cài đặt hệ điều hành, KHÔNG có nút bật/tắt
+   DARK MODE — theo hệ điều hành, hoặc ép bằng nút ở Header
    ============================================================
 
-   Vì sao không làm nút chuyển: một nút cần chỗ lưu lựa chọn, cần đọc lại lúc
-   khởi động trước khi vẽ (không thì màn hình chớp trắng một nhịp), và cần một
-   client component nằm ở layout gốc — trong khi phần công khai đang được dựng
-   tĩnh. Máy tính và điện thoại đều đã có cài đặt hệ thống, và người dùng duy
-   nhất của site này chỉ có một sở thích tại một thời điểm.
+   Nút chuyển ở `components/layout/ThemeToggle.tsx`; thuộc tính `data-theme`
+   được gán bởi script chặn trong `app/layout.tsx` trước khi vẽ khung hình đầu
+   tiên, nếu không thì mọi lần tải trang đều chớp sáng một nhịp.
 
    Chỉ đảo lại BIẾN MÀU. Không có một dòng nào trong component phải sửa — đó
    chính là thứ mà việc gom token vào một chỗ (PLAN §4) mua về.
+
+   ⚠️ Với điều kiện component KHÔNG cứng hóa màu. Đã dính: ô tick và mọi nút
+   chính dùng `bg-ink text-white`, mà ở chế độ tối `--color-ink` lật thành gần
+   trắng — thành chữ trắng trên nền trắng. Cặp đúng là `bg-ink text-bg`, vì
+   `text-bg` lật ngược cùng lúc. Nếu phải viết `text-white` thì chỉ đúng ở nơi
+   nền LUÔN tối bất kể chủ đề (Lightbox).
 
    Nền không dùng đen tuyệt đối: #0a0a0a trên nền OLED làm chữ trắng bị nhòe
    viền. Chữ cũng không trắng tuyệt đối, vì tương phản tối đa đọc lâu thì mỏi. */
@@ -125,10 +129,19 @@
   --color-down: #f87171;
 }
 
-/* 3. Chọn tay «Sáng» → chỉ cần nói lại color-scheme; token sáng đã là mặc định */
+/* 3. Chọn tay «Sáng» → token sáng đã là mặc định, chỉ cần nói lại color-scheme
+      để ô nhập và thanh cuộn của trình duyệt thôi đi theo hệ điều hành. */
 :root[data-theme="light"] {
   color-scheme: light;
 }
+
+/* 📌 Ghi lại cho lần sau, vì nó tốn kha khá thời gian để loại trừ:
+   `getComputedStyle` đọc trên một phần tử đang có `transition-colors` có thể
+   trả về màu CŨ ĐÃ CACHE sau khi đổi `data-theme` lúc chạy — trong khi biến ở
+   `:root` và phần tử mới tạo cùng class đều đã đúng. Nghĩa là nếu đo bằng
+   JavaScript mà thấy nền trang một màu còn phần tử con một màu khác thì hãy
+   nghi phép đo trước, đừng nghi cascade. Ép tính lại (đổi `display` rồi trả
+   về) là ra đúng ngay. */
 
 /* ============================================================
    BASE

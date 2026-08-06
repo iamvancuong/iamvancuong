@@ -91,8 +91,12 @@ function ToggleRow({
         className="flex w-full items-center gap-3 rounded-[var(--radius-md)] px-2 py-2.5 text-left transition-colors hover:bg-surface"
       >
         <span
+          /* Viền dùng `ink-3`, KHÔNG dùng `line`. `line` là màu của đường kẻ
+             trang trí (#e5e5e5 sáng / #2a2a2a tối) — đặt lên nền trang thì chỉ
+             được 1.3:1, tức là ở chế độ tối gần như không nhìn ra ô. Viền của
+             một ĐIỀU KHIỂN cần ≥3:1; `ink-3` cho 4.0:1 ở tối và 2.5:1 ở sáng. */
           className={`flex size-[22px] shrink-0 items-center justify-center rounded-[var(--radius-sm)] border transition-colors ${
-            on ? "border-ink bg-ink text-white" : "border-line bg-bg"
+            on ? "border-ink bg-ink text-bg" : "border-ink-3 bg-bg"
           }`}
         >
           {on && <Check size={14} strokeWidth={3} />}

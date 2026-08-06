@@ -33,7 +33,7 @@ export default async function WritePage() {
         <form action={createPost}>
           <button
             type="submit"
-            className="flex items-center gap-1.5 rounded-[var(--radius-md)] bg-ink px-4 py-2 text-[14px] font-medium text-white"
+            className="flex items-center gap-1.5 rounded-[var(--radius-md)] bg-ink px-4 py-2 text-[14px] font-medium text-bg"
           >
             <Plus size={15} strokeWidth={2} />
             Bài mới

@@ -253,7 +253,8 @@ function GoalRow({
             type="submit"
             aria-label={done ? "Bỏ đánh dấu xong" : "Đánh dấu đã xong"}
             className={`mt-0.5 flex size-[20px] items-center justify-center rounded-[var(--radius-sm)] border transition-colors ${
-              done ? "border-ink bg-ink text-white" : "border-line hover:border-ink-3"
+              /* `ink-3` chứ không `line` — xem chú thích ở TodayPanel */
+              done ? "border-ink bg-ink text-bg" : "border-ink-3 hover:border-ink"
             }`}
           >
             {done && <Check size={13} strokeWidth={3} />}

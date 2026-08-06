@@ -60,6 +60,7 @@ function read(): Theme {
 function apply(theme: Theme) {
   const el = document.documentElement;
 
+  // `color-scheme` do CSS lo theo `data-theme` — xem app/globals.css.
   if (theme === "system") {
     delete el.dataset.theme;
     try {

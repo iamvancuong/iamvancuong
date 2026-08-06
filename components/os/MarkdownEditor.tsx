@@ -361,7 +361,7 @@ function ModeBtn({
       aria-label={title}
       aria-pressed={on}
       className={`flex size-8 items-center justify-center rounded-[var(--radius-sm)] transition-colors ${
-        on ? "bg-ink text-white" : "text-ink-2 hover:bg-surface-2 hover:text-ink"
+        on ? "bg-ink text-bg" : "text-ink-2 hover:bg-surface-2 hover:text-ink"
       }`}
     >
       {children}

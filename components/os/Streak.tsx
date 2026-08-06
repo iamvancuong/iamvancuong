@@ -93,7 +93,7 @@ export function Streak({ logs }: { logs: DailyLog[] }) {
             aria-pressed={v.key === view}
             className={`rounded-[var(--radius-sm)] px-2.5 py-1 text-[12px] transition-colors ${
               v.key === view
-                ? "bg-ink text-white"
+                ? "bg-ink text-bg"
                 : "text-ink-2 hover:bg-surface-2 hover:text-ink"
             }`}
           >

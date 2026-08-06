@@ -173,7 +173,7 @@ export default async function CalendarPage({
                           title={`${iso} — ${level}/3 việc nền tảng`}
                           className={`flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-[11px] tabular-nums transition-opacity hover:opacity-70 ${
                             FILL[level]
-                          } ${level >= 2 ? "text-white" : "text-ink-2"} ${
+                          } ${level >= 2 ? "text-bg" : "text-ink-2"} ${
                             inMonth ? "" : "opacity-30"
                           } ${
                             iso === today

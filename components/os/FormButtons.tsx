@@ -29,7 +29,7 @@ export function SubmitButton({
 
   const cls =
     variant === "solid"
-      ? "rounded-[var(--radius-sm)] bg-ink px-4 py-2 text-[14px] font-medium text-white hover:opacity-90"
+      ? "rounded-[var(--radius-sm)] bg-ink px-4 py-2 text-[14px] font-medium text-bg hover:opacity-90"
       : "text-[12px] text-accent underline underline-offset-2";
 
   return (

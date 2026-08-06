@@ -54,7 +54,7 @@ export function AreaPhotoUpload({ slug }: { slug: string }) {
         <button
           type="submit"
           disabled={busy || files.length === 0}
-          className="rounded-[var(--radius-sm)] bg-ink px-4 py-2 text-[14px] font-medium text-white transition-opacity disabled:opacity-40"
+          className="rounded-[var(--radius-sm)] bg-ink px-4 py-2 text-[14px] font-medium text-bg transition-opacity disabled:opacity-40"
         >
           {busy ? "Đang lưu ảnh…" : "Tải lên"}
         </button>

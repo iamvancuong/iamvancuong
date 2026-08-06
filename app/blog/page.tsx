@@ -56,7 +56,7 @@ export default async function BlogPage({ searchParams }: PageProps<"/blog">) {
               lang={f.lang}
               className={`rounded-[var(--radius-md)] border px-3 py-1 text-[13px] transition-colors ${
                 on
-                  ? "border-ink bg-ink text-white"
+                  ? "border-ink bg-ink text-bg"
                   : "border-line text-ink-2 hover:border-ink-3 hover:text-ink"
               }`}
             >

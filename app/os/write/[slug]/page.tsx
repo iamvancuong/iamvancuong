@@ -56,7 +56,7 @@ export default async function EditPostPage({
               className={`flex items-center gap-1.5 rounded-[var(--radius-md)] border px-3 py-1.5 text-[13px] transition-colors ${
                 isPublic
                   ? "border-line text-up hover:border-ink-3"
-                  : "border-ink bg-ink text-white"
+                  : "border-ink bg-ink text-bg"
               }`}
             >
               {isPublic ? <Eye size={14} /> : <EyeOff size={14} />}
@@ -164,7 +164,7 @@ export default async function EditPostPage({
             {tags.map((t) => (
               <label
                 key={t.id}
-                className="flex cursor-pointer items-center gap-2 rounded-[var(--radius-md)] border border-line px-3 py-1.5 text-[13px] transition-colors hover:border-ink-3 has-checked:border-ink has-checked:bg-ink has-checked:text-white"
+                className="flex cursor-pointer items-center gap-2 rounded-[var(--radius-md)] border border-line px-3 py-1.5 text-[13px] transition-colors hover:border-ink-3 has-checked:border-ink has-checked:bg-ink has-checked:text-bg"
               >
                 <input
                   type="checkbox"
@@ -223,7 +223,7 @@ export default async function EditPostPage({
         <div className="sticky bottom-0 flex items-center gap-3 border-t border-line bg-bg/95 py-3 backdrop-blur">
           <button
             type="submit"
-            className="rounded-[var(--radius-md)] bg-ink px-5 py-2.5 text-[14px] font-medium text-white"
+            className="rounded-[var(--radius-md)] bg-ink px-5 py-2.5 text-[14px] font-medium text-bg"
           >
             Lưu
           </button>
