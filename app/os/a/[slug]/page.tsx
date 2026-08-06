@@ -6,6 +6,7 @@ import { GoalsTab } from "@/components/os/GoalsTab";
 import { PrinciplesTab } from "@/components/os/PrinciplesTab";
 import { ItemsTab } from "@/components/os/ItemsTab";
 import { MetricsTab } from "@/components/os/MetricsTab";
+import { ProgressPhotos } from "@/components/os/ProgressPhotos";
 import { MemoryList } from "@/components/os/MemoryList";
 import { MemoryForm } from "@/components/os/MemoryForm";
 import { EmptyNote } from "@/components/os/formBits";
@@ -58,6 +59,12 @@ export default async function AreaPage({
         take: 20,
         include: { photos: { orderBy: [{ order: "asc" }, { createdAt: "asc" }] } },
       },
+      // Ảnh tiến trình: gắn thẳng vào lĩnh vực, KHÔNG thuộc ký ức nào — nếu
+      // không lọc `memoryId: null` thì ảnh của mọi ký ức sẽ lọt vào tab này.
+      photos: {
+        where: { memoryId: null },
+        orderBy: [{ takenAt: "asc" }, { createdAt: "asc" }],
+      },
     },
   });
 
@@ -76,6 +83,7 @@ export default async function AreaPage({
     items: area.items.filter((i) => i.status !== "DROPPED").length,
     metrics: area.metrics.length,
     memories: area.memories.length,
+    photos: area.photos.length,
   };
 
   /**
@@ -109,6 +117,9 @@ export default async function AreaPage({
         )}
         {tab === "items" && <ItemsTab slug={slug} items={area.items} />}
         {tab === "metrics" && <MetricsTab slug={slug} metrics={area.metrics} />}
+        {tab === "photos" && (
+          <ProgressPhotos slug={slug} photos={area.photos} />
+        )}
         {tab === "memories" && (
           <div className="space-y-8">
             {area.memories.length === 0 ? (

@@ -39,6 +39,11 @@ const TABS = [
     label: "Ký ức",
     hint: "Chuyện đã xảy ra, có ảnh. Ngày tự do nên lùi được về tận tuổi thơ.",
   },
+  {
+    key: "photos",
+    label: "Tiến trình",
+    hint: "Ảnh chụp lại theo chu kỳ — da, tóc, cơ thể. Thứ đổi quá chậm để nhớ, nhưng nhìn hai tấm cách nhau nửa năm là thấy ngay.",
+  },
 ] as const;
 
 export type AreaTab = (typeof TABS)[number]["key"];

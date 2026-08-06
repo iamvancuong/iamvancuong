@@ -644,6 +644,63 @@ export async function setPhotoCaption(
 
 /** Xóa một tấm ảnh khỏi ký ức, kèm file thật trên đĩa. */
 /**
+ * Ảnh tiến trình — ảnh gắn thẳng vào lĩnh vực, KHÔNG thuộc ký ức nào.
+ *
+ * Vì sao cần loại ảnh không có ký ức: da, tóc, cơ thể đổi quá chậm để nhớ, và
+ * bạn nhìn mình mỗi ngày nên không bao giờ thấy nó đổi — trí nhớ về ngoại hình
+ * của chính mình là thứ kém tin cậy nhất. Với những lĩnh vực đó thì **ảnh
+ * chính là biểu đồ**, cùng vai trò với Số đo ở lĩnh vực đo được bằng số.
+ *
+ * Bắt mỗi tấm phải kèm một "ký ức" là bắt bịa ra một câu chuyện cho việc chụp
+ * mặt mình tháng một lần. `Photo.memoryId` vốn đã nullable — chỗ này chỉ là
+ * dùng đúng điều schema cho phép từ đầu.
+ *
+ * `takenAt` lấy từ EXIF nếu ảnh có; không có thì để null và giao diện xếp theo
+ * ngày tải lên. Ảnh tiến trình mặc định RIÊNG TƯ, không kế thừa gì.
+ */
+export async function uploadAreaPhotos(areaSlug: string, fd: FormData) {
+  await assertOwner();
+
+  const area = await db.area.findUniqueOrThrow({ where: { slug: areaSlug } });
+
+  const files = fd.getAll("photos").filter((f): f is File => f instanceof File);
+  const saved = [];
+  for (const f of files) {
+    const s = await saveImage(f);
+    if (s) saved.push(s);
+  }
+  if (saved.length === 0) return;
+
+  const caption = str(fd, "caption", 200);
+
+  try {
+    await db.photo.createMany({
+      data: saved.map((s) => ({
+        url: s.url,
+        thumbUrl: s.thumbUrl,
+        width: s.width,
+        height: s.height,
+        bytes: s.bytes,
+        takenAt: s.takenAt,
+        caption,
+        areaId: area.id,
+        visibility: Visibility.PRIVATE,
+      })),
+    });
+  } catch (e) {
+    // Ghi database hỏng thì phải dọn file đã nằm trên đĩa, nếu không thư mục
+    // uploads sẽ đầy dần bằng những tấm không bản ghi nào trỏ tới.
+    for (const s of saved) {
+      await deleteUpload(s.url);
+      await deleteUpload(s.thumbUrl);
+    }
+    throw e;
+  }
+
+  revalidatePath(`/os/a/${areaSlug}`);
+}
+
+/**
  * Đổi chỗ ảnh với tấm liền kề TRONG CÙNG một ký ức.
  *
  * Focus sắp xếp được từ lâu, ảnh thì chưa — nên tấm đại diện của một ký ức

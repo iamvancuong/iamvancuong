@@ -10,6 +10,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "tsx scripts/test.ts",
     "db:up": "docker compose up -d --wait",
     "db:down": "docker compose down",
     "db:push": "prisma db push && node scripts/after-db-push.mjs",

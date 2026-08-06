@@ -115,12 +115,18 @@ export function recentLevels(
   });
 }
 
-/** Số ngày đủ 3 việc trong một khoảng, kèm tổng số ngày đã trôi qua. */
+/**
+ * Số ngày đủ 3 việc trong một khoảng, kèm tổng số ngày đã trôi qua.
+ *
+ * `today` nhận vào được để kiểm được — hàm nào tự đọc đồng hồ bên trong thì
+ * kết quả đổi theo ngày chạy, và không viết được phép kiểm nào cho nó. Cùng
+ * khuôn với `todayISO(now)` và `weekDates(offset, end)`.
+ */
 export function periodStats(
   logs: DailyLog[],
   scope: "month" | "year",
+  today = todayISO(),
 ): { full: number; elapsed: number } {
-  const today = todayISO();
   const [y, m] = today.split("-").map(Number);
   const d = Number(today.slice(8));
 

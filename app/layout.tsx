@@ -21,6 +21,11 @@ export const metadata: Metadata = {
     description: site.description,
   },
   robots: { index: true, follow: true },
+  /* Để trình duyệt và trình đọc RSS tự tìm ra /feed.xml — không có dòng này
+     thì feed vẫn chạy nhưng phải biết địa chỉ mới đăng ký được. */
+  alternates: {
+    types: { "application/rss+xml": `${site.url}/feed.xml` },
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

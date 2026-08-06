@@ -45,11 +45,57 @@
 }
 
 /* ============================================================
+   DARK MODE — theo cài đặt hệ điều hành, KHÔNG có nút bật/tắt
+   ============================================================
+
+   Vì sao không làm nút chuyển: một nút cần chỗ lưu lựa chọn, cần đọc lại lúc
+   khởi động trước khi vẽ (không thì màn hình chớp trắng một nhịp), và cần một
+   client component nằm ở layout gốc — trong khi phần công khai đang được dựng
+   tĩnh. Máy tính và điện thoại đều đã có cài đặt hệ thống, và người dùng duy
+   nhất của site này chỉ có một sở thích tại một thời điểm.
+
+   Chỉ đảo lại BIẾN MÀU. Không có một dòng nào trong component phải sửa — đó
+   chính là thứ mà việc gom token vào một chỗ (PLAN §4) mua về.
+
+   Nền không dùng đen tuyệt đối: #0a0a0a trên nền OLED làm chữ trắng bị nhòe
+   viền. Chữ cũng không trắng tuyệt đối, vì tương phản tối đa đọc lâu thì mỏi. */
+
+/* ⚠️ Ghi đè trên `:root` bằng CSS THUẦN, KHÔNG lồng `@theme` vào trong
+   `@media`. Tailwind v4 nâng mọi khối `@theme` lên cấp cao nhất lúc biên dịch,
+   nên `@theme` đặt trong media query vẫn áp VÔ ĐIỀU KIỆN — hậu quả là trang
+   luôn tối kể cả khi hệ điều hành để sáng. Đã dính thật và chỉ lộ ra khi đo
+   `getComputedStyle` ở chế độ sáng; nhìn bằng mắt ở chế độ tối thì thấy đúng.
+   `@theme` ở trên vẫn là nguồn khai báo biến; đây chỉ là ghi đè giá trị. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #0f0f0f;
+    --color-surface: #171717;
+    --color-surface-2: #1f1f1f;
+
+    --color-ink: #ededed;
+    --color-ink-2: #a3a3a3;
+    --color-ink-3: #737373;
+
+    --color-line: #2a2a2a;
+    --color-line-soft: #1f1f1f;
+
+    /* Xanh sáng hơn bản sáng: #2563eb trên nền tối tụt xuống dưới ngưỡng đọc được */
+    --color-accent: #60a5fa;
+
+    --color-up: #4ade80;
+    --color-flat: #737373;
+    --color-down: #f87171;
+  }
+}
+
+/* ============================================================
    BASE
    ============================================================ */
 
 html {
   -webkit-text-size-adjust: 100%;
+  /* Cho ô nhập, thanh cuộn, và các thành phần sẵn có của trình duyệt đi theo */
+  color-scheme: light dark;
 }
 
 body {
