@@ -5,8 +5,8 @@
   "/favicon.ico/route": "app/favicon.ico/route.js",
   "/api/backup/route": "app/api/backup/route.js",
   "/api/auth/login/route": "app/api/auth/login/route.js",
-  "/api/contact/route": "app/api/contact/route.js",
   "/api/uploads/[...path]/route": "app/api/uploads/[...path]/route.js",
+  "/api/contact/route": "app/api/contact/route.js",
   "/api/uploads/route": "app/api/uploads/route.js",
   "/feed.xml/route": "app/feed.xml/route.js",
   "/opengraph-image/route": "app/opengraph-image/route.js",
@@ -34,6 +34,6 @@
   "/os/log/[date]/page": "app/os/log/[date]/page.js",
   "/os/money/page": "app/os/money/page.js",
   "/os/log/page": "app/os/log/page.js",
-  "/os/write/[slug]/page": "app/os/write/[slug]/page.js",
-  "/os/write/page": "app/os/write/page.js"
+  "/os/write/page": "app/os/write/page.js",
+  "/os/write/[slug]/page": "app/os/write/[slug]/page.js"
 }

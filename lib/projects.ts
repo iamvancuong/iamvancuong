@@ -29,6 +29,7 @@ export type Project = {
  */
 export type Experience = {
   company: string;
+  url?: string;
   role: string;
   roleJa: string;
   period: string;
@@ -39,10 +40,11 @@ export type Experience = {
 
 export const experiences: Experience[] = [
   {
-    company: "Heligate",
+    company: "Adamo Software",
+    url: "https://adamosoft.com/",
     role: "Lập trình viên Fullstack",
     roleJa: "フルスタックエンジニア",
-    period: "10/2023 – 3/2025",
+    period: "5/2025 – 2/2026",
     bullets: [
       "Dev chính hệ thống HRM: chịu trách nhiệm toàn bộ vòng đời phát triển & bảo trì.",
       "Thiết kế kiến trúc module hóa, áp dụng Service Layer, Repository, Queue/Event giúp code dễ bảo trì và test.",
@@ -62,10 +64,10 @@ export const experiences: Experience[] = [
     stack: ["Laravel", "Redis", "AWS S3", "CloudFront", "MySQL", "GitLab CI/CD"],
   },
   {
-    company: "JVB Việt Nam",
+    company: "Heligate",
     role: "Lập trình viên Fullstack",
     roleJa: "フルスタックエンジニア",
-    period: "06/2022 – 4/2023",
+    period: "10/2023 – 3/2025",
     bullets: [
       "Tham gia phát triển hệ thống HRM, Quản lý tài sản & Booking (Wannago).",
       "Thiết kế và triển khai RESTful API theo chuẩn Laravel, tích hợp mail, xuất file (Excel/PDF).",
@@ -83,11 +85,11 @@ export const experiences: Experience[] = [
     stack: ["Laravel", "Angular", "MySQL", "Redis", "Docker", "Git", "Figma"],
   },
   {
-    // ⚠️ Công ty + thời gian của kỳ thực tập BA — cần bạn xác nhận/bổ sung.
     company: "JVB Việt Nam",
+    url: "https://jvb-corp.com/vi/",
     role: "Thực tập sinh Business Analyst (BA)",
     roleJa: "ビジネスアナリスト（インターン）",
-    period: "",
+    period: "06/2022 – 4/2023",
     bullets: [
       "Phân tích yêu cầu nghiệp vụ, mô hình dữ liệu, viết SRS và logic xử lý cho hệ thống CIIS-IDM.",
       "Phối hợp dev team đảm bảo tính chính xác của yêu cầu, kiểm thử và đánh giá kết quả đầu ra.",

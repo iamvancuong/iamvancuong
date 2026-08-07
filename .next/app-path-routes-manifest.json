@@ -5,8 +5,8 @@
   "/favicon.ico/route": "/favicon.ico",
   "/api/backup/route": "/api/backup",
   "/api/auth/login/route": "/api/auth/login",
-  "/api/contact/route": "/api/contact",
   "/api/uploads/[...path]/route": "/api/uploads/[...path]",
+  "/api/contact/route": "/api/contact",
   "/api/uploads/route": "/api/uploads",
   "/feed.xml/route": "/feed.xml",
   "/opengraph-image/route": "/opengraph-image",
@@ -34,6 +34,6 @@
   "/os/log/[date]/page": "/os/log/[date]",
   "/os/money/page": "/os/money",
   "/os/log/page": "/os/log",
-  "/os/write/[slug]/page": "/os/write/[slug]",
-  "/os/write/page": "/os/write"
+  "/os/write/page": "/os/write",
+  "/os/write/[slug]/page": "/os/write/[slug]"
 }

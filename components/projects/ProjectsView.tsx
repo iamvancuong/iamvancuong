@@ -122,7 +122,20 @@ export function ProjectsView({ projects }: { projects: Project[] }) {
         {experiences.map((e, i) => (
           <article key={i} className="border-b border-line-soft pb-10 last:border-0">
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <h3 className="text-[18px] font-semibold tracking-[-0.01em]">{e.company}</h3>
+              <h3 className="text-[18px] font-semibold tracking-[-0.01em]">
+                {e.url ? (
+                  <a
+                    href={e.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="transition-colors hover:text-accent"
+                  >
+                    {e.company}
+                  </a>
+                ) : (
+                  e.company
+                )}
+              </h3>
               <span lang={jl} className="text-[14px] text-ink-2">
                 {lang === "ja" ? e.roleJa : e.role}
               </span>
