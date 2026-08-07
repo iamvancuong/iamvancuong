@@ -57,8 +57,8 @@ export function ContactForm({ lang }: { lang: Lang }) {
 
   return (
     <form onSubmit={onSubmit} className="mx-auto mt-8 grid max-w-[520px] gap-3 text-left">
-      <input name="name" required maxLength={100} placeholder={t.name[lang]} lang={jl} className={field} />
-      <input name="email" type="email" required maxLength={200} placeholder={t.email[lang]} className={field} />
+      <input name="name" maxLength={100} placeholder={t.name[lang]} lang={jl} className={field} />
+      <input name="email" type="email" maxLength={200} placeholder={t.email[lang]} className={field} />
       <textarea name="message" required rows={4} maxLength={4000} placeholder={t.message[lang]} lang={jl} className={`${field} resize-y`} />
       {state === "error" && (
         <p lang={jl} className="text-[13px] text-down">

@@ -34,13 +34,17 @@ export function InboxList({ messages }: { messages: InboxMessage[] }) {
             {!m.read && (
               <span className="size-2 shrink-0 rounded-full bg-accent" aria-label="Chưa đọc" />
             )}
-            <span className="text-[15px] font-semibold text-ink">{m.name}</span>
-            <a
-              href={`mailto:${m.email}`}
-              className="text-[13px] text-accent underline underline-offset-2"
-            >
-              {m.email}
-            </a>
+            <span className="text-[15px] font-semibold text-ink">
+              {m.name || "Ẩn danh"}
+            </span>
+            {m.email && (
+              <a
+                href={`mailto:${m.email}`}
+                className="text-[13px] text-accent underline underline-offset-2"
+              >
+                {m.email}
+              </a>
+            )}
             <span className="ml-auto text-[12px] tabular-nums text-ink-3">{m.when}</span>
           </div>
 

@@ -51,16 +51,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Dữ liệu không hợp lệ." }, { status: 400 });
   }
 
-  const name = (body.name ?? "").trim();
+  const name = (body.name ?? "").trim().slice(0, 100);
   const email = (body.email ?? "").trim();
   const message = (body.message ?? "").trim();
 
-  if (name.length < 1 || name.length > 100)
-    return NextResponse.json({ error: "Vui lòng nhập tên." }, { status: 400 });
-  if (!EMAIL_RE.test(email) || email.length > 200)
+  // Chỉ LỜI NHẮN bắt buộc. Tên bỏ trống cũng được. Email không bắt buộc, nhưng
+  // nếu có nhập thì phải đúng định dạng (để còn trả lời được).
+  if (message.length < 1 || message.length > 4000)
+    return NextResponse.json({ error: "Vui lòng nhập lời nhắn." }, { status: 400 });
+  if (email && (!EMAIL_RE.test(email) || email.length > 200))
     return NextResponse.json({ error: "Email chưa hợp lệ." }, { status: 400 });
-  if (message.length < 5 || message.length > 4000)
-    return NextResponse.json({ error: "Lời nhắn quá ngắn." }, { status: 400 });
 
   perIp.set(ip, bump(perIp.get(ip), now, PER_IP.windowMs));
   globalBucket = bump(globalBucket, now, GLOBAL.windowMs);

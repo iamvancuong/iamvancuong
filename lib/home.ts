@@ -92,18 +92,18 @@ export const home = {
   },
 
   contact: {
-    heading: { vi: "Kết nối", ja: "つながる" },
+    heading: { vi: "Kết nối với mình", ja: "つながる" },
     line: {
-      vi: "Tuyển dụng, hợp tác, hay chỉ muốn chào hỏi — cứ nhắn cho mình.",
-      ja: "採用のご相談も、ちょっとしたご挨拶も、お気軽にどうぞ。",
+      vi: "Tuyển dụng, hợp tác, hay chỉ muốn nói một câu chào — mình luôn vui khi nhận được tin. Chỉ cần lời nhắn thôi; để lại tên và email nếu muốn mình trả lời lại.",
+      ja: "採用のご相談も、ちょっとしたご挨拶も大歓迎です。メッセージだけで大丈夫。返信がほしいときはお名前とメールも添えてください。",
     },
     form: {
-      name: { vi: "Tên của bạn", ja: "お名前" },
-      email: { vi: "Email", ja: "メールアドレス" },
-      message: { vi: "Lời nhắn của bạn...", ja: "メッセージ..." },
+      name: { vi: "Tên của bạn (không bắt buộc)", ja: "お名前（任意）" },
+      email: { vi: "Email — để mình trả lời (không bắt buộc)", ja: "メール — 返信用（任意）" },
+      message: { vi: "Lời nhắn của bạn…", ja: "メッセージ…" },
       submit: { vi: "Gửi lời nhắn", ja: "送信する" },
-      sending: { vi: "Đang gửi...", ja: "送信中..." },
-      success: { vi: "Cảm ơn bạn! Mình sẽ phản hồi sớm nhất có thể.", ja: "ありがとうございます!できるだけ早く返信します。" },
+      sending: { vi: "Đang gửi…", ja: "送信中…" },
+      success: { vi: "Cảm ơn bạn đã nhắn! Mình sẽ phản hồi sớm nhất có thể.", ja: "メッセージありがとうございます！できるだけ早くお返事します。" },
       error: { vi: "Có lỗi rồi, thử lại giúp mình nhé.", ja: "エラーが発生しました。もう一度お試しください。" },
     },
   },
