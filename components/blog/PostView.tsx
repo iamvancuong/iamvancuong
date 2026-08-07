@@ -4,6 +4,7 @@ import { Container } from "@/components/layout/Container";
 import { LanguageToggle } from "./LanguageToggle";
 import { fmtDate, hasJa, type Lang, type PostWithTags } from "@/lib/posts";
 import { renderMarkdown } from "@/lib/markdown";
+import { t } from "@/lib/i18n";
 
 /** Dùng chung cho /blog/[slug] và /blog/[slug]/ja. */
 export async function PostView({
@@ -25,14 +26,13 @@ export async function PostView({
     <Container width="prose">
       {/* Chỉ hiện khi bạn đăng nhập — khách không tới được bài riêng tư */}
       {!isPublic && (
-        <p className="mb-8 rounded-[var(--radius-md)] border border-line bg-surface px-3 py-2 text-[13px] text-ink-2">
-          Bài này đang <strong className="font-medium">riêng tư</strong>, chỉ bạn
-          xem được.{" "}
+        <p lang={ja ? "ja" : undefined} className="mb-8 rounded-[var(--radius-md)] border border-line bg-surface px-3 py-2 text-[13px] text-ink-2">
+          {t.postView.privateNote[lang]}{" "}
           <Link
             href={`/os/write/${post.slug}`}
             className="text-accent underline underline-offset-2"
           >
-            Sửa hoặc xuất bản
+            {t.postView.editPublish[lang]}
           </Link>
         </p>
       )}

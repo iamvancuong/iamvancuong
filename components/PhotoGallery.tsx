@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Image from "next/image";
 import { Lightbox, type LightboxPhoto } from "./Lightbox";
+import { useLang } from "@/components/i18n/LangProvider";
+import { t } from "@/lib/i18n";
 
 export type PhotoSection = { key: string; label: string; photos: LightboxPhoto[] };
 
@@ -15,6 +17,7 @@ export type PhotoSection = { key: string; label: string; photos: LightboxPhoto[]
  */
 export function PhotoGallery({ sections }: { sections: PhotoSection[] }) {
   const [open, setOpen] = useState<number | null>(null);
+  const { lang } = useLang();
 
   // Danh sách phẳng để lightbox đi xuyên các tháng
   const flat = sections.flatMap((s) => s.photos);
@@ -45,7 +48,7 @@ export function PhotoGallery({ sections }: { sections: PhotoSection[] }) {
                 >
                   <Image
                     src={p.thumbUrl ?? p.url}
-                    alt={p.caption ?? "Ảnh"}
+                    alt={p.caption ?? t.photos.alt[lang]}
                     width={480}
                     height={480}
                     unoptimized

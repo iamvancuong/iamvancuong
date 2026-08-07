@@ -2,6 +2,8 @@
 
 import { useSyncExternalStore } from "react";
 import { Monitor, Moon, Sun } from "lucide-react";
+import { useLang } from "@/components/i18n/LangProvider";
+import { t } from "@/lib/i18n";
 
 /**
  * Nút chuyển Sáng / Tối / Theo hệ thống.
@@ -34,10 +36,10 @@ const NEXT: Record<Theme, Theme> = {
   dark: "system",
 };
 
-const LABEL: Record<Theme, string> = {
-  system: "Theo hệ thống",
-  light: "Giao diện sáng",
-  dark: "Giao diện tối",
+const LABEL_KEY: Record<Theme, "system" | "light" | "dark"> = {
+  system: "system",
+  light: "light",
+  dark: "dark",
 };
 
 const ICON = { system: Monitor, light: Sun, dark: Moon };
@@ -82,15 +84,18 @@ function apply(theme: Theme) {
 }
 
 export function ThemeToggle() {
+  const { lang } = useLang();
   const theme = useSyncExternalStore(subscribe, read, () => "system" as Theme);
   const Icon = ICON[theme];
+  const label = t.theme[LABEL_KEY[theme]][lang];
+  const nextLabel = t.theme[LABEL_KEY[NEXT[theme]]][lang];
 
   return (
     <button
       type="button"
       onClick={() => apply(NEXT[theme])}
-      title={`${LABEL[theme]} — bấm để đổi sang ${LABEL[NEXT[theme]].toLowerCase()}`}
-      aria-label={`Giao diện: ${LABEL[theme]}. Bấm để đổi.`}
+      title={`${label} — ${t.theme.hint[lang]}`}
+      aria-label={`${label} · ${nextLabel}`}
       className="flex items-center rounded-[var(--radius-md)] p-1.5 text-ink-3 transition-colors hover:bg-surface hover:text-ink"
     >
       <Icon size={15} strokeWidth={1.75} />

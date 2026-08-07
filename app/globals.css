@@ -164,10 +164,14 @@ body {
   background: #e8eeff;
 }
 
-/* Chữ Nhật cần line-height rộng hơn chữ Latin */
+/* Chữ Nhật: chỉ ĐỔI FONT ở đây, KHÔNG ép line-height.
+   Trước đây có `line-height: 1.9` — nhưng quy tắc này nằm NGOÀI @layer nên đè
+   mọi class `leading-*` của Tailwind, khiến tiêu đề/nhãn tiếng Nhật phình cao
+   gần gấp đôi và đẩy layout khi chuyển Việt→Nhật. Giờ để mỗi phần tử tự quản
+   line-height qua `leading-*` (giống hệt bản tiếng Việt → không lệch layout).
+   Phần đọc dài (blog) đã có `.prose` lo line-height riêng (1.75). */
 :lang(ja) {
   font-family: var(--font-jp-first);
-  line-height: 1.9;
 }
 
 /* ============================================================
@@ -305,4 +309,137 @@ body {
 .prose th {
   background: var(--color-surface);
   font-weight: 500;
+}
+
+/* ============================================================
+   MOTION — chuyển động cho trang chủ giới thiệu.
+   Tự viết, KHÔNG thư viện animation (PLAN §3). `.reveal` được thêm
+   class `.is-in` khi cuộn vào khung nhìn (components/Reveal.tsx).
+   Luôn nhường `prefers-reduced-motion`: tắt hết, nội dung hiện đủ.
+   ============================================================ */
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Xuất hiện lúc tải (hero). Dùng kèm delay inline để so le. */
+.animate-fade-up {
+  animation: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Hiện dần khi cuộn tới (các section phía dưới). */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* Trượt-lên SO LE cho từng phần tử con (tiêu đề → nội dung → lưới). */
+.reveal-stagger > * {
+  opacity: 0;
+  transform: translateY(30px);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reveal-stagger.is-in > * {
+  opacity: 1;
+  transform: none;
+}
+
+.reveal-stagger.is-in > *:nth-child(1) {
+  transition-delay: 0ms;
+}
+.reveal-stagger.is-in > *:nth-child(2) {
+  transition-delay: 90ms;
+}
+.reveal-stagger.is-in > *:nth-child(3) {
+  transition-delay: 180ms;
+}
+.reveal-stagger.is-in > *:nth-child(4) {
+  transition-delay: 270ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .reveal,
+  .reveal-stagger > * {
+    animation: none;
+    transition: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Trang chủ (class `.snap` gắn/gỡ trong Intro): cuộn MƯỢT + chừa chỗ header
+   dính. KHÔNG dùng scroll-snap CSS nữa — lăn chuột bị khựng. Để cuộn tự nhiên,
+   mỗi mục full-height, và dùng hiệu ứng TRƯỢT-LÊN khi vào khung nhìn cho đẹp. */
+html.snap {
+  scroll-behavior: smooth;
+  scroll-padding-top: 4.5rem;
+}
+
+/* Header dính: hạ nhẹ khi tải. */
+@keyframes fade-down {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-down {
+  animation: fade-down 0.5s ease both;
+}
+
+/* Gạch chân trượt cho link điều hướng ở Header. */
+.nav-link {
+  position: relative;
+}
+
+.nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -4px;
+  height: 1.5px;
+  background: var(--color-ink);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.nav-link:hover::after {
+  transform: scaleX(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.snap {
+    scroll-behavior: auto;
+  }
+  .animate-fade-down {
+    animation: none;
+  }
+  .nav-link::after {
+    transition: none;
+  }
 }

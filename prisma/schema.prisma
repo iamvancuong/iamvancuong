@@ -463,3 +463,18 @@ model Post {
 
   @@index([visibility, publishedAt])
 }
+
+/// Tin nhắn từ form liên hệ ở trang chủ công khai. Chỉ LƯU (chưa có hạ tầng
+/// gửi mail); chủ nhân đọc qua Prisma Studio hoặc trang /os sau này.
+model ContactMessage {
+  id      String  @id @default(cuid())
+  name    String
+  email   String
+  message String  @db.Text
+  ip      String?
+  read    Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}

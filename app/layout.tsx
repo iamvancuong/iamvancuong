@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { cookies } from "next/headers";
 import { inter, notoJP } from "./fonts";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { LangProvider } from "@/components/i18n/LangProvider";
 import { site } from "@/lib/site";
+import { DEFAULT_LANG, LANG_COOKIE, isLang } from "@/lib/i18n";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -45,7 +48,12 @@ export const metadata: Metadata = {
  */
 const themeScript = `try{var t=localStorage.getItem("theme");if(t==="dark"||t==="light")document.documentElement.dataset.theme=t}catch(e){}`;
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // Đọc ngôn ngữ đã chọn từ cookie ngay ở server → HTML dựng sẵn đúng ngôn ngữ,
+  // không nháy Việt→Nhật khi tải trang.
+  const cookieLang = (await cookies()).get(LANG_COOKIE)?.value;
+  const lang = isLang(cookieLang) ? cookieLang : DEFAULT_LANG;
+
   return (
     <html
       lang="vi"
@@ -65,9 +73,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         />
       </head>
       <body className="flex min-h-full flex-col">
-        <Header />
-        <main className="flex-1 py-14 md:py-20">{children}</main>
-        <Footer />
+        <LangProvider initial={lang}>
+          <Header />
+          <main className="flex-1 py-14 md:py-20">{children}</main>
+          <Footer />
+        </LangProvider>
       </body>
     </html>
   );

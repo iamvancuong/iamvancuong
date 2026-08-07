@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { useLang } from "@/components/i18n/LangProvider";
+import { t } from "@/lib/i18n";
 
 export type LightboxPhoto = {
   id: string;
@@ -31,6 +33,7 @@ export function Lightbox({
   onIndex: (i: number) => void;
 }) {
   const [touchX, setTouchX] = useState<number | null>(null);
+  const { lang } = useLang();
 
   const many = photos.length > 1;
   const prev = useCallback(
@@ -66,7 +69,7 @@ export function Lightbox({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Xem ảnh"
+      aria-label={t.lightbox.view[lang]}
       onClick={onClose}
       onTouchStart={(e) => setTouchX(e.touches[0].clientX)}
       onTouchEnd={(e) => {
@@ -84,7 +87,7 @@ export function Lightbox({
         <button
           type="button"
           onClick={onClose}
-          aria-label="Đóng"
+          aria-label={t.lightbox.close[lang]}
           className="flex size-9 items-center justify-center rounded-[var(--radius-md)] transition-colors hover:bg-white/10 hover:text-white"
         >
           <X size={20} strokeWidth={1.75} />
@@ -99,7 +102,7 @@ export function Lightbox({
               e.stopPropagation();
               prev();
             }}
-            aria-label="Ảnh trước"
+            aria-label={t.lightbox.prev[lang]}
             className="absolute left-2 z-10 flex size-11 items-center justify-center rounded-full bg-white/10 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
           >
             <ChevronLeft size={22} strokeWidth={1.75} />
@@ -125,7 +128,7 @@ export function Lightbox({
               e.stopPropagation();
               next();
             }}
-            aria-label="Ảnh sau"
+            aria-label={t.lightbox.next[lang]}
             className="absolute right-2 z-10 flex size-11 items-center justify-center rounded-full bg-white/10 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
           >
             <ChevronRight size={22} strokeWidth={1.75} />

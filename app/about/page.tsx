@@ -2,30 +2,28 @@ import fs from "node:fs";
 import path from "node:path";
 import type { Metadata } from "next";
 import { Container } from "@/components/layout/Container";
+import { AboutView } from "@/components/about/AboutView";
 import { renderMarkdown } from "@/lib/markdown";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "About",
+  title: "Giới thiệu",
   description: site.description,
 };
 
+function read(file: string) {
+  return fs.readFileSync(path.join(process.cwd(), "content", file), "utf8");
+}
+
 export default async function AboutPage() {
-  const md = fs.readFileSync(
-    path.join(process.cwd(), "content", "about.md"),
-    "utf8",
-  );
-  const html = await renderMarkdown(md);
+  const [vi, ja] = await Promise.all([
+    renderMarkdown(read("about.md")),
+    renderMarkdown(read("about.ja.md")),
+  ]);
 
   return (
     <Container width="prose">
-      <header className="border-b border-line pb-8">
-        <h1 className="text-[32px] font-semibold tracking-[-0.02em]">About</h1>
-      </header>
-      <div
-        className="prose mt-10"
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
+      <AboutView vi={vi} ja={ja} />
     </Container>
   );
 }

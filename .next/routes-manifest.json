@@ -115,6 +115,12 @@
       "namedRegex": "^/api/backup(?:/)?$"
     },
     {
+      "page": "/api/contact",
+      "regex": "^/api/contact(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/contact(?:/)?$"
+    },
+    {
       "page": "/api/uploads",
       "regex": "^/api/uploads(?:/)?$",
       "routeKeys": {},

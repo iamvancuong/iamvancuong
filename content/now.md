@@ -25,5 +25,3 @@ Cập nhật khoảng một lần mỗi tháng.
 ### Ngoài ba việc trên
 
 Vẫn có những thứ tôi quan tâm nhưng **cố tình chưa động tới lúc này**: học thêm ngôn ngữ khác, làm video, đi du lịch nhiều nơi, đọc sách theo danh sách dài. Chúng không biến mất, chỉ là chưa tới lượt.
-
-Ý tưởng trang này lấy từ [nownownow.com](https://nownownow.com/about) của Derek Sivers.

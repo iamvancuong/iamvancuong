@@ -1,6 +1,10 @@
+"use client";
+
 import Link from "next/link";
 import { Container } from "./Container";
 import { site } from "@/lib/site";
+import { useLang } from "@/components/i18n/LangProvider";
+import { t } from "@/lib/i18n";
 
 /**
  * Thứ tự = thứ tự khai trong `lib/site.ts`, tức là xếp theo mức liên quan tới
@@ -24,8 +28,9 @@ const links = [
 ].filter((l) => l.href !== "");
 
 export function Footer() {
+  const { lang } = useLang();
   return (
-    <footer className="mt-24 border-t border-line py-10">
+    <footer className="mt-12 border-t border-line py-10">
       <Container>
         <div className="flex flex-col gap-4 text-[13px] text-ink-3 sm:flex-row sm:items-center sm:justify-between">
           <p>
@@ -48,8 +53,8 @@ export function Footer() {
                 {l.label}
               </a>
             ))}
-            <Link href="/now" className="transition-colors hover:text-ink">
-              Now
+            <Link href="/now" lang={lang === "ja" ? "ja" : undefined} className="transition-colors hover:text-ink">
+              {t.now.title[lang]}
             </Link>
           </div>
         </div>

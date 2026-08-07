@@ -1,9 +1,8 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import { Visibility } from "@prisma/client";
 import { Container } from "@/components/layout/Container";
 import { db } from "@/lib/db";
-import { PhotoGallery } from "@/components/PhotoGallery";
+import { PhotosView, type PhotoMonth } from "@/components/photos/PhotosView";
 
 export const metadata: Metadata = {
   title: "Ảnh",
@@ -22,7 +21,7 @@ export default async function PhotosPage() {
     orderBy: [{ takenAt: "desc" }, { createdAt: "desc" }],
   });
 
-  // Gom theo tháng
+  // Gom theo tháng (key = "YYYY-MM" hoặc "khac")
   const byMonth = new Map<string, typeof photos>();
   for (const p of photos) {
     const d = whenOf(p);
@@ -33,47 +32,28 @@ export default async function PhotosPage() {
     byMonth.get(key)!.push(p);
   }
 
+  const months: PhotoMonth[] = [...byMonth.entries()]
+    .sort((a, b) => b[0].localeCompare(a[0]))
+    .map(([key, list]) => {
+      const [y, m] = key === "khac" ? [null, null] : key.split("-").map(Number);
+      return {
+        key,
+        year: y,
+        month: m,
+        photos: list.map((p) => ({
+          id: p.id,
+          url: p.url,
+          thumbUrl: p.thumbUrl,
+          caption: p.caption ?? p.memory?.title ?? null,
+          width: p.width,
+          height: p.height,
+        })),
+      };
+    });
+
   return (
     <Container>
-      <header className="border-b border-line pb-8">
-        <h1 className="text-[32px] font-semibold tracking-[-0.02em]">Ảnh</h1>
-        <p className="mt-2 text-[16px] text-ink-2">
-          Cuộc sống ở Nhật, ghi lại bằng ảnh.
-        </p>
-      </header>
-
-      {photos.length === 0 ? (
-        <p className="mt-10 text-[15px] text-ink-2">
-          Chưa có ảnh nào được chia sẻ.{" "}
-          <Link
-            href="/journey"
-            className="text-accent underline underline-offset-2"
-          >
-            Xem hành trình
-          </Link>
-        </p>
-      ) : (
-        <PhotoGallery
-          sections={[...byMonth.entries()]
-            .sort((a, b) => b[0].localeCompare(a[0]))
-            .map(([key, list]) => {
-              const [y, m] = key.split("-");
-              return {
-                key,
-                label:
-                  key === "khac" ? "Không rõ thời gian" : `Tháng ${m}, ${y}`,
-                photos: list.map((p) => ({
-                  id: p.id,
-                  url: p.url,
-                  thumbUrl: p.thumbUrl,
-                  caption: p.caption ?? p.memory?.title ?? null,
-                  width: p.width,
-                  height: p.height,
-                })),
-              };
-            })}
-        />
-      )}
+      <PhotosView months={months} />
     </Container>
   );
 }

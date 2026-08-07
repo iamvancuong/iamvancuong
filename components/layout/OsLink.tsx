@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import { LockKeyhole, SquareUser } from "lucide-react";
+import { useLang } from "@/components/i18n/LangProvider";
+import { t } from "@/lib/i18n";
 
 /**
  * Báo cho React đọc lại cookie ngay sau khi mount, và mỗi lần quay lại tab.
@@ -32,6 +34,7 @@ function subscribe(onChange: () => void) {
  * Người lạ bấm vào cũng chỉ tới trang đăng nhập.
  */
 export function OsLink() {
+  const { lang } = useLang();
   // Trong lúc SSR và hydrate thì trả về false → HTML hai bên khớp nhau.
   const signedIn = useSyncExternalStore(
     subscribe,
@@ -42,7 +45,7 @@ export function OsLink() {
   return (
     <Link
       href="/os"
-      title={signedIn ? "Vào Life OS" : "Khu vực riêng tư"}
+      title={signedIn ? t.os.enter[lang] : t.os.private[lang]}
       className={`flex items-center gap-1.5 rounded-[var(--radius-md)] border px-2.5 py-1 text-[13px] transition-colors ${
         signedIn
           ? "border-line bg-surface text-ink hover:border-ink-3"

@@ -75,6 +75,31 @@ export function keystoneStreak(logs: DailyLog[]): number {
   return streak;
 }
 
+/**
+ * Chuỗi ngày liên tiếp thoả một điều kiện tuỳ ý (ghi nhật ký / học tiếng Nhật /
+ * IT…). Cùng quy ước với keystoneStreak: hôm nay chưa ghi thì tính từ hôm qua.
+ */
+export function streakOf(
+  logs: DailyLog[],
+  done: (l: DailyLog) => boolean,
+): number {
+  const map = indexByDay(logs);
+  const ok = (d: string) => {
+    const l = map.get(d);
+    return !!l && done(l);
+  };
+
+  let cursor = todayISO();
+  if (!ok(cursor)) cursor = addDaysISO(cursor, -1);
+
+  let streak = 0;
+  while (ok(cursor)) {
+    streak++;
+    cursor = addDaysISO(cursor, -1);
+  }
+  return streak;
+}
+
 /** Chuỗi dài nhất từng đạt — để so với chuỗi hiện tại. */
 export function longestStreak(logs: DailyLog[]): number {
   const days = logs

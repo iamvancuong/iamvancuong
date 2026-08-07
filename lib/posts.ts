@@ -1,4 +1,4 @@
-import { Visibility, type Post, type Tag } from "@prisma/client";
+import { Visibility } from "@prisma/client";
 import { db } from "./db";
 import { isOwner } from "./session";
 
@@ -7,14 +7,18 @@ import { isOwner } from "./session";
  *
  * Bài công khai và bài riêng tư là CÙNG MỘT KHO, khác nhau đúng một trường
  * `visibility`. Không cần hệ thống thứ hai cho "blog riêng tôi xem".
+ *
+ * Helper thuần (hasJa/fmtDate/slugify + type) ở `lib/posts-format.ts` để client
+ * dùng được mà không kéo `db` vào bundle. Re-export lại đây cho tiện phía server.
  */
+export {
+  hasJa,
+  fmtDate,
+  slugify,
+} from "./posts-format";
+export type { Lang, PostWithTags } from "./posts-format";
 
-export type Lang = "vi" | "ja";
-export type PostWithTags = Post & { tags: Tag[] };
-
-export function hasJa(p: Pick<Post, "bodyJa">): boolean {
-  return !!p.bodyJa?.trim();
-}
+import type { PostWithTags } from "./posts-format";
 
 /** Chủ đề nằm trong dữ liệu — tạo mới lúc viết bài, /blog tự có bộ lọc. */
 export function listTags() {
@@ -50,27 +54,4 @@ export async function getPost(slug: string): Promise<PostWithTags | null> {
   if (!visible && !(await isOwner())) return null;
 
   return post;
-}
-
-export function fmtDate(d: Date | null, lang: Lang = "vi"): string {
-  if (!d) return "";
-  return new Intl.DateTimeFormat(lang === "ja" ? "ja-JP" : "vi-VN", {
-    year: "numeric",
-    month: lang === "ja" ? "long" : "2-digit",
-    day: lang === "ja" ? "numeric" : "2-digit",
-    timeZone: "UTC",
-  }).format(d);
-}
-
-/** Bỏ dấu tiếng Việt để sinh slug sạch từ tiêu đề hoặc tên chủ đề. */
-export function slugify(input: string): string {
-  return input
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/đ/g, "d")
-    .replace(/Đ/g, "D")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 60);
 }

@@ -9,9 +9,12 @@ export const site = {
   hometown: "Quảng Trị",
   domain: "iamvancuong.com",
   url: "https://iamvancuong.com",
-  tagline: "Người Việt đang xây sự nghiệp IT ở Nhật.",
+  tagline: "Du học sinh người Việt tại Nhật.",
+  taglineJa: "日本で学ぶベトナム人留学生です。",
   description:
     "Tôi học tiếng Nhật, học lập trình, và ghi lại toàn bộ quá trình — kể cả những đoạn chưa đẹp.",
+  descriptionJa:
+    "日本語とプログラミングを学びながら、その過程を——うまくいかない部分も含めて——ここに記録しています。",
   locale: "vi_VN",
 
   /**
@@ -28,15 +31,17 @@ export const site = {
     email: "vancuongit2021@gmail.com",
     instagram: "https://www.instagram.com/iamvancuong",
     youtube: "https://www.youtube.com/@iamvancuong",
+    tiktok: "https://www.tiktok.com/@iamvancuong",
     facebook: "https://www.facebook.com/iamvancuong",
   },
 } as const;
 
+// Nhãn song ngữ. ⚠️ Bản JA là AI nháp — chủ nhân rà lại.
 export const nav = [
-  { href: "/now", label: "Now" },
-  { href: "/blog", label: "Viết" },
-  { href: "/journey", label: "Hành trình" },
-  { href: "/photos", label: "Ảnh" },
-  { href: "/projects", label: "Projects" },
-  { href: "/about", label: "About" },
+  { href: "/now", label: { vi: "Dạo này", ja: "いま" } },
+  { href: "/blog", label: { vi: "Viết", ja: "ブログ" } },
+  { href: "/journey", label: { vi: "Hành trình", ja: "歩み" } },
+  { href: "/photos", label: { vi: "Ảnh", ja: "写真" } },
+  { href: "/projects", label: { vi: "Dự án", ja: "プロジェクト" } },
+  { href: "/about", label: { vi: "Giới thiệu", ja: "自己紹介" } },
 ] as const;
