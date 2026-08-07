@@ -30,8 +30,15 @@ export default async function OsLayout({ children }: LayoutProps<"/os">) {
     select: { slug: true, name: true, icon: true },
   });
 
-  // Badge tin nhắn liên hệ chưa đọc trên nav.
-  const unread = await db.contactMessage.count({ where: { read: false } });
+  // Badge tin nhắn liên hệ chưa đọc trên nav. Bọc try/catch: nếu prisma client
+  // chưa regenerate hoặc bảng ContactMessage chưa có (prod chưa migrate), đừng
+  // để cả /os vỡ chỉ vì cái badge — bỏ qua, coi như 0.
+  let unread = 0;
+  try {
+    unread = await db.contactMessage.count({ where: { read: false } });
+  } catch {
+    // ContactMessage chưa sẵn sàng — badge ẩn, /os vẫn chạy bình thường.
+  }
 
   return (
     <Container width="os">

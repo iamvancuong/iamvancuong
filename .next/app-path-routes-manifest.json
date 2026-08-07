@@ -24,16 +24,16 @@
   "/projects/page": "/projects",
   "/os/page": "/os",
   "/os/a/[slug]/page": "/os/a/[slug]",
-  "/os/data/page": "/os/data",
   "/os/calendar/page": "/os/calendar",
+  "/os/data/page": "/os/data",
   "/os/huong-dan/page": "/os/huong-dan",
-  "/os/inbox/page": "/os/inbox",
   "/os/goals/page": "/os/goals",
+  "/os/inbox/page": "/os/inbox",
   "/os/focus/page": "/os/focus",
   "/os/journey/page": "/os/journey",
   "/os/log/[date]/page": "/os/log/[date]",
   "/os/money/page": "/os/money",
   "/os/log/page": "/os/log",
-  "/os/write/[slug]/page": "/os/write/[slug]",
-  "/os/write/page": "/os/write"
+  "/os/write/page": "/os/write",
+  "/os/write/[slug]/page": "/os/write/[slug]"
 }
