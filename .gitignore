@@ -13,9 +13,14 @@
 # testing
 /coverage
 
-# next.js
-/.next/
+# next.js — CỐ Ý commit .next để deploy qua `git pull` (server shared hosting
+# không build được vì glibc cũ). Chỉ bỏ cache/dev vì nặng và tự tái tạo.
+/.next/cache
+/.next/dev
 /out/
+
+# gói build tạm (nén để upload thủ công — không commit)
+*.zip
 
 # production
 /build

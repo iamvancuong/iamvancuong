@@ -1,0 +1,5 @@
+User-Agent: *
+Allow: /
+Disallow: /os
+
+Sitemap: https://iamvancuong.com/sitemap.xml

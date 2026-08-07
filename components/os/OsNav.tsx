@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   CalendarCheck,
   CalendarDays,
+  BookOpen,
   Crosshair,
   Database,
   LayoutDashboard,
@@ -115,6 +116,18 @@ export function OsNav({ areas }: { areas: NavArea[] }) {
             >
               <Database size={14} strokeWidth={1.75} />
               Dữ liệu &amp; lĩnh vực
+            </Link>
+
+            <Link
+              href="/os/huong-dan"
+              className={`flex items-center gap-2.5 px-2.5 py-1.5 text-[13px] transition-colors ${
+                pathname === "/os/huong-dan"
+                  ? "font-medium text-ink"
+                  : "text-ink-3 hover:text-ink"
+              }`}
+            >
+              <BookOpen size={14} strokeWidth={1.75} />
+              Hướng dẫn sử dụng
             </Link>
 
             <button

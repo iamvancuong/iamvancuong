@@ -1,0 +1,3 @@
+# Build output của Next: lưu byte-nguyên vẹn, KHÔNG đổi line-ending khi commit
+# trên Windows rồi checkout trên Linux (tránh hỏng font .woff2, lệch manifest).
+.next/** -text
