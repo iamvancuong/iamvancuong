@@ -46,6 +46,8 @@ export const t = {
     built: { vi: "Tôi đã làm gì", ja: "やったこと" },
     source: { vi: "Mã nguồn", ja: "ソースコード" },
     demo: { vi: "Xem thử", ja: "見てみる" },
+    projectsSub: { vi: "Dự án cá nhân", ja: "個人プロジェクト" },
+    experience: { vi: "Kinh nghiệm làm việc", ja: "職務経歴" },
     status: {
       "đang làm": { vi: "đang làm", ja: "制作中" },
       "đang chạy": { vi: "đang chạy", ja: "稼働中" },

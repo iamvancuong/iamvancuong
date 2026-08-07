@@ -23,6 +23,83 @@ export type Project = {
   demo?: string;
 };
 
+/**
+ * Kinh nghiệm làm việc (khác dự án cá nhân). ⚠️ JA là AI nháp — chủ nhân rà lại.
+ * `period` trống thì phần thời gian tự ẩn.
+ */
+export type Experience = {
+  company: string;
+  role: string;
+  roleJa: string;
+  period: string;
+  bullets: string[];
+  bulletsJa: string[];
+  stack: string[];
+};
+
+export const experiences: Experience[] = [
+  {
+    company: "Heligate",
+    role: "Lập trình viên Fullstack",
+    roleJa: "フルスタックエンジニア",
+    period: "10/2023 – 3/2025",
+    bullets: [
+      "Dev chính hệ thống HRM: chịu trách nhiệm toàn bộ vòng đời phát triển & bảo trì.",
+      "Thiết kế kiến trúc module hóa, áp dụng Service Layer, Repository, Queue/Event giúp code dễ bảo trì và test.",
+      "Phát triển module Tuyển dụng với pipeline kéo–thả, auto status, phân quyền linh hoạt và tracking real-time bằng Redis queue.",
+      "Tối ưu hiệu năng hệ thống qua caching, Redis, AWS S3 + CloudFront (upload & CDN load balancing).",
+      "Hỗ trợ DevOps: deploy, cấu hình domain, thiết lập môi trường chạy riêng cho FE (Angular) và BE (Laravel).",
+      "Phát triển module Redmine nội bộ: Timesheet, Workflow Tracker, Permission, Check-in/out — phục vụ hơn 150 user nội bộ.",
+    ],
+    bulletsJa: [
+      "HRMシステムの主担当として、開発から保守まで全ライフサイクルを担当。",
+      "モジュール化した設計を行い、Service Layer・Repository・Queue/Eventを採用して保守性とテスト性を向上。",
+      "採用管理モジュールを開発：ドラッグ&ドロップのパイプライン、自動ステータス、柔軟な権限管理、Redis queueによるリアルタイム追跡。",
+      "キャッシュ・Redis・AWS S3＋CloudFront（アップロードとCDNロードバランシング）でシステム性能を最適化。",
+      "DevOpsを支援：デプロイ、ドメイン設定、FE（Angular）とBE（Laravel）の独立実行環境を構築。",
+      "社内Redmineモジュールを開発：Timesheet、Workflow Tracker、権限、勤怠打刻——社内150名以上が利用。",
+    ],
+    stack: ["Laravel", "Redis", "AWS S3", "CloudFront", "MySQL", "GitLab CI/CD"],
+  },
+  {
+    company: "JVB Việt Nam",
+    role: "Lập trình viên Fullstack",
+    roleJa: "フルスタックエンジニア",
+    period: "06/2022 – 4/2023",
+    bullets: [
+      "Tham gia phát triển hệ thống HRM, Quản lý tài sản & Booking (Wannago).",
+      "Thiết kế và triển khai RESTful API theo chuẩn Laravel, tích hợp mail, xuất file (Excel/PDF).",
+      "Áp dụng Service–Repository pattern, tối ưu truy vấn và caching nâng cao.",
+      "Tối ưu UX/UI từ Figma → Angular; triển khai môi trường Docker dev/staging.",
+      "Cải thiện tốc độ phản hồi API nhanh hơn ~35% sau khi tối ưu query và cache layer.",
+    ],
+    bulletsJa: [
+      "HRM・資産管理・予約システム（Wannago）の開発に参加。",
+      "Laravel標準に沿ったRESTful APIを設計・実装し、メール送信やファイル出力（Excel/PDF）を統合。",
+      "Service-Repositoryパターン、クエリ最適化、高度なキャッシュを適用。",
+      "Figma→AngularでUX/UIを最適化し、Docker製のdev/staging環境を構築。",
+      "クエリとキャッシュ層の最適化により、API応答速度を約35%改善。",
+    ],
+    stack: ["Laravel", "Angular", "MySQL", "Redis", "Docker", "Git", "Figma"],
+  },
+  {
+    // ⚠️ Công ty + thời gian của kỳ thực tập BA — cần bạn xác nhận/bổ sung.
+    company: "JVB Việt Nam",
+    role: "Thực tập sinh Business Analyst (BA)",
+    roleJa: "ビジネスアナリスト（インターン）",
+    period: "",
+    bullets: [
+      "Phân tích yêu cầu nghiệp vụ, mô hình dữ liệu, viết SRS và logic xử lý cho hệ thống CIIS-IDM.",
+      "Phối hợp dev team đảm bảo tính chính xác của yêu cầu, kiểm thử và đánh giá kết quả đầu ra.",
+    ],
+    bulletsJa: [
+      "業務要件とデータモデルを分析し、CIIS-IDMシステムのSRSと処理ロジックを作成。",
+      "開発チームと連携して要件の正確性を確保し、テストと成果物の評価を実施。",
+    ],
+    stack: ["Phân tích nghiệp vụ", "SRS", "Data modeling"],
+  },
+];
+
 export const projects: Project[] = [
   {
     // ⚠️ NHÁP — đọc từ milaedu.com + bạn cung cấp. Cần bạn xác nhận:
