@@ -2,14 +2,14 @@
 updated: "2026-08"
 focus:
   - area: "Tiếng Nhật"
-    title: "Thi đậu JLPT N3"
-    detail: "Mỗi ngày tối thiểu 60 phút. Anki cho từ vựng và kanji, mock test mỗi tháng một lần để biết mình thật sự đang ở đâu."
-  - area: "Sự nghiệp"
-    title: "Chuẩn bị làm IT ở Nhật"
-    detail: "Học React và TypeScript cho tới nơi tới chốn, và build đủ ba project thật để có cái mang đi phỏng vấn."
+    title: "Thi đậu JLPT N3 — kỳ tháng 12/2026"
+    detail: "Mỗi ngày tối thiểu 60 phút. Anki cho từ vựng và kanji, mock test hàng tháng để biết mình đang ở đâu trước kỳ thi."
   - area: "Cơ thể"
-    title: "Ngủ đủ, ăn đủ, tập đều"
-    detail: "Ngủ trước 12 giờ đêm, ăn đủ ba bữa, tập ba buổi một tuần. Mục tiêu là tăng cân một cách lành mạnh."
+    title: "Chăm cho cơ thể khỏe lên"
+    detail: "Ngủ trước 12 giờ, ăn đủ ba bữa, tập đều. Mục tiêu là tăng cân một cách lành mạnh."
+  - area: "Lập trình"
+    title: "Giữ được nhiệt với lập trình"
+    detail: "Không cần nhiều, chỉ cần đều — mỗi ngày chạm vào code một chút để ngọn lửa không tắt."
 ---
 
 Trang này ghi lại **đúng ba việc tôi đang tập trung** ở thời điểm hiện tại. Không phải danh sách mọi thứ tôi muốn làm — chỉ ba thứ.
