@@ -205,6 +205,12 @@
       "namedRegex": "^/os/huong\\-dan(?:/)?$"
     },
     {
+      "page": "/os/inbox",
+      "regex": "^/os/inbox(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/os/inbox(?:/)?$"
+    },
+    {
       "page": "/os/journey",
       "regex": "^/os/journey(?:/)?$",
       "routeKeys": {},

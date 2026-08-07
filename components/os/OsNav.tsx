@@ -10,6 +10,7 @@ import {
   Database,
   LayoutDashboard,
   LogOut,
+  Mail,
   PenLine,
   Route,
   Target,
@@ -46,7 +47,7 @@ function areaIcon(name: string | null): LucideIcon {
   return found ?? icons.Circle;
 }
 
-export function OsNav({ areas }: { areas: NavArea[] }) {
+export function OsNav({ areas, unread = 0 }: { areas: NavArea[]; unread?: number }) {
   const pathname = usePathname();
 
   const router = useRouter();
@@ -106,6 +107,23 @@ export function OsNav({ areas }: { areas: NavArea[] }) {
               không có link nào trỏ tới — trang mồ côi, chỉ vào được bằng cách
               tự gõ địa chỉ. */}
           <div className="space-y-1 border-t border-line-soft pt-3">
+            <Link
+              href="/os/inbox"
+              className={`flex items-center gap-2.5 px-2.5 py-1.5 text-[13px] transition-colors ${
+                pathname === "/os/inbox"
+                  ? "font-medium text-ink"
+                  : "text-ink-3 hover:text-ink"
+              }`}
+            >
+              <Mail size={14} strokeWidth={1.75} />
+              Hộp thư
+              {unread > 0 && (
+                <span className="ml-auto rounded-full bg-accent px-1.5 text-[11px] font-medium tabular-nums text-bg">
+                  {unread}
+                </span>
+              )}
+            </Link>
+
             <Link
               href="/os/data"
               className={`flex items-center gap-2.5 px-2.5 py-1.5 text-[13px] transition-colors ${

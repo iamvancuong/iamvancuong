@@ -30,10 +30,13 @@ export default async function OsLayout({ children }: LayoutProps<"/os">) {
     select: { slug: true, name: true, icon: true },
   });
 
+  // Badge tin nhắn liên hệ chưa đọc trên nav.
+  const unread = await db.contactMessage.count({ where: { read: false } });
+
   return (
     <Container width="os">
       <div className="flex gap-10 pb-24 md:pb-0">
-        <OsNav areas={areas} />
+        <OsNav areas={areas} unread={unread} />
         <div className="min-w-0 flex-1">{children}</div>
       </div>
     </Container>

@@ -111,6 +111,6 @@ export const home = {
   more: { vi: "Khám phá thêm", ja: "もっと見る" },
 
   images: {
-    hero: { src: "", alt: "Chân dung Trương Văn Cường" },
+    hero: { src: "/images/avatar.jpg", alt: "Chân dung Trương Văn Cường" },
   },
 } as const;
