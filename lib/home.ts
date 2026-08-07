@@ -23,14 +23,14 @@ export const home = {
   about: {
     heading: { vi: "Về tôi", ja: "私について" },
     // Slogan nhẹ nhàng, có chút tự trào thay cho việc liệt kê mục tiêu.
-    slogan: { vi: "Sáng lên lớp, chiều baito, tối “thỉnh thoảng” code.", ja: "昼は学校、夕方はバイト、夜は「たまに」コード。" },
+    slogan: { vi: "Trưa lên lớp, chiều baito, tối “thỉnh thoảng” code.", ja: "昼は学校、夕方はバイト、夜は「たまに」コード。" },
     paragraphs: {
       vi: [
-        "Mình là Cường — một du học sinh đúng chuẩn: sáng vác cặp lên lớp, chiều lao đi baito, tối mở laptop định code nhưng phải “thỉnh thoảng” lắm mới gõ được dòng nào. Thời gian còn lại mình dành để chụp ảnh, viết lách và quay dăm ba đoạn video vụn vặt của cuộc sống.",
+        "Mình là Cường — một du học sinh đúng chuẩn: trưa vác cặp lên lớp, chiều lao đi baito kể cả thứ Bảy, Chủ nhật, tối mở laptop định code nhưng phải “thỉnh thoảng” lắm mới gõ được dòng nào. Thời gian còn lại mình dành để chụp ảnh, viết lách và quay dăm ba đoạn video vụn vặt của cuộc sống.",
         "Trang này là cuốn nhật ký mở của mình — nơi gom từng khoảnh khắc nhỏ trước khi bộ nhớ cá vàng kịp xóa mất. Không tô hồng, không giả vờ giỏi hơn thực tế; chỉ là một anh du học sinh mỗi ngày khá lên một chút (và mỗi mùa đông mập lên một chút).",
       ],
       ja: [
-        "クオンです。絵に描いたような留学生で、朝は学校へ、夕方はバイトへ。夜はコードを書こうとPCを開くものの、実際に手が動くのは「たまに」だけ。残りの時間は、写真を撮ったり、文章を書いたり、ちょっとした動画を撮ったりして過ごしています。",
+        "クオンです。絵に描いたような留学生で、昼は学校へ、夕方はバイトへ——土日も。夜はコードを書こうとPCを開くものの、実際に手が動くのは「たまに」だけ。残りの時間は、写真を撮ったり、文章を書いたり、ちょっとした動画を撮ったりして過ごしています。",
         "このサイトは、いわば公開中の日記帳。金魚並みの記憶力が消してしまう前に、日々の小さな瞬間を書き留める場所です。話を盛るつもりはありません。少しずつ成長している(そして冬ごとに少しずつ太っていく)、ただの留学生の記録です。",
       ],
     },
