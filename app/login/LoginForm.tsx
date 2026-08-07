@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 /**
  * `?from=` do middleware đặt nên luôn là đường dẫn nội bộ. Nhưng ai cũng gõ
@@ -15,7 +15,6 @@ function safeFrom(from: string | null): string {
 }
 
 export function LoginForm() {
-  const router = useRouter();
   const params = useSearchParams();
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -33,8 +32,10 @@ export function LoginForm() {
     });
 
     if (res.ok) {
-      router.replace(safeFrom(params.get("from")));
-      router.refresh();
+      // Tải CỨNG sang /os thay vì điều hướng client: đảm bảo server render mới
+      // với cookie vừa đặt, không dính RSC cache cũ (trước khi đăng nhập) khiến
+      // phải F5 mới vào được. Không tắt `busy` vì trang sắp rời đi.
+      window.location.assign(safeFrom(params.get("from")));
     } else {
       const data = await res.json().catch(() => ({}));
       setError(data.error ?? "Không đăng nhập được.");

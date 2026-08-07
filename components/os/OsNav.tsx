@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -11,10 +12,12 @@ import {
   LayoutDashboard,
   LogOut,
   Mail,
+  Menu,
   PenLine,
   Route,
   Target,
   Wallet,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import * as icons from "lucide-react";
@@ -49,6 +52,7 @@ function areaIcon(name: string | null): LucideIcon {
 
 export function OsNav({ areas, unread = 0 }: { areas: NavArea[]; unread?: number }) {
   const pathname = usePathname();
+  const [moreOpen, setMoreOpen] = useState(false);
 
   const router = useRouter();
 
@@ -77,6 +81,37 @@ export function OsNav({ areas, unread = 0 }: { areas: NavArea[]; unread?: number
         >
           <Icon size={15} strokeWidth={1.75} />
           {label}
+        </Link>
+      </li>
+    );
+  };
+
+  /** Dòng trong sheet "Thêm" của mobile — bấm xong đóng sheet, hỗ trợ badge. */
+  const sheetLink = (
+    href: string,
+    label: string,
+    Icon: LucideIcon,
+    badge = 0,
+  ) => {
+    const on = pathname === href;
+    return (
+      <li key={href}>
+        <Link
+          href={href}
+          onClick={() => setMoreOpen(false)}
+          className={`flex items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2.5 text-[14px] transition-colors ${
+            on
+              ? "bg-surface-2 font-medium text-ink"
+              : "text-ink-2 hover:bg-surface hover:text-ink"
+          }`}
+        >
+          <Icon size={16} strokeWidth={1.75} />
+          {label}
+          {badge > 0 && (
+            <span className="ml-auto rounded-full bg-accent px-1.5 text-[11px] font-medium tabular-nums text-bg">
+              {badge}
+            </span>
+          )}
         </Link>
       </li>
     );
@@ -160,7 +195,67 @@ export function OsNav({ areas, unread = 0 }: { areas: NavArea[]; unread?: number
         </div>
       </nav>
 
-      {/* Mobile: chỉ vòng lặp hằng ngày/hằng tuần, lĩnh vực vào qua Hôm nay */}
+      {/* Mobile: thanh dưới 4 việc hằng ngày + nút "Thêm" mở hết phần còn lại. */}
+      {moreOpen && (
+        <div className="fixed inset-0 z-20 md:hidden" role="dialog" aria-modal="true">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setMoreOpen(false)}
+          />
+          <div className="absolute inset-x-0 bottom-0 max-h-[82vh] overflow-y-auto rounded-t-2xl border-t border-line bg-bg p-4 pb-8">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-[12px] font-medium uppercase tracking-[0.08em] text-ink-3">
+                Tất cả
+              </span>
+              <button
+                type="button"
+                onClick={() => setMoreOpen(false)}
+                aria-label="Đóng"
+                className="rounded-[var(--radius-md)] p-1 text-ink-2 hover:bg-surface"
+              >
+                <X size={18} strokeWidth={1.75} />
+              </button>
+            </div>
+
+            <ul className="space-y-0.5">
+              {MAIN.filter((m) => !m.mobile).map((m) =>
+                sheetLink(m.href, m.label, m.icon),
+              )}
+            </ul>
+
+            <div className="mt-4">
+              <div className="mb-1.5 px-2.5 text-[11px] font-medium uppercase tracking-[0.08em] text-ink-3">
+                Lĩnh vực
+              </div>
+              <ul className="space-y-0.5">
+                {areas.map((a) =>
+                  sheetLink(`/os/a/${a.slug}`, a.name, areaIcon(a.icon)),
+                )}
+              </ul>
+            </div>
+
+            <ul className="mt-4 space-y-0.5 border-t border-line-soft pt-3">
+              {sheetLink("/os/inbox", "Hộp thư", Mail, unread)}
+              {sheetLink("/os/data", "Dữ liệu & lĩnh vực", Database)}
+              {sheetLink("/os/huong-dan", "Hướng dẫn sử dụng", BookOpen)}
+              <li>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMoreOpen(false);
+                    logout();
+                  }}
+                  className="flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2.5 text-[14px] text-ink-2 hover:bg-surface"
+                >
+                  <LogOut size={16} strokeWidth={1.75} />
+                  Đăng xuất
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
+      )}
+
       <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-bg/95 backdrop-blur md:hidden">
         <ul className="flex">
           {MAIN.filter((m) => m.mobile).map(({ href, label, icon: Icon }) => {
@@ -179,6 +274,19 @@ export function OsNav({ areas, unread = 0 }: { areas: NavArea[]; unread?: number
               </li>
             );
           })}
+          <li className="flex-1">
+            <button
+              type="button"
+              onClick={() => setMoreOpen(true)}
+              className="relative flex w-full flex-col items-center gap-1 py-2.5 text-[11px] text-ink-3"
+            >
+              <Menu size={18} strokeWidth={1.75} />
+              Thêm
+              {unread > 0 && (
+                <span className="absolute right-[26%] top-1.5 size-1.5 rounded-full bg-accent" />
+              )}
+            </button>
+          </li>
         </ul>
       </nav>
     </>
