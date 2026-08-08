@@ -5,7 +5,7 @@ export const site = {
   name: "Cường",
   fullName: "Trương Văn Cường",
   /** Dùng để tính tuổi và các mốc mục tiêu (25 tuổi, 30 tuổi...) trong /os */
-  birthDate: "2003-07-06",
+  birthDate: "2003-11-29",
   hometown: "Quảng Trị",
   domain: "iamvancuong.com",
   url: "https://iamvancuong.com",

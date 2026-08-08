@@ -57,5 +57,6 @@ export const cv = {
   languages: [
     { label: { vi: "Tiếng Việt", ja: "ベトナム語" }, level: { vi: "Bản ngữ", ja: "母語" } },
     { label: { vi: "Tiếng Nhật", ja: "日本語" }, level: { vi: "Đang học · mục tiêu N3", ja: "学習中・N3目標" } },
+    { label: { vi: "Tiếng Anh", ja: "英語" }, level: { vi: "Aptis B2", ja: "Aptis B2" } },
   ],
 } as const;

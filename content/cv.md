@@ -31,9 +31,8 @@
 ## Ngôn ngữ
 - Tiếng Việt: bản ngữ
 - Tiếng Nhật: đang học · mục tiêu N3
+- Tiếng Anh: Aptis B2
 
 ---
 
-⚠️ Lưu ý: `lib/site.ts` đang để ngày sinh 06/07/2003 (dùng cho mốc tuổi trong /os).
-CV dùng 29/11/2003 theo thông tin bạn cung cấp — nếu ngày đúng là 29/11 thì nên
-sửa luôn `site.ts` cho khớp.
+Ngày sinh 29/11/2003 đã đồng bộ ở `lib/site.ts` (dùng tính mốc tuổi trong /os).
