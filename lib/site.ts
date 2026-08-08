@@ -43,5 +43,6 @@ export const nav = [
   { href: "/journey", label: { vi: "Hành trình", ja: "歩み" } },
   { href: "/photos", label: { vi: "Ảnh", ja: "写真" } },
   { href: "/projects", label: { vi: "Dự án", ja: "プロジェクト" } },
+  { href: "/cv", label: { vi: "CV", ja: "履歴書" } },
   { href: "/about", label: { vi: "Giới thiệu", ja: "自己紹介" } },
 ] as const;

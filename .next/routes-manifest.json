@@ -133,6 +133,12 @@
       "namedRegex": "^/blog(?:/)?$"
     },
     {
+      "page": "/cv",
+      "regex": "^/cv(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/cv(?:/)?$"
+    },
+    {
       "page": "/favicon.ico",
       "regex": "^/favicon\\.ico(?:/)?$",
       "routeKeys": {},

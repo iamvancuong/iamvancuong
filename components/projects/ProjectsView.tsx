@@ -3,7 +3,7 @@
 import { useLang } from "@/components/i18n/LangProvider";
 import { t } from "@/lib/i18n";
 import { Badge } from "@/components/ui/Badge";
-import { experiences, type Project } from "@/lib/projects";
+import type { Project } from "@/lib/projects";
 
 /**
  * Trang Dự án — song ngữ. Nội dung project (tên/mô tả/vấn đề/đã làm) lấy bản
@@ -24,11 +24,7 @@ export function ProjectsView({ projects }: { projects: Project[] }) {
         </p>
       </header>
 
-      <h2 lang={jl} className="mt-10 text-[12px] font-medium uppercase tracking-[0.08em] text-ink-3">
-        {t.projects.projectsSub[lang]}
-      </h2>
-
-      <div className="mt-6 space-y-12">
+      <div className="mt-10 space-y-12">
         {projects.map((p) => {
           const name = lang === "ja" ? p.nameJa ?? p.name : p.name;
           const summary = lang === "ja" ? p.summaryJa : p.summary;
@@ -111,54 +107,6 @@ export function ProjectsView({ projects }: { projects: Project[] }) {
             </article>
           );
         })}
-      </div>
-
-      {/* ── Kinh nghiệm làm việc ── */}
-      <h2 lang={jl} className="mt-16 text-[12px] font-medium uppercase tracking-[0.08em] text-ink-3">
-        {t.projects.experience[lang]}
-      </h2>
-
-      <div className="mt-6 space-y-10">
-        {experiences.map((e, i) => (
-          <article key={i} className="border-b border-line-soft pb-10 last:border-0">
-            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <h3 className="text-[18px] font-semibold tracking-[-0.01em]">
-                {e.url ? (
-                  <a
-                    href={e.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="transition-colors hover:text-accent"
-                  >
-                    {e.company}
-                  </a>
-                ) : (
-                  e.company
-                )}
-              </h3>
-              <span lang={jl} className="text-[14px] text-ink-2">
-                {lang === "ja" ? e.roleJa : e.role}
-              </span>
-              {e.period && (
-                <span className="ml-auto text-[13px] tabular-nums text-ink-3">{e.period}</span>
-              )}
-            </div>
-
-            <ul className="mt-3 list-disc space-y-1.5 pl-5 text-[15px] leading-relaxed text-ink-2 marker:text-ink-3">
-              {(lang === "ja" ? e.bulletsJa : e.bullets).map((b, j) => (
-                <li key={j} lang={jl}>
-                  {b}
-                </li>
-              ))}
-            </ul>
-
-            <div className="mt-4 flex flex-wrap gap-1.5">
-              {e.stack.map((s) => (
-                <Badge key={s}>{s}</Badge>
-              ))}
-            </div>
-          </article>
-        ))}
       </div>
     </>
   );

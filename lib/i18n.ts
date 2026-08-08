@@ -113,4 +113,23 @@ export const t = {
     editPublish: { vi: "Sửa hoặc xuất bản", ja: "編集または公開" },
   },
   menu: { vi: "Menu", ja: "メニュー" },
+
+  cv: {
+    title: { vi: "Hồ sơ / CV", ja: "履歴書・職務経歴書" },
+    subtitle: {
+      vi: "Hồ sơ ứng tuyển của mình. Bấm nút để tải bản PDF.",
+      ja: "応募用の職務経歴書です。ボタンからPDFを保存できます。",
+    },
+    download: { vi: "Tải PDF", ja: "PDFを保存" },
+    summary: { vi: "Tóm tắt", ja: "職務要約" },
+    experience: { vi: "Kinh nghiệm làm việc", ja: "職務経歴" },
+    skills: { vi: "Kỹ năng", ja: "スキル" },
+    education: { vi: "Học vấn", ja: "学歴" },
+    languages: { vi: "Ngôn ngữ", ja: "語学" },
+    birth: { vi: "Ngày sinh", ja: "生年月日" },
+    phone: { vi: "Điện thoại", ja: "電話" },
+    email: { vi: "Email", ja: "メール" },
+    address: { vi: "Địa chỉ", ja: "住所" },
+    nationality: { vi: "Quốc tịch", ja: "国籍" },
+  },
 } as const;

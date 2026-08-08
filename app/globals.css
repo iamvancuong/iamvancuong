@@ -443,3 +443,30 @@ html.snap {
     transition: none;
   }
 }
+
+/* ============================================================
+   IN CV — nút "Tải PDF" gọi window.print(). Chỉ giữ nội dung CV,
+   ẩn header/footer/nút; canh cho vừa trang giấy.
+   ============================================================ */
+@media print {
+  header,
+  footer,
+  .no-print {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+  .cv-doc {
+    max-width: none !important;
+  }
+  .cv-doc a {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+  /* Không cắt ngang một mục kinh nghiệm giữa hai trang */
+  .cv-doc article,
+  .break-inside-avoid {
+    break-inside: avoid;
+  }
+}
