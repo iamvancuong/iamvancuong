@@ -44,6 +44,15 @@ export function Intro({ streaks, journey }: { streaks: PublicStreaks; journey: J
   const { lang } = useLang();
   const jl = lang === "ja" ? "ja" : undefined;
 
+  // Ô nhiệt: bỏ các ô TRỐNG ở đầu (trước ngày hoạt động đầu tiên) để dải bắt
+  // đầu từ bên trái — web vừa chạy thì nhỏ, lớn dần theo ngày, không phơi cả
+  // chục tuần quá khứ trống. Chưa có hoạt động nào thì hiện tuần gần nhất.
+  const heatCells = (() => {
+    const h = streaks.heatmap;
+    const first = h.findIndex((c) => c.level > 0);
+    return first === -1 ? h.slice(-7) : h.slice(first);
+  })();
+
   useEffect(() => {
     const el = document.documentElement;
     el.classList.add("snap");
@@ -184,7 +193,7 @@ export function Intro({ streaks, journey }: { streaks: PublicStreaks; journey: J
             </div>
             <div className="mt-4 overflow-x-auto">
               <div className="grid grid-flow-col grid-rows-7 gap-1">
-                {streaks.heatmap.map((c) => (
+                {heatCells.map((c) => (
                   <span
                     key={c.iso}
                     title={c.iso}

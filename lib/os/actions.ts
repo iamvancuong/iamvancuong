@@ -344,6 +344,19 @@ export async function deletePrinciple(id: string, areaSlug: string) {
   revalidatePath("/os");
 }
 
+/** Ghim/bỏ ghim: nguyên tắc được ghim mới lên Dashboard /os (1 câu/ngày). */
+export async function togglePrinciplePinned(id: string, areaSlug: string) {
+  await assertOwner();
+  const p = await db.principle.findUnique({
+    where: { id },
+    select: { pinned: true },
+  });
+  if (!p) return;
+  await db.principle.update({ where: { id }, data: { pinned: !p.pinned } });
+  revalidatePath(`/os/a/${areaSlug}`);
+  revalidatePath("/os");
+}
+
 /* ---------------- Đang dùng ---------------- */
 
 export async function createItem(areaSlug: string, fd: FormData) {

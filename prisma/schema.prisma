@@ -134,7 +134,11 @@ model Principle {
   text String        @db.Text
   why  String?       @db.Text
 
-  active    Boolean  @default(true)
+  active Boolean @default(true)
+  /// Ghim để hiện ở Dashboard /os (một nguyên tắc mỗi ngày xoay vòng qua các
+  /// nguyên tắc ĐƯỢC GHIM). Mặc định tắt: chỉ cái được tick mới lên trang chủ.
+  pinned Boolean @default(false)
+
   order     Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -47,8 +47,9 @@ export default async function DashboardPage() {
         orderBy: [{ horizon: "asc" }, { horizonAge: "asc" }],
         take: 3,
       }),
+      // Chỉ nguyên tắc ĐƯỢC GHIM mới lên Dashboard (1 câu/ngày xoay vòng).
       db.principle.findMany({
-        where: { active: true },
+        where: { active: true, pinned: true },
         include: { area: { select: { name: true, slug: true } } },
       }),
       // Đủ một năm để lịch nhiệt và thống kê tháng/năm có dữ liệu

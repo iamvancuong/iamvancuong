@@ -1,8 +1,9 @@
 import { PrincipleKind, type Principle } from "@prisma/client";
-import { X } from "lucide-react";
+import { Pin, X } from "lucide-react";
 import {
   createPrinciple,
   deletePrinciple,
+  togglePrinciplePinned,
   updatePrinciple,
 } from "@/lib/os/actions";
 import {
@@ -77,7 +78,25 @@ function Column({
         <ul className="space-y-3">
           {items.map((p) => (
             <li key={p.id} className="group flex items-start gap-2">
-              <span className="mt-[9px] size-1 shrink-0 rounded-full bg-ink-3" />
+              <form action={togglePrinciplePinned.bind(null, p.id, slug)} className="mt-0.5">
+                <button
+                  type="submit"
+                  title={
+                    p.pinned
+                      ? "Đang hiển thị ở Dashboard /os — bấm để bỏ ghim"
+                      : "Ghim để hiển thị ở Dashboard /os"
+                  }
+                  aria-label={p.pinned ? "Bỏ ghim" : "Ghim hiển thị ở /os"}
+                  aria-pressed={p.pinned}
+                  className={`p-1 transition-colors ${
+                    p.pinned
+                      ? "text-accent"
+                      : "text-transparent group-hover:text-ink-3 hover:!text-ink"
+                  }`}
+                >
+                  <Pin size={14} strokeWidth={2} className={p.pinned ? "fill-accent" : ""} />
+                </button>
+              </form>
               <div className="min-w-0 flex-1">
                 <div className="text-[15px] leading-snug">{p.text}</div>
                 {p.why && (
