@@ -13,7 +13,12 @@ import {
   todayISO,
   weekdayShortVN,
 } from "@/lib/os/day";
-import { dayLevel } from "@/lib/os/stats";
+import {
+  dayLevel,
+  keystoneStreak,
+  longestStreak,
+  periodStats,
+} from "@/lib/os/stats";
 
 export const metadata: Metadata = { title: "Nhật ký" };
 
@@ -71,6 +76,13 @@ export default async function LogListPage() {
 
   const hasToday = days.has(today);
 
+  const streakStats = {
+    current: keystoneStreak(streakLogs),
+    best: longestStreak(streakLogs),
+    month: periodStats(streakLogs, "month"),
+    year: periodStats(streakLogs, "year"),
+  };
+
   return (
     <div className="max-w-[680px] space-y-8">
       <header className="flex flex-wrap items-start justify-between gap-3">
@@ -92,7 +104,7 @@ export default async function LogListPage() {
         </Link>
       </header>
 
-      <Streak logs={streakLogs} />
+      <Streak logs={streakLogs} stats={streakStats} />
 
       {sorted.length === 0 ? (
         <EmptyNote>

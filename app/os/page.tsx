@@ -9,6 +9,7 @@ import { db } from "@/lib/db";
 import { ageNow } from "@/lib/os/age";
 import { addDaysISO, dayUTC, isoUTC, todayISO } from "@/lib/os/day";
 import { periodCountdown, periodLabel, periodState } from "@/lib/os/period";
+import { keystoneStreak, longestStreak, periodStats } from "@/lib/os/stats";
 import { Streak } from "@/components/os/Streak";
 import { MAX_NOW } from "@/lib/os/constants";
 import { horizonText } from "@/components/os/GoalsTab";
@@ -77,6 +78,16 @@ export default async function DashboardPage() {
 
   const age = ageNow();
   const todayLog = logs.find((l) => isoUTC(l.date) === iso) ?? null;
+
+  // Chuỗi + thống kê tính ở SERVER (todayISO cố định JST) để không phụ thuộc
+  // múi giờ trình duyệt — trước đây Streak tính ở client nên máy lệch giờ thì
+  // ra sai. Nay giống cách trang chủ công khai làm.
+  const streakStats = {
+    current: keystoneStreak(logs),
+    best: longestStreak(logs),
+    month: periodStats(logs, "month"),
+    year: periodStats(logs, "year"),
+  };
 
   // Lĩnh vực đang có việc ở NOW. Chưa đặt việc nào thì hiện cả danh sách —
   // lúc đó nó là lời mời bắt đầu, không phải 28 ô trống bắt điền cho đủ.
@@ -238,7 +249,7 @@ export default async function DashboardPage() {
       {/* Chỉ số + 3 việc nền tảng — tick ngay tại đây, không phải mở trang khác */}
       <TodayPanel iso={iso} log={todayLog} logs={logs} />
 
-      <Streak logs={logs} />
+      <Streak logs={logs} stats={streakStats} />
 
       <section>
         <h2 className="mb-3 text-[12px] font-medium uppercase tracking-[0.08em] text-ink-3">

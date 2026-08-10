@@ -3,12 +3,7 @@
 import { useState } from "react";
 import type { DailyLog } from "@prisma/client";
 import { Flame } from "lucide-react";
-import {
-  keystoneStreak,
-  longestStreak,
-  periodStats,
-  recentLevels,
-} from "@/lib/os/stats";
+import { recentLevels } from "@/lib/os/stats";
 import { dayUTC, fmtDateVN, weekdayShortVN } from "@/lib/os/day";
 
 /**
@@ -39,13 +34,22 @@ const VIEWS = [
 
 type ViewKey = (typeof VIEWS)[number]["key"];
 
-export function Streak({ logs }: { logs: DailyLog[] }) {
+export function Streak({
+  logs,
+  stats,
+}: {
+  logs: DailyLog[];
+  stats: {
+    current: number;
+    best: number;
+    month: { full: number; elapsed: number };
+    year: { full: number; elapsed: number };
+  };
+}) {
   const [view, setView] = useState<ViewKey>("d14");
 
-  const current = keystoneStreak(logs);
-  const best = longestStreak(logs);
-  const month = periodStats(logs, "month");
-  const year = periodStats(logs, "year");
+  // Tính ở SERVER (giờ JST cố định), truyền xuống — không phụ thuộc múi giờ máy.
+  const { current, best, month, year } = stats;
 
   const days = VIEWS.find((v) => v.key === view)!.days;
 
