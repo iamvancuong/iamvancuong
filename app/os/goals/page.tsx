@@ -16,7 +16,12 @@ export const metadata: Metadata = { title: "Con người muốn hướng tới" 
  */
 export default async function GoalsPage() {
   const goals = await db.goal.findMany({
-    where: { status: { not: GoalStatus.DROPPED } },
+    where: {
+      status: { not: GoalStatus.DROPPED },
+      // Cam kết tuần/tháng KHÔNG phải mốc dài hạn — chúng sống ở Dashboard + Lịch.
+      // Trước đây lọt vào đây rồi rơi vào nhánh `else` → hiện nhầm thành "Cả đời".
+      horizon: { notIn: [Horizon.WEEK, Horizon.MONTH] },
+    },
     include: { area: { select: { name: true, slug: true } } },
     orderBy: [{ horizonAge: "asc" }, { order: "asc" }],
   });
