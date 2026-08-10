@@ -80,13 +80,12 @@ eq("dayUTC dựng đúng nửa đêm UTC", dayUTC("2026-08-06").toISOString(), "
 eq("isoUTC là phép ngược của dayUTC", isoUTC(dayUTC("2026-08-06")), "2026-08-06");
 // Đây là luật #2 của dự án: thiếu hậu tố Z là lệch một ngày vì JST = UTC+9.
 eq("không lệch ngày dù máy ở JST", isoUTC(new Date("2026-08-06T00:00:00.000Z")), "2026-08-06");
-// ⚠️ `todayISO` đọc giờ ĐỊA PHƯƠNG, còn `dayUTC`/`isoUTC` đọc UTC. Đây là
-// điểm dễ trộn nhầm nhất trong cả dự án: ở JST (UTC+9), 15:30Z hôm nay đã là
-// 00:30 ngày MAI theo giờ máy. Dựng Date từ thành phần địa phương để phép kiểm
-// không đổi kết quả theo múi giờ của máy chạy nó.
-eq("todayISO theo giờ địa phương", todayISO(new Date(2026, 7, 6, 12, 0, 0)), "2026-08-06");
-eq("nửa đêm địa phương vẫn ra đúng ngày", todayISO(new Date(2026, 7, 6, 0, 30, 0)), "2026-08-06");
-eq("sát nửa đêm địa phương chưa sang ngày mới", todayISO(new Date(2026, 7, 6, 23, 59, 0)), "2026-08-06");
+// ⚠️ `todayISO` nay CỐ ĐỊNH giờ Nhật (Asia/Tokyo, UTC+9), không đọc giờ máy.
+// Dùng mốc UTC rõ ràng để phép kiểm tất định, không đổi theo múi giờ máy chạy.
+// 15:00Z = 00:00 JST ngày HÔM SAU — ranh giới ngày của JST.
+eq("todayISO theo giờ Nhật", todayISO(new Date("2026-08-06T03:00:00Z")), "2026-08-06");
+eq("trước nửa đêm JST vẫn là ngày đó", todayISO(new Date("2026-08-06T14:59:00Z")), "2026-08-06");
+eq("qua nửa đêm JST sang ngày mới", todayISO(new Date("2026-08-06T15:00:00Z")), "2026-08-07");
 
 eq("cộng ngày qua cuối tháng", addDaysISO("2026-01-31", 1), "2026-02-01");
 eq("trừ ngày qua đầu năm", addDaysISO("2026-01-01", -1), "2025-12-31");
@@ -141,10 +140,17 @@ eq("ngày trống là mức 0", dayLevel(undefined), 0);
 eq("đủ ba việc là mức 3", dayLevel(full("2026-08-06")), 3);
 eq("hai trong ba là mức 2", dayLevel(log("2026-08-06", { kSleep: true, kEat: true })), 2);
 
-const streak = [full("2026-08-04"), full("2026-08-05"), full("2026-08-06")];
+// keystoneStreak đo TỪ HÔM NAY, nên dựng ngày tương đối theo hôm nay — không
+// hardcode (hardcode sẽ hỏng khi thời gian trôi qua mốc đó).
+const t0 = todayISO();
+const streak = [full(addDaysISO(t0, -2)), full(addDaysISO(t0, -1)), full(t0)];
 eq("chuỗi ba ngày liên tiếp", keystoneStreak(streak), 3);
 // Chuỗi không được coi là đứt chỉ vì buổi tối hôm nay chưa tới.
-eq("hôm nay chưa ghi thì tính từ hôm qua", keystoneStreak([full("2026-08-04"), full("2026-08-05")]) >= 0, true);
+eq(
+  "hôm nay chưa ghi thì tính từ hôm qua",
+  keystoneStreak([full(addDaysISO(t0, -2)), full(addDaysISO(t0, -1))]),
+  2,
+);
 eq("kỷ lục dài nhất", longestStreak([full("2026-01-01"), full("2026-01-02"), full("2026-06-01")]), 2);
 eq("chưa ngày nào đủ thì kỷ lục 0", longestStreak([log("2026-01-01")]), 0);
 

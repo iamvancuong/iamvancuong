@@ -16,12 +16,21 @@ export function isoUTC(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-/** Hôm nay theo giờ địa phương của người dùng, dạng "YYYY-MM-DD". */
+/**
+ * Hôm nay theo giờ NHẬT (Asia/Tokyo), dạng "YYYY-MM-DD".
+ *
+ * CỐ ĐỊNH múi giờ, không đọc giờ địa phương của tiến trình: app một người dùng
+ * ở Nhật, mà server production thường chạy UTC — nếu để `getDate()` tự quyết
+ * "hôm nay" thì cả /os lệch một ngày (chuỗi, ngày đang mở, kỳ tuần/tháng…).
+ * Client (trình duyệt ở Nhật) và server nay đồng nhất một "hôm nay" JST.
+ */
 export function todayISO(now: Date = new Date()): string {
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, "0");
-  const d = String(now.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
 }
 
 export function addDaysISO(iso: string, n: number): string {
