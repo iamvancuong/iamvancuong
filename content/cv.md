@@ -10,8 +10,9 @@
 - Ngày sinh: 29/11/2003
 - Quốc tịch: Việt Nam
 - Email: vancuongit2021@gmail.com
-- Điện thoại: 090-6897-5994 (09068975994)
-- Địa chỉ: 〒454-0826 愛知県名古屋市中川区小本本町2丁目63
+- Địa chỉ (công khai): Nagoya, Aichi · 愛知県名古屋市
+- Điện thoại & địa chỉ đầy đủ: KHÔNG để công khai — gửi riêng khi ứng tuyển
+  (repo GitHub công khai nên không lưu ở đây).
 
 ## Kinh nghiệm làm việc
 1. **Adamo Software** (5/2025 – 2/2026) — Lập trình viên Fullstack — hệ thống HRM, module Tuyển dụng, Redmine nội bộ. Stack: Laravel, Redis, AWS S3, CloudFront, MySQL, GitLab CI/CD.

@@ -14,8 +14,9 @@ export const cv = {
   birthDate: "29/11/2003",
   nationality: { vi: "Việt Nam", ja: "ベトナム" },
   email: "vancuongit2021@gmail.com",
-  phone: "090-6897-5994",
-  address: "〒454-0826 愛知県名古屋市中川区小本本町2丁目63",
+  // Chỉ để cấp thành phố cho trang CÔNG KHAI — địa chỉ đầy đủ & SĐT gửi riêng
+  // khi ứng tuyển, không phơi trên web (repo GitHub cũng công khai).
+  address: { vi: "Nagoya, Aichi", ja: "愛知県名古屋市" },
 
   summary: {
     vi: "Lập trình viên Fullstack với khoảng 3 năm kinh nghiệm, chuyên Laravel và Angular. Mạnh về kiến trúc sạch (Service-Repository, Queue/Event), tối ưu hiệu năng (Redis, caching) và tích hợp cloud (AWS S3/CloudFront). Từng dẫn dắt phát triển và bảo trì các hệ thống HRM phục vụ hơn 150 người dùng.",

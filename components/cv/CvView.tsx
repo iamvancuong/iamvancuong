@@ -36,8 +36,7 @@ export function CvView() {
     { label: t.cv.birth[lang], value: cv.birthDate },
     { label: t.cv.nationality[lang], value: cv.nationality[lang], lang: jl },
     { label: t.cv.email[lang], value: cv.email },
-    { label: t.cv.phone[lang], value: cv.phone },
-    { label: t.cv.address[lang], value: cv.address, lang: "ja" },
+    { label: t.cv.address[lang], value: cv.address[lang], lang: jl },
   ];
 
   return (
