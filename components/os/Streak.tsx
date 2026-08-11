@@ -116,10 +116,10 @@ export function Streak({
 
       <p className="mt-3 text-[12px] leading-relaxed text-ink-3">
         {current === 0 && best === 0
-          ? "Chưa có ngày nào đủ ba việc. Bắt đầu tối nay là được."
+          ? "Chưa có ngày nào được ghi. Tick một việc nền tảng tối nay là chuỗi bắt đầu."
           : current === 0
-            ? `Chuỗi đang đứt. Không sao — làm lại từ hôm nay, kỷ lục cũ là ${best} ngày.`
-            : "Ô càng đậm là ngày làm được càng nhiều. Bỏ một ngày là bình thường; bỏ hai ngày liên tiếp thì hạ ngưỡng xuống."}
+            ? `Chuỗi đang đứt. Không sao — tick lại một việc hôm nay, kỷ lục cũ là ${best} ngày.`
+            : "Chuỗi tính theo ngày CÓ LÀM (≥1 việc); ô càng đậm là ngày làm được càng nhiều. Bỏ trắng một ngày là đứt."}
       </p>
     </section>
   );

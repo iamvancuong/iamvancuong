@@ -152,7 +152,20 @@ eq(
   2,
 );
 eq("kỷ lục dài nhất", longestStreak([full("2026-01-01"), full("2026-01-02"), full("2026-06-01")]), 2);
-eq("chưa ngày nào đủ thì kỷ lục 0", longestStreak([log("2026-01-01")]), 0);
+eq("ngày trống (0 việc) không tính vào kỷ lục", longestStreak([log("2026-01-01")]), 0);
+
+// Chuỗi mới: CÓ LÀM (≥1 việc) là tính — ngày 1/3 vẫn vào chuỗi, không cần đủ 3.
+const partial = (iso: string) => log(iso, { kSleep: true }); // 1/3 việc
+eq(
+  "ngày làm 1/3 vẫn tính vào chuỗi",
+  keystoneStreak([partial(addDaysISO(t0, -1)), partial(t0)]),
+  2,
+);
+eq(
+  "kỷ lục tính cả ngày 1/3",
+  longestStreak([partial("2026-01-01"), partial("2026-01-02")]),
+  2,
+);
 
 eq("tuần có đúng 7 ngày", weekDates(0, "2026-08-06").length, 7);
 eq("tuần kết thúc hôm nay", weekDates(0, "2026-08-06").at(-1), "2026-08-06");
@@ -174,8 +187,8 @@ eq("trend trong dung sai là phẳng", trend(105, 100), "flat");
 eq("từ 0 lên có là up", trend(5, 0), "up");
 eq("0 sang 0 là phẳng", trend(0, 0), "flat");
 
-const ps = periodStats([full("2026-08-01"), full("2026-08-02"), log("2026-08-03")], "month", "2026-08-06");
-eq("đếm ngày đủ ba việc trong tháng", ps.full, 2);
+const ps = periodStats([full("2026-08-01"), log("2026-08-02", { kEat: true }), log("2026-08-03")], "month", "2026-08-06");
+eq("đếm ngày CÓ LÀM (≥1 việc) trong tháng", ps.full, 2);
 eq("số ngày đã trôi qua trong tháng", ps.elapsed, 6);
 
 /* ---------------------------------------------------------------- money */

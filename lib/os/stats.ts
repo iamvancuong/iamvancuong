@@ -53,22 +53,21 @@ export function trend(now: number, prev: number, tolerance = 0.1): Trend {
 }
 
 /**
- * Chuỗi ngày liên tiếp làm đủ cả 3 việc nền tảng.
+ * Chuỗi ngày liên tiếp CÓ LÀM — tick ít nhất 1 trong 3 việc nền tảng là ngày
+ * đó tính vào chuỗi (không cần đủ cả 3). Ô đậm nhạt (0–3) vẫn cho thấy làm
+ * được nhiều hay ít, còn chuỗi chỉ hỏi "hôm đó có xuất hiện không".
  * Nếu hôm nay chưa ghi thì tính từ hôm qua — chuỗi không bị coi là đứt chỉ
  * vì buổi tối chưa tới.
  */
 export function keystoneStreak(logs: DailyLog[]): number {
   const map = indexByDay(logs);
-  const full = (d: string) => {
-    const l = map.get(d);
-    return !!l && l.kSleep && l.kJapanese && l.kEat;
-  };
+  const active = (d: string) => dayLevel(map.get(d)) >= 1;
 
   let cursor = todayISO();
-  if (!full(cursor)) cursor = addDaysISO(cursor, -1);
+  if (!active(cursor)) cursor = addDaysISO(cursor, -1);
 
   let streak = 0;
-  while (full(cursor)) {
+  while (active(cursor)) {
     streak++;
     cursor = addDaysISO(cursor, -1);
   }
@@ -100,10 +99,10 @@ export function streakOf(
   return streak;
 }
 
-/** Chuỗi dài nhất từng đạt — để so với chuỗi hiện tại. */
+/** Chuỗi dài nhất từng đạt — cùng chuẩn với chuỗi hiện tại (ngày có làm ≥1). */
 export function longestStreak(logs: DailyLog[]): number {
   const days = logs
-    .filter((l) => l.kSleep && l.kJapanese && l.kEat)
+    .filter((l) => dayLevel(l) >= 1)
     .map((l) => isoUTC(l.date))
     .sort();
 
@@ -158,8 +157,7 @@ export function periodStats(
   const prefix = scope === "month" ? today.slice(0, 7) : today.slice(0, 4);
 
   const full = logs.filter(
-    (l) =>
-      isoUTC(l.date).startsWith(prefix) && l.kSleep && l.kJapanese && l.kEat,
+    (l) => isoUTC(l.date).startsWith(prefix) && dayLevel(l) >= 1,
   ).length;
 
   // Số ngày đã qua tính tới hôm nay, không tính ngày tương lai
