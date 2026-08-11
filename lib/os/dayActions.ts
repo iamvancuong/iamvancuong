@@ -367,6 +367,54 @@ export async function moveUndoneTasks(fromISO: string, toISO: string) {
   revalidatePath("/os");
 }
 
+/**
+ * Chép danh sách việc của một ngày sang ngày kế tiếp.
+ *
+ * Việc hằng ngày phần lớn là lặp lại — "4h N5–N4", "1h30 ôn anki" — nên gõ lại
+ * mỗi tối là thứ khiến người ta bỏ dùng sau ba hôm.
+ *
+ * Chép TITLE, không chép trạng thái: mai là một ngày mới, mọi ô đều chưa tick.
+ *
+ * Bỏ qua việc TRÙNG TÊN đã có ở ngày đích — bấm hai lần không sinh ra hai bản
+ * sao. Không có chỗ chặn này thì mỗi lần lỡ tay là danh sách dài gấp đôi, mà
+ * xóa thì phải xóa từng dòng một.
+ */
+export async function copyTasksToDay(fromISO: string, toISO: string) {
+  await assertOwner();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fromISO)) return;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(toISO)) return;
+  if (fromISO === toISO) return;
+
+  const [source, existing] = await Promise.all([
+    db.dayTask.findMany({
+      where: { date: dayUTC(fromISO) },
+      orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+      select: { title: true, order: true },
+    }),
+    db.dayTask.findMany({
+      where: { date: dayUTC(toISO) },
+      select: { title: true, order: true },
+    }),
+  ]);
+
+  const taken = new Set(existing.map((t) => t.title));
+  const fresh = source.filter((t) => !taken.has(t.title));
+  if (fresh.length === 0) return;
+
+  // Xếp SAU những việc đã có ở ngày đích, giữ nguyên thứ tự tương đối.
+  const base = existing.reduce((m, t) => Math.max(m, t.order), 0);
+
+  await db.dayTask.createMany({
+    data: fresh.map((t, i) => ({
+      date: dayUTC(toISO),
+      title: t.title,
+      order: base + i + 1,
+    })),
+  });
+
+  revalidatePath("/os");
+}
+
 /** Tick nhanh từ Dashboard — không phải mở trang nhật ký. */
 export async function toggleKeystone(
   iso: string,
