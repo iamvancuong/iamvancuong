@@ -31,11 +31,16 @@ import { JapaneseToday } from "@/components/os/JapaneseToday";
 const DAILY_PRINCIPLES = 3;
 
 /**
- * Dashboard trả lời đúng bốn câu, theo đúng thứ tự người ta cần lúc sáng dậy:
- *   1. Hôm nay tôi phải làm gì?          ← DayPlan
- *   2. Tiếng Nhật đang nhanh hay chậm?   ← JapaneseToday
- *   3. Tôi đang tập trung vào gì?
- *   4. Tôi có đang đi đúng hướng không?
+ * Thứ tự trên màn hình, theo đúng thứ tự cần lúc sáng dậy:
+ *   1. Tôi sống theo nguyên tắc nào?     ← 3 nguyên tắc, đọc mất ba giây
+ *   2. Đường vào nhật ký hôm nay
+ *   3. Hôm nay tôi phải làm gì?          ← DayPlan
+ *   4. Tiếng Nhật đang nhanh hay chậm?   ← JapaneseToday
+ *   5. Tôi đang tập trung vào gì?
+ *   6. Tôi có đang đi đúng hướng không?
+ *
+ * Nguyên tắc lên đầu (12/08) theo yêu cầu của chủ nhân: nằm giữa trang thì
+ * lướt qua mất, mà cả mục đó tồn tại chỉ để được ĐỌC.
  */
 export default async function DashboardPage() {
   const iso = todayISO();
@@ -230,7 +235,42 @@ export default async function DashboardPage() {
         </span>
       </header>
 
-      {/* ① Việc hôm nay — trên cùng, vì đây là câu duy nhất cần trả lời lúc
+      {/* Nguyên tắc trong ngày — đọc mất ba giây, nhưng là cách duy nhất
+          để những dòng đó không thành chữ chết. */}
+      {dailyPrinciples.length > 0 && (
+        <section>
+          <h2 className="mb-3 text-[12px] font-medium uppercase tracking-[0.08em] text-ink-3">
+            Nên nhớ hôm nay
+          </h2>
+          <ul className="grid gap-px overflow-hidden rounded-[var(--radius-lg)] border border-line bg-line">
+            {dailyPrinciples.map((p) => (
+              <li key={p.id} className="bg-surface p-4">
+                <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-3">
+                  {p.kind === PrincipleKind.DO ? "Nên" : "Không nên"}
+                </div>
+                <p className="mt-1.5 text-[16px] leading-snug">{p.text}</p>
+                {p.why && (
+                  <p className="mt-1.5 text-[13px] leading-relaxed text-ink-2">
+                    {p.why}
+                  </p>
+                )}
+                <Link
+                  href={`/os/a/${p.area.slug}?tab=principles`}
+                  className="mt-2 inline-block text-[12px] text-ink-3 transition-colors hover:text-ink"
+                >
+                  {p.area.name} →
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Cảnh báo tuần + đường sang nhật ký. Ba việc nền tảng đã dọn khỏi
+          Dashboard — xem chú thích đầu TodayPanel.tsx. */}
+      <TodayPanel iso={iso} logs={logs} />
+
+      {/* Việc hôm nay — trên cùng, vì đây là câu duy nhất cần trả lời lúc
              vừa mở mắt. Viết được từ tối hôm trước qua tab «Ngày mai». */}
       <DayPlan
         todayISO={iso}
@@ -344,41 +384,6 @@ export default async function DashboardPage() {
           </ul>
         </section>
       )}
-
-      {/* Nguyên tắc trong ngày — đọc mất ba giây, nhưng là cách duy nhất
-          để những dòng đó không thành chữ chết. */}
-      {dailyPrinciples.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-[12px] font-medium uppercase tracking-[0.08em] text-ink-3">
-            Nên nhớ hôm nay
-          </h2>
-          <ul className="grid gap-px overflow-hidden rounded-[var(--radius-lg)] border border-line bg-line">
-            {dailyPrinciples.map((p) => (
-              <li key={p.id} className="bg-surface p-4">
-                <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-3">
-                  {p.kind === PrincipleKind.DO ? "Nên" : "Không nên"}
-                </div>
-                <p className="mt-1.5 text-[16px] leading-snug">{p.text}</p>
-                {p.why && (
-                  <p className="mt-1.5 text-[13px] leading-relaxed text-ink-2">
-                    {p.why}
-                  </p>
-                )}
-                <Link
-                  href={`/os/a/${p.area.slug}?tab=principles`}
-                  className="mt-2 inline-block text-[12px] text-ink-3 transition-colors hover:text-ink"
-                >
-                  {p.area.name} →
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {/* Cảnh báo tuần + đường sang nhật ký. Ba việc nền tảng đã dọn khỏi
-          Dashboard — xem chú thích đầu TodayPanel.tsx. */}
-      <TodayPanel iso={iso} logs={logs} />
 
       <Streak logs={logs} stats={streakStats} />
 
