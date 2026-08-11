@@ -68,7 +68,8 @@ Thứ tự bắt buộc: **SQL trước, deploy sau.**
    → lưu thành `scripts/YYYY-MM-DD-<tên>.sql`, commit cùng code.
 2. **Chạy thử trên bản sao** trước khi giao — xem cách làm ở bước dưới.
 3. Server: cPanel → phpMyAdmin → DB → tab SQL → dán file → Go.
-4. Rồi mới `bash deploy.sh`.
+4. Rồi mới `bash deploy.sh` — nó **tự sinh lại Prisma client**, bước bắt buộc
+   thứ hai mà bản `deploy.sh` trước 12/08/2026 không có (xem §6, dòng #441).
 
 ⚠️ **Đừng dùng `ADD COLUMN IF NOT EXISTS`** — đó là cú pháp MariaDB; MySQL từ
 chối ngay dòng đầu và toàn bộ phần còn lại của file không chạy. `CREATE TABLE
@@ -139,6 +140,7 @@ Không nằm trong git. 4 biến (`NODE_ENV=production` do Application mode tự
 | `git reset/pull` báo `Permission denied` tạo thư mục | Thư mục source thiếu quyền ghi. `find . -type d -not -path './node_modules/*' -not -path './.git/*' -exec chmod 755 {} \;` rồi tương tự cho file 644. |
 | Log `Failed to load external module @prisma/client-<hash>` | Build bằng Turbopack. Build lại bằng `npm run build` (đã để `--webpack`), push, `deploy.sh`. |
 | Cảnh báo `@next/swc... GLIBC_2.29 not found` | **Vô hại** — chỉ là warning, Next tự bỏ qua khi *chạy* app đã build sẵn. Không cần xử. |
+| **`Minified React error #441`** trên trình duyệt sau khi deploy | ⭐ **Mã này KHÔNG nói gì về nguyên nhân.** `resolveErrorProd()` của React dựng nó ra để thay cho một lỗi THẬT xảy ra ở **server**, đã bị xóa nội dung vì đang chạy production. Thủ phạm số một: **Prisma client trên server còn cũ** — `.next` không gộp `@prisma/client` mà `require()` nó lúc chạy từ `node_modules`, mà `node_modules` không nằm trong git. Bắt bệnh trong 10 giây:<br>`node -e "console.log(require('@prisma/client').Prisma.dmmf.datamodel.models.map(m=>m.name).join(', '))"`<br>Thiếu model vừa thêm → đúng nó. Xử: `node node_modules/prisma/build/index.js generate && touch tmp/restart.txt`. **Đã vá trong `deploy.sh` (12/08/2026)** nên từ nay tự chạy. |
 | Trang chủ OK nhưng mọi trang khác 404 (test bằng `curl 127.0.0.1`) | Ảo — `curl 127.0.0.1 + Host header` không kích hoạt đúng Passenger. **Test bằng domain thật** trên trình duyệt. |
 | Vào web được nhưng **login không lưu** (quay lại trang login) | Cookie có cờ `Secure` (vì production) → chỉ hoạt động trên **HTTPS**. Bật SSL: cPanel → SSL/TLS Status → Run AutoSSL cho domain. |
 
