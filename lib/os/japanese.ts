@@ -12,7 +12,7 @@ import { POMO_MIN } from "./constants";
  */
 
 /** Chỉ những trường cần cho phép tính — nhận cả bản ghi rút gọn. */
-type JpLog = Pick<DailyLog, "date" | "jpPomo" | "jpMin">;
+export type JpLog = Pick<DailyLog, "date" | "jpPomo" | "jpMin">;
 
 /**
  * Một mục tiêu có bấm giờ. Nhận ra bằng `targetHours != null` — đó là dấu

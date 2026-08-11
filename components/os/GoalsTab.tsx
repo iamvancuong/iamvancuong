@@ -1,7 +1,8 @@
 import { GoalStatus, Horizon, type Goal } from "@prisma/client";
 import { Check, CopyPlus, X, Undo2 } from "lucide-react";
 import { ageMilestones, timeUntilAge, type AgeMilestone } from "@/lib/os/age";
-import { fmtDateVN, isoUTC, todayISO } from "@/lib/os/day";
+import { fmtDateVN, fmtH, isoUTC, todayISO } from "@/lib/os/day";
+import { goalPace, type JpLog } from "@/lib/os/japanese";
 import {
   currentPeriodStart,
   isPeriod,
@@ -55,10 +56,13 @@ export function horizonText(
 export function GoalsTab({
   slug,
   goals,
+  logs = [],
   tracksStudy = false,
 }: {
   slug: string;
   goals: Goal[];
+  /** Nhật ký để tính nhịp của từng chặng. Rỗng cũng chạy được. */
+  logs?: JpLog[];
   /**
    * Lĩnh vực này có bấm giờ pomodoro không (`Area.tracksStudy`).
    *
@@ -133,6 +137,7 @@ export function GoalsTab({
           milestones={milestones}
           tracksStudy={tracksStudy}
           kidsOf={kidsOf}
+          logs={logs}
         />
       )}
 
@@ -145,6 +150,7 @@ export function GoalsTab({
           milestones={milestones}
           tracksStudy={tracksStudy}
           kidsOf={kidsOf}
+          logs={logs}
         />
       )}
 
@@ -156,6 +162,7 @@ export function GoalsTab({
           milestones={milestones}
           tracksStudy={tracksStudy}
           kidsOf={kidsOf}
+          logs={logs}
         />
       )}
 
@@ -175,6 +182,7 @@ export function GoalsTab({
               milestones={milestones}
               tracksStudy={tracksStudy}
               kids={kidsOf?.(g) ?? []}
+              logs={logs}
             />
               </li>
             ))}
@@ -193,6 +201,7 @@ export function GoalsTab({
                   milestones={milestones}
                   tracksStudy={tracksStudy}
                   kids={kidsOf(g)}
+                  logs={logs}
                 />
               </li>
             ))}
@@ -267,6 +276,7 @@ function PeriodSection({
   milestones,
   tracksStudy = false,
   kidsOf,
+  logs = [],
 }: {
   title: string;
   hint?: string;
@@ -275,6 +285,7 @@ function PeriodSection({
   milestones: AgeMilestone[];
   tracksStudy?: boolean;
   kidsOf?: (g: Goal) => Goal[];
+  logs?: JpLog[];
 }) {
   return (
     <section>
@@ -291,6 +302,7 @@ function PeriodSection({
                   milestones={milestones}
                   tracksStudy={tracksStudy}
                   kids={kidsOf?.(g) ?? []}
+                  logs={logs}
                 />
           </li>
         ))}
@@ -305,6 +317,7 @@ function GoalRow({
   milestones,
   tracksStudy = false,
   kids = [],
+  logs = [],
 }: {
   goal: Goal;
   slug: string;
@@ -312,6 +325,7 @@ function GoalRow({
   tracksStudy?: boolean;
   /** Mục tiêu con, đã xếp theo ngày bắt đầu. */
   kids?: Goal[];
+  logs?: JpLog[];
 }) {
   const done = g.status === GoalStatus.DONE;
   const period = isPeriod(g.horizon) && g.periodStart;
@@ -422,7 +436,7 @@ function GoalRow({
 
         {/* Mục tiêu con — chặng và mảng kỹ năng nằm TRONG mục tiêu này. */}
         {tracksStudy && g.targetHours != null && (
-          <StudyChildren parent={g} kids={kids} slug={slug} />
+          <StudyChildren parent={g} kids={kids} slug={slug} logs={logs} />
         )}
 
         <Disclosure label="Sửa" small>
@@ -668,12 +682,18 @@ function StudyChildren({
   parent,
   kids,
   slug,
+  logs,
 }: {
   parent: Goal;
   kids: Goal[];
   slug: string;
+  logs: JpLog[];
 }) {
   const today = todayISO();
+  // Nhịp cha đã đặt — mốc để nói "đủ mỗi ngày vẫn không kịp".
+  const tooFast = (need: number) =>
+    parent.dailyPomo != null && need > parent.dailyPomo;
+
   const pStart = parent.studyStart ? isoUTC(parent.studyStart) : null;
   const pEnd = parent.studyEnd ? isoUTC(parent.studyEnd) : null;
 
@@ -690,6 +710,21 @@ function StudyChildren({
       {kids.map((k) => {
         const s = k.studyStart ? isoUTC(k.studyStart) : null;
         const e = k.studyEnd ? isoUTC(k.studyEnd) : null;
+
+        // Chỉ chặng (có khai ngày) mới có nhịp. Mảng kỹ năng thì không.
+        const pace = k.targetHours
+          ? goalPace(
+              {
+                studyStart: k.studyStart,
+                studyEnd: k.studyEnd,
+                targetHours: k.targetHours,
+                priorHours: k.priorHours,
+                dailyPomo: parent.dailyPomo,
+              },
+              logs,
+              today,
+            )
+          : null;
 
         const state =
           s && e
@@ -731,6 +766,41 @@ function StudyChildren({
                 </span>
               )}
             </div>
+            {/*
+              Nhịp của CHẶNG — cố ý gọn hơn hẳn khối của cha: một dòng số, không
+              lặp lại cả đoạn văn. Câu dài chỉ xuất hiện khi có chuyện thật sự
+              cần nói, tức là nhịp đã đặt không đủ để kịp.
+
+              Chặng dùng chung cách tính với cha: mọi phút rơi vào khoảng ngày
+              của nó đều tính. Mảng kỹ năng (không khai ngày) thì không có nhịp
+              — nó chạy suốt đợt, "còn mấy ngày" không có nghĩa.
+            */}
+            {pace && pace.state === "running" && (
+              <div className="mt-0.5 flex flex-wrap items-baseline gap-x-2 text-[12px] tabular-nums text-ink-3">
+                <span>
+                  {fmtH(pace.doneMin)} / {fmtH(pace.totalMin)} · {pace.percent}%
+                </span>
+                <span>· còn {pace.daysLeft} ngày</span>
+                {pace.pomoPerDayLeft != null && pace.pomoPerDayLeft > 0 && (
+                  <span
+                    className={
+                      tooFast(pace.pomoPerDayLeft) ? "font-medium text-accent" : ""
+                    }
+                  >
+                    · cần {pace.pomoPerDayLeft} hiệp/ngày
+                  </span>
+                )}
+              </div>
+            )}
+            {pace?.state === "running" &&
+              pace.pomoPerDayLeft != null &&
+              tooFast(pace.pomoPerDayLeft) && (
+                <p className="mt-0.5 text-[12px] leading-relaxed text-accent">
+                  Nhịp đang đặt là {parent.dailyPomo} — chặng này đủ mỗi ngày
+                  vẫn không kịp. Nâng nhịp, lùi ngày đích, hoặc bớt giờ.
+                </p>
+              )}
+
             {outside && (
               <p className="mt-0.5 text-[12px] leading-relaxed text-accent">
                 Khoảng ngày này nằm NGOÀI khoảng của «{parent.title}» — giờ học
@@ -738,6 +808,71 @@ function StudyChildren({
                 cha cho bao trùm cả chặng này.
               </p>
             )}
+
+            {/* Sửa / xóa NGAY TẠI CHỖ. Con bị lọc khỏi danh sách chính nên
+                không đi qua GoalRow — không có khối này thì tạo xong là chịu. */}
+            <div className="mt-1 flex items-center gap-3">
+              <Disclosure label="sửa" small>
+                <form
+                  action={updateGoal.bind(null, k.id, slug)}
+                  className="mt-1 grid gap-2 rounded-[var(--radius-md)] border border-line p-2.5 sm:grid-cols-4"
+                >
+                  <input
+                    name="icon"
+                    maxLength={8}
+                    defaultValue={k.icon ?? ""}
+                    placeholder="🎧"
+                    aria-label="Icon"
+                    className={inputSmCls}
+                  />
+                  <input
+                    name="title"
+                    required
+                    maxLength={200}
+                    defaultValue={k.title}
+                    aria-label="Tên"
+                    className={`sm:col-span-2 ${inputSmCls}`}
+                  />
+                  <input
+                    type="number"
+                    name="targetHours"
+                    min={0}
+                    max={2000}
+                    defaultValue={k.targetHours ?? ""}
+                    placeholder="giờ"
+                    aria-label="Ngân sách giờ"
+                    className={inputSmCls}
+                  />
+                  <input
+                    type="date"
+                    name="studyStart"
+                    defaultValue={s ?? ""}
+                    aria-label="Bắt đầu"
+                    className={`sm:col-span-2 ${inputSmCls}`}
+                  />
+                  <input
+                    type="date"
+                    name="studyEnd"
+                    defaultValue={e ?? ""}
+                    aria-label="Ngày đích"
+                    className={`sm:col-span-2 ${inputSmCls}`}
+                  />
+                  <div className="flex justify-end sm:col-span-4">
+                    <SubmitButton>Lưu</SubmitButton>
+                  </div>
+                </form>
+              </Disclosure>
+
+              <form action={deleteGoal.bind(null, k.id, slug)}>
+                <ConfirmButton
+                  confirm={`Xóa «${k.title}»? Giờ đã học KHÔNG mất — các hiệp của nó rơi về «chưa gắn» và vẫn nằm trong tổng của mục tiêu cha.`}
+                  label={`Xóa ${k.title}`}
+                  className="text-[12px] text-ink-3 hover:text-down"
+                >
+                  xóa
+                </ConfirmButton>
+              </form>
+            </div>
           </li>
         );
       })}

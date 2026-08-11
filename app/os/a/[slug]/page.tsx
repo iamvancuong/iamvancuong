@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { db } from "@/lib/db";
+import { addDaysISO, dayUTC, todayISO } from "@/lib/os/day";
 import { AreaTabs, toAreaTab } from "@/components/os/AreaTabs";
 import { GoalsTab } from "@/components/os/GoalsTab";
 import { PrinciplesTab } from "@/components/os/PrinciplesTab";
@@ -41,6 +42,17 @@ export default async function AreaPage({
   const { slug } = await params;
   const sp = await searchParams;
   const tab = toAreaTab(sp.tab);
+
+  /**
+   * Nhật ký một năm rưỡi — đủ cho mọi đợt học đang chạy. Chỉ dùng khi lĩnh vực
+   * có bấm giờ; lĩnh vực khác thì mảng rỗng, không tốn truy vấn nào thêm vì
+   * điều kiện nằm ngay trong `where`.
+   */
+  const jpLogs = await db.dailyLog.findMany({
+    where: { date: { gte: dayUTC(addDaysISO(todayISO(), -550)) } },
+    select: { date: true, jpPomo: true, jpMin: true },
+    orderBy: { date: "asc" },
+  });
 
   const area = await db.area.findUnique({
     where: { slug },
@@ -116,6 +128,7 @@ export default async function AreaPage({
             slug={slug}
             goals={area.goals}
             tracksStudy={area.tracksStudy}
+            logs={jpLogs}
           />
         )}
         {tab === "principles" && (
