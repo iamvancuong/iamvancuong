@@ -135,8 +135,8 @@ function goalFields(fd: FormData) {
  */
 export async function createGoal(
   areaSlug: string,
+  parentId: string | null,
   fd: FormData,
-  parentId?: string,
 ) {
   await assertOwner();
 

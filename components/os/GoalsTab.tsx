@@ -246,7 +246,7 @@ export function GoalsTab({
 
       <Disclosure label="+ Thêm mục tiêu">
         <form
-          action={createGoal.bind(null, slug)}
+          action={createGoal.bind(null, slug, null)}
           className="space-y-2 rounded-[var(--radius-lg)] border border-line p-3"
         >
           <GoalFields milestones={milestones} tracksStudy={tracksStudy} />
@@ -421,7 +421,9 @@ function GoalRow({
         )}
 
         {/* Mục tiêu con — chặng và mảng kỹ năng nằm TRONG mục tiêu này. */}
-        {kids.length > 0 && <StudyChildren parent={g} kids={kids} />}
+        {tracksStudy && g.targetHours != null && (
+          <StudyChildren parent={g} kids={kids} slug={slug} />
+        )}
 
         <Disclosure label="Sửa" small>
           <div className="space-y-3 rounded-[var(--radius-lg)] border border-line p-3">
@@ -662,13 +664,29 @@ function GoalFields({
  * là 280 giờ của N4 im lặng biến mất khỏi tổng — con số vẫn trông hợp lý, chỉ
  * là thiếu. Nên chỗ này nói thẳng ra.
  */
-function StudyChildren({ parent, kids }: { parent: Goal; kids: Goal[] }) {
+function StudyChildren({
+  parent,
+  kids,
+  slug,
+}: {
+  parent: Goal;
+  kids: Goal[];
+  slug: string;
+}) {
   const today = todayISO();
   const pStart = parent.studyStart ? isoUTC(parent.studyStart) : null;
   const pEnd = parent.studyEnd ? isoUTC(parent.studyEnd) : null;
 
   return (
-    <ul className="mt-2.5 space-y-1.5 border-l border-line-soft pl-3">
+    <div className="mt-2.5 border-l border-line-soft pl-3">
+      {/* Nói thẳng quan hệ, đừng bắt suy từ thụt lề. */}
+      <p className="mb-1.5 text-[11px] font-medium uppercase tracking-[0.08em] text-ink-3">
+        Thuộc «{parent.title}»
+        {parent.targetHours != null && ` · tổng ${parent.targetHours}h`}
+        {kids.length > 0 &&
+          ` · đã chia ${kids.reduce((n, k) => n + (k.targetHours ?? 0), 0)}h`}
+      </p>
+      <ul className="space-y-1.5">
       {kids.map((k) => {
         const s = k.studyStart ? isoUTC(k.studyStart) : null;
         const e = k.studyEnd ? isoUTC(k.studyEnd) : null;
@@ -723,6 +741,82 @@ function StudyChildren({ parent, kids }: { parent: Goal; kids: Goal[] }) {
           </li>
         );
       })}
-    </ul>
+
+      <li>
+        <Disclosure label="+ Thêm mục tiêu con" small>
+          {/*
+            Form GỌN, không dùng GoalFields: một chặng chỉ cần tên · icon ·
+            ngân sách giờ · khoảng ngày. Bày cả mốc tuổi và cách đo ở đây là
+            hỏi những câu không thuộc về một chặng.
+
+            `parentId` bind sẵn — cha là dòng đang mở, không phải chọn từ một ô
+            select. Không có cách nào gắn nhầm cha.
+          */}
+          <form
+            action={createGoal.bind(null, slug, parent.id)}
+            className="space-y-2 rounded-[var(--radius-md)] border border-line p-2.5"
+          >
+            <div className="grid gap-2 sm:grid-cols-4">
+              <input
+                name="icon"
+                maxLength={8}
+                placeholder="🎧"
+                aria-label="Icon"
+                className={inputSmCls}
+              />
+              <input
+                name="title"
+                required
+                maxLength={200}
+                placeholder="Tên chặng / mảng"
+                aria-label="Tên"
+                className={`sm:col-span-2 ${inputSmCls}`}
+              />
+              <input
+                type="number"
+                name="targetHours"
+                min={0}
+                max={2000}
+                placeholder="giờ"
+                aria-label="Ngân sách giờ"
+                className={inputSmCls}
+              />
+              <label className="block sm:col-span-2">
+                <span className="block text-[11px] text-ink-3">
+                  Bắt đầu — để trống nếu là mảng kỹ năng
+                </span>
+                <input
+                  type="date"
+                  name="studyStart"
+                  defaultValue={
+                    parent.studyStart ? isoUTC(parent.studyStart) : ""
+                  }
+                  className={`mt-1 ${inputSmCls}`}
+                />
+              </label>
+              <label className="block sm:col-span-2">
+                <span className="block text-[11px] text-ink-3">Ngày đích</span>
+                <input
+                  type="date"
+                  name="studyEnd"
+                  defaultValue={parent.studyEnd ? isoUTC(parent.studyEnd) : ""}
+                  className={`mt-1 ${inputSmCls}`}
+                />
+              </label>
+            </div>
+            <p className="text-[12px] leading-relaxed text-ink-3">
+              Có ngày = một <strong className="font-medium text-ink-2">chặng</strong>{" "}
+              (N5–N4 rồi tới N3). Không ngày = một{" "}
+              <strong className="font-medium text-ink-2">mảng kỹ năng</strong>{" "}
+              chạy suốt đợt (từ vựng · nghe · đọc).
+            </p>
+            <div className="flex justify-end">
+              <SubmitButton>Thêm</SubmitButton>
+            </div>
+          </form>
+        </Disclosure>
+      </li>
+      </ul>
+    </div>
   );
 }
