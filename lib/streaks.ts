@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { jpTotal } from "@/lib/os/japanese";
 import { streakOf, recentLevels } from "@/lib/os/stats";
 
 export type HeatCell = { iso: string; level: 0 | 1 | 2 | 3; isToday: boolean };
@@ -31,7 +32,11 @@ export async function getPublicStreaks(): Promise<PublicStreaks> {
           l.journalChange?.trim()
         ),
     ),
-    japanese: streakOf(logs, (l) => l.jpMin > 0),
+    // ⚠️ jpTotal, KHÔNG phải l.jpMin — `jpMin` từ khi có pomodoro chỉ còn là
+    // phút LẺ. Đọc thẳng nó làm chuỗi tiếng Nhật đứt ngay ngày đầu tiên học
+    // bằng pomodoro (7 hiệp, 0 phút lẻ → jpMin = 0), mà đây là con số hiện
+    // trên TRANG CHỦ CÔNG KHAI.
+    japanese: streakOf(logs, (l) => jpTotal(l) > 0),
     it: streakOf(logs, (l) => l.itMin > 0),
     heatmap: recentLevels(logs, 119),
   };

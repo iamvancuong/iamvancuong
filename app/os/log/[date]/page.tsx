@@ -1,9 +1,9 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ChevronLeft, ChevronRight, List } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, List } from "lucide-react";
 import { db } from "@/lib/db";
-import { deleteDailyLog } from "@/lib/os/dayActions";
+import { deleteDailyLog, toggleDayTask } from "@/lib/os/dayActions";
 import { DailyLogForm } from "@/components/os/DailyLogForm";
 import { PomoRow } from "@/components/os/PomoRow";
 import { ConfirmButton } from "@/components/os/formBits";
@@ -25,7 +25,7 @@ export default async function LogDayPage({
 
   const isToday = iso === todayISO();
 
-  const [log, sessions, studyGoal] = await Promise.all([
+  const [log, sessions, studyGoal, tasks] = await Promise.all([
     db.dailyLog.findUnique({ where: { date: dayUTC(iso) } }),
     db.pomoSession.findMany({
       where: { date: dayUTC(iso) },
@@ -40,6 +40,12 @@ export default async function LogDayPage({
       },
       orderBy: { studyEnd: "asc" },
       include: { children: { orderBy: { order: "asc" } } },
+    }),
+    // Việc đã đặt ra cho ngày này. Trước đây KHÔNG trang nào hiện chúng sau khi
+    // ngày trôi qua — dữ liệu nằm nguyên trong database mà không nhìn lại được.
+    db.dayTask.findMany({
+      where: { date: dayUTC(iso) },
+      orderBy: [{ order: "asc" }, { createdAt: "asc" }],
     }),
   ]);
 
@@ -81,6 +87,49 @@ export default async function LogDayPage({
           )}
         </div>
       </header>
+
+      {tasks.length > 0 && (
+        <section>
+          <h2 className="mb-3 flex items-baseline justify-between text-[12px] font-medium uppercase tracking-[0.08em] text-ink-3">
+            Việc của ngày này
+            <span className="tabular-nums normal-case tracking-normal">
+              {tasks.filter((t) => t.done).length}/{tasks.length} xong
+            </span>
+          </h2>
+          {/* Tick được luôn, không chỉ để đọc: ngày hôm qua quên tick một việc
+              đã làm thì đây là chỗ duy nhất chữa lại. */}
+          <ul className="rounded-[var(--radius-lg)] border border-line p-2">
+            {tasks.map((t) => (
+              <li key={t.id}>
+                <form action={toggleDayTask.bind(null, t.id)}>
+                  <button
+                    type="submit"
+                    aria-pressed={t.done}
+                    className="flex w-full items-center gap-3 rounded-[var(--radius-md)] px-2 py-2.5 text-left transition-colors hover:bg-surface"
+                  >
+                    <span
+                      /* Viền `ink-3` chứ không phải `line` — xem chú thích cùng
+                         loại ở TodayPanel.tsx. */
+                      className={`flex size-[22px] shrink-0 items-center justify-center rounded-[var(--radius-sm)] border transition-colors ${
+                        t.done ? "border-ink bg-ink text-bg" : "border-ink-3 bg-bg"
+                      }`}
+                    >
+                      {t.done && <Check size={14} strokeWidth={3} />}
+                    </span>
+                    <span
+                      className={`min-w-0 text-[15px] leading-snug ${
+                        t.done ? "text-ink-3 line-through" : "text-ink"
+                      }`}
+                    >
+                      {t.title}
+                    </span>
+                  </button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* Cùng hàng ô với /os, nhưng cho ĐÚNG ngày đang mở — đây là chỗ chữa
           ngày đã qua mà quên tick. Cố ý không có ô nhập số hiệp trong form

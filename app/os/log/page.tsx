@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Bed, Check, Dumbbell, PenLine, Sparkles } from "lucide-react";
 import { db } from "@/lib/db";
+import { jpTotal } from "@/lib/os/japanese";
 import { PhotoGrid } from "@/components/PhotoGrid";
 import { Streak } from "@/components/os/Streak";
 import { EmptyNote } from "@/components/os/formBits";
@@ -34,7 +35,7 @@ export default async function LogListPage() {
   const today = todayISO();
   const since = dayUTC(addDaysISO(today, -365));
 
-  const [logs, memories, streakLogs] = await Promise.all([
+  const [logs, memories, streakLogs, tasks] = await Promise.all([
     db.dailyLog.findMany({ where: { date: { gte: since } }, orderBy: { date: "desc" } }),
     db.memory.findMany({
       where: { date: { gte: since } },
@@ -47,21 +48,45 @@ export default async function LogListPage() {
       where: { date: { gte: dayUTC(addDaysISO(today, -400)) } },
       orderBy: { date: "desc" },
     }),
+    // Đếm việc mỗi ngày để danh sách nói được "hôm đó định làm gì, xong mấy".
+    db.dayTask.groupBy({
+      by: ["date", "done"],
+      where: { date: { gte: since } },
+      _count: { _all: true },
+    }),
   ]);
 
   // Gộp nhật ký và ký ức theo ngày
   const days = new Map<
     string,
-    { log?: (typeof logs)[number]; memories: typeof memories }
+    {
+      log?: (typeof logs)[number];
+      memories: typeof memories;
+      tasks: { done: number; total: number };
+    }
   >();
 
+  const blank = () => ({ memories: [] as typeof memories, tasks: { done: 0, total: 0 } });
+
   for (const l of logs) {
-    days.set(isoUTC(l.date), { log: l, memories: [] });
+    days.set(isoUTC(l.date), { ...blank(), log: l });
   }
   for (const m of memories) {
     const iso = isoUTC(m.date);
-    if (!days.has(iso)) days.set(iso, { memories: [] });
+    if (!days.has(iso)) days.set(iso, blank());
     days.get(iso)!.memories.push(m);
+  }
+  /**
+   * Ngày CHỈ có việc — không nhật ký, không ký ức — vẫn phải hiện ra. Trước đây
+   * danh sách dựng từ hai nguồn kia nên một ngày lên kế hoạch đầy đủ mà quên
+   * ghi nhật ký thì biến mất khỏi lịch sử.
+   */
+  for (const t of tasks) {
+    const iso = isoUTC(t.date);
+    if (!days.has(iso)) days.set(iso, blank());
+    const d = days.get(iso)!.tasks;
+    d.total += t._count._all;
+    if (t.done) d.done += t._count._all;
   }
 
   const sorted = [...days.entries()].sort((a, b) => b[0].localeCompare(a[0]));
@@ -121,9 +146,15 @@ export default async function LogListPage() {
               </h2>
 
               <ul className="space-y-3">
-                {entries.map(([iso, { log, memories: mems }]) => (
+                {entries.map(([iso, { log, memories: mems, tasks: tk }]) => (
                   <li key={iso}>
-                    <DayCard iso={iso} log={log} memories={mems} isToday={iso === today} />
+                    <DayCard
+                      iso={iso}
+                      log={log}
+                      memories={mems}
+                      tasks={tk}
+                      isToday={iso === today}
+                    />
                   </li>
                 ))}
               </ul>
@@ -146,8 +177,10 @@ function DayCard({
   iso,
   log,
   memories,
+  tasks,
   isToday,
 }: {
+  tasks: { done: number; total: number };
   iso: string;
   log?: DayLog;
   memories: DayMemory[];
@@ -212,24 +245,34 @@ function DayCard({
 
         <PhotoGrid photos={photos} variant="row" />
 
-        {log && (
+        {(log || tasks.total > 0) && (
           <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-ink-3">
-            {log.sleepAt && (
+            {/* Việc trong ngày — trước đây danh sách này hoàn toàn không nhắc
+                tới chúng, nên qua ngày là không nhìn lại được nữa. */}
+            {tasks.total > 0 && (
+              <span className="tabular-nums">
+                ✓ {tasks.done}/{tasks.total} việc
+              </span>
+            )}
+            {log?.sleepAt && (
               <span className="flex items-center gap-1">
                 <Bed size={12} strokeWidth={1.75} />
                 {log.sleepAt}
               </span>
             )}
-            {log.jpMin > 0 && <span>日 {fmtH(log.jpMin)}</span>}
-            {log.itMin > 0 && <span>IT {fmtH(log.itMin)}</span>}
-            {log.workout && (
+            {/* ⚠️ jpTotal, KHÔNG phải log.jpMin: từ khi có pomodoro thì `jpMin`
+                chỉ còn là phút LẺ. Đọc thẳng nó làm một ngày học 7 hiệp mà không
+                có phút lẻ nào hiện ra thành "không giờ nào". */}
+            {jpTotal(log) > 0 && <span>日 {fmtH(jpTotal(log))}</span>}
+            {(log?.itMin ?? 0) > 0 && <span>IT {fmtH(log!.itMin)}</span>}
+            {log?.workout && (
               <span className="flex items-center gap-1">
                 <Dumbbell size={12} strokeWidth={1.75} />
                 tập
               </span>
             )}
-            {log.spend != null && <span>¥{log.spend.toLocaleString("vi-VN")}</span>}
-            {log.publishable && (
+            {log?.spend != null && <span>¥{log.spend.toLocaleString("vi-VN")}</span>}
+            {log?.publishable && (
               <span className="flex items-center gap-1 text-ink-2">
                 <Check size={12} strokeWidth={2.5} />
                 đáng viết

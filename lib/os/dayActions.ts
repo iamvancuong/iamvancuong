@@ -307,6 +307,19 @@ export async function setSessionGoal(id: string, goalId: string | null) {
 /* ---------------- Việc trong ngày ---------------- */
 
 /**
+ * Việc trong ngày hiện ở HAI trang: `/os` (hôm nay + ngày mai) và
+ * `/os/log/[ngày]` (nhìn lại ngày đã qua). Quên trang thứ hai thì tick ở /os
+ * xong mở nhật ký vẫn thấy trạng thái cũ — sai mà không có lỗi nào hiện ra.
+ *
+ * `/os/log/[date]` là route động nên phải khai `"page"`; nếu không Next chỉ
+ * xóa cache của đúng chuỗi đó chứ không xóa của từng ngày.
+ */
+function revalidateTasks() {
+  revalidatePath("/os");
+  revalidatePath("/os/log/[date]", "page");
+}
+
+/**
  * `iso` là NGÀY PHẢI LÀM, không phải ngày viết — nên 12 giờ đêm ghi cho mai
  * thì sáng mai mở /os là nó đã nằm sẵn ở tab «Hôm nay».
  */
@@ -328,7 +341,7 @@ export async function createDayTask(iso: string, fd: FormData) {
     data: { date, title, order: (last?.order ?? 0) + 1 },
   });
 
-  revalidatePath("/os");
+  revalidateTasks();
 }
 
 export async function toggleDayTask(id: string) {
@@ -337,13 +350,13 @@ export async function toggleDayTask(id: string) {
   const task = await db.dayTask.findUniqueOrThrow({ where: { id } });
   await db.dayTask.update({ where: { id }, data: { done: !task.done } });
 
-  revalidatePath("/os");
+  revalidateTasks();
 }
 
 export async function deleteDayTask(id: string) {
   await assertOwner();
   await db.dayTask.delete({ where: { id } });
-  revalidatePath("/os");
+  revalidateTasks();
 }
 
 /**
@@ -364,7 +377,7 @@ export async function moveUndoneTasks(fromISO: string, toISO: string) {
     data: { date: dayUTC(toISO) },
   });
 
-  revalidatePath("/os");
+  revalidateTasks();
 }
 
 /**
@@ -402,7 +415,7 @@ export async function repeatTask(id: string, toISO: string) {
     data: { date, title: task.title, order: (last?.order ?? 0) + 1 },
   });
 
-  revalidatePath("/os");
+  revalidateTasks();
 }
 
 /** Tick nhanh từ Dashboard — không phải mở trang nhật ký. */
