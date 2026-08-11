@@ -24,7 +24,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     where: { visibility: Visibility.PUBLIC, publishedAt: { not: null } },
   });
 
-  const staticPages = ["", "/now", "/blog", "/journey", "/photos", "/projects", "/about"].map(
+  const staticPages = ["", "/now", "/blog", "/journey", "/photos", "/projects", "/cv", "/about"].map(
     (p) => ({
       url: `${site.url}${p}`,
       lastModified: new Date(),

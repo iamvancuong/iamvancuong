@@ -25,6 +25,11 @@ export const metadata: Metadata = {
     description: site.description,
   },
   robots: { index: true, follow: true },
+  /* Xác minh quyền sở hữu với Google Search Console. Token lấy từ site.ts
+     (được commit → deploy theo git); env chỉ để override khi cần. */
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION || site.googleVerification,
+  },
   /* Để trình duyệt và trình đọc RSS tự tìm ra /feed.xml — không có dòng này
      thì feed vẫn chạy nhưng phải biết địa chỉ mới đăng ký được. */
   alternates: {

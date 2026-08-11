@@ -10,6 +10,13 @@ export const site = {
   domain: "iamvancuong.com",
   url: "https://iamvancuong.com",
   tagline: "Du học sinh người Việt tại Nhật.",
+  /**
+   * Mã xác minh Google Search Console. KHÔNG phải bí mật — nó vốn hiện công
+   * khai trong thẻ <meta> của mọi trang. Để trong code (không phải .env) vì
+   * .env bị gitignore, KHÔNG deploy lên server; token nằm đây thì được commit
+   * + git pull xuống server, chạy đúng cả ở bản production force-dynamic.
+   */
+  googleVerification: "OcE-wd5Cn5B17YXFPKRR0PyxyXUvZ-6KvEuWv2WjA40",
   taglineJa: "日本で学ぶベトナム人留学生です。",
   description:
     "Tôi học tiếng Nhật, học lập trình, và ghi lại toàn bộ quá trình — kể cả những đoạn chưa đẹp.",
