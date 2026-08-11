@@ -4,10 +4,10 @@ import { useRef, useState } from "react";
 import type { DayTask } from "@prisma/client";
 import { Check, CopyPlus, Plus, X } from "lucide-react";
 import {
-  copyTasksToDay,
   createDayTask,
   deleteDayTask,
   moveUndoneTasks,
+  repeatTask,
   toggleDayTask,
 } from "@/lib/os/dayActions";
 import { weekdayVN } from "@/lib/os/day";
@@ -113,6 +113,22 @@ export function DayPlan({
                     </span>
                   </button>
                 </form>
+                {/* Lặp lại việc này sang ngày mai. Chỉ ở tab «Hôm nay»: đứng
+                    ở tab «Ngày mai» mà lặp thì đích là ngày kia — một ngày
+                    không nhìn thấy được ở đây, bấm xong không biết chuyện gì
+                    đã xảy ra. Bấm hai lần không nhân đôi (chặn ở server). */}
+                {tab === "today" && (
+                  <form action={repeatTask.bind(null, t.id, tomorrow)}>
+                    <button
+                      type="submit"
+                      aria-label={`Lặp lại cho ngày mai: ${t.title}`}
+                      title="Lặp lại cho ngày mai"
+                      className="rounded-[var(--radius-sm)] p-1.5 text-ink-3 transition-colors hover:bg-surface hover:text-ink"
+                    >
+                      <CopyPlus size={15} strokeWidth={1.75} />
+                    </button>
+                  </form>
+                )}
                 <form action={deleteDayTask.bind(null, t.id)}>
                   <button
                     type="submit"
@@ -130,34 +146,6 @@ export function DayPlan({
 
         <AddTask iso={iso} />
       </div>
-
-      {/*
-        Việc hằng ngày phần lớn lặp lại, nên gõ lại mỗi tối là thứ khiến người
-        ta bỏ dùng sau ba hôm. Cùng biểu tượng với «làm lại kỳ sau» ở mục tiêu —
-        cùng ý nghĩa thì nên cùng ký hiệu.
-
-        Chỉ hiện ở tab «Hôm nay»: đứng ở tab «Ngày mai» mà chép thì đích là ngày
-        kia, một ngày không nhìn thấy được ở đây — bấm xong không biết đã xảy ra
-        chuyện gì.
-      */}
-      {tab === "today" && todayTasks.length > 0 && (
-        <form
-          action={copyTasksToDay.bind(null, today, tomorrow)}
-          className="mt-2.5"
-        >
-          <button
-            type="submit"
-            // Nhảy luôn sang tab «Ngày mai»: bấm xong mà vẫn đứng ở tab cũ thì
-            // màn hình không đổi gì, không biết đã chép được hay chưa. Đổi tab
-            // ngay còn server action thì chạy song song rồi revalidate.
-            onClick={() => setTab("tomorrow")}
-            className="inline-flex items-center gap-1.5 text-[12px] text-ink-3 transition-colors hover:text-ink"
-          >
-            <CopyPlus size={13} strokeWidth={1.75} />
-            Chép {todayTasks.length} việc sang ngày mai
-          </button>
-        </form>
-      )}
 
       {tab === "today" && yesterdayUndone > 0 && (
         <form

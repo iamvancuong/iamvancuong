@@ -368,48 +368,38 @@ export async function moveUndoneTasks(fromISO: string, toISO: string) {
 }
 
 /**
- * Chép danh sách việc của một ngày sang ngày kế tiếp.
+ * Lặp lại MỘT việc sang một ngày khác (thường là ngày mai).
  *
- * Việc hằng ngày phần lớn là lặp lại — "4h N5–N4", "1h30 ôn anki" — nên gõ lại
+ * Việc hằng ngày phần lớn lặp lại — "4h N5–N4", "1h30 ôn anki" — nên gõ lại
  * mỗi tối là thứ khiến người ta bỏ dùng sau ba hôm.
  *
- * Chép TITLE, không chép trạng thái: mai là một ngày mới, mọi ô đều chưa tick.
+ * Chép TÊN, không chép trạng thái: mai là ngày mới, ô tick phải trắng.
  *
- * Bỏ qua việc TRÙNG TÊN đã có ở ngày đích — bấm hai lần không sinh ra hai bản
- * sao. Không có chỗ chặn này thì mỗi lần lỡ tay là danh sách dài gấp đôi, mà
- * xóa thì phải xóa từng dòng một.
+ * Trùng tên ở ngày đích thì bỏ qua, nên bấm hai lần không sinh ra hai bản sao.
+ * Không có chỗ chặn này thì mỗi lần lỡ tay lại phải đi xóa tay từng dòng.
  */
-export async function copyTasksToDay(fromISO: string, toISO: string) {
+export async function repeatTask(id: string, toISO: string) {
   await assertOwner();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(fromISO)) return;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(toISO)) return;
-  if (fromISO === toISO) return;
 
-  const [source, existing] = await Promise.all([
-    db.dayTask.findMany({
-      where: { date: dayUTC(fromISO) },
-      orderBy: [{ order: "asc" }, { createdAt: "asc" }],
-      select: { title: true, order: true },
-    }),
-    db.dayTask.findMany({
-      where: { date: dayUTC(toISO) },
-      select: { title: true, order: true },
-    }),
-  ]);
+  const task = await db.dayTask.findUniqueOrThrow({ where: { id } });
+  const date = dayUTC(toISO);
 
-  const taken = new Set(existing.map((t) => t.title));
-  const fresh = source.filter((t) => !taken.has(t.title));
-  if (fresh.length === 0) return;
+  const dup = await db.dayTask.findFirst({
+    where: { date, title: task.title },
+    select: { id: true },
+  });
+  if (dup) return;
 
-  // Xếp SAU những việc đã có ở ngày đích, giữ nguyên thứ tự tương đối.
-  const base = existing.reduce((m, t) => Math.max(m, t.order), 0);
+  // Xếp cuối danh sách ngày đích.
+  const last = await db.dayTask.findFirst({
+    where: { date },
+    orderBy: { order: "desc" },
+    select: { order: true },
+  });
 
-  await db.dayTask.createMany({
-    data: fresh.map((t, i) => ({
-      date: dayUTC(toISO),
-      title: t.title,
-      order: base + i + 1,
-    })),
+  await db.dayTask.create({
+    data: { date, title: task.title, order: (last?.order ?? 0) + 1 },
   });
 
   revalidatePath("/os");
