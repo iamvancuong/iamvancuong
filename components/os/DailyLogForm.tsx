@@ -3,6 +3,8 @@
 import { useRef, useTransition } from "react";
 import type { DailyLog } from "@prisma/client";
 import { saveDailyLog } from "@/lib/os/dayActions";
+import { fmtH } from "@/lib/os/day";
+import { jpTotal } from "@/lib/os/japanese";
 
 /**
  * Không có nút Lưu.
@@ -55,7 +57,12 @@ export function DailyLogForm({
               className={inputCls}
             />
           </Field>
-          <Field label="Tiếng Nhật" suffix="phút">
+          {/* ⚠️ Số hiệp KHÔNG nhập ở đây — nó là hàng ô pomodoro ở đầu trang.
+              Có hai đường ghi vào cùng một con số là hai con số trôi khỏi nhau.
+              Ô dưới là phút LẺ, không phải tổng: tổng = hiệp × 50 + ô này.
+              Podcast trên tàu, nói chuyện, xem phim — học thật nhưng không
+              thành hiệp. */}
+          <Field label="Tiếng Nhật, phút lẻ" suffix="phút">
             <input
               type="number"
               inputMode="numeric"
@@ -91,6 +98,16 @@ export function DailyLogForm({
             />
           </Field>
         </div>
+
+        {jpTotal(log) > 0 && (
+          <p className="mt-2 text-[12px] tabular-nums text-ink-3">
+            Tổng tiếng Nhật hôm đó:{" "}
+            <strong className="font-medium text-ink-2">{fmtH(jpTotal(log))}</strong>
+            {log && log.jpPomo > 0 && ` (${log.jpPomo} hiệp`}
+            {log && log.jpPomo > 0 && log.jpMin > 0 && ` + ${log.jpMin}p lẻ`}
+            {log && log.jpPomo > 0 && ")"}
+          </p>
+        )}
       </section>
 
       <section>

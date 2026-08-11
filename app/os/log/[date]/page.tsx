@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, List } from "lucide-react";
 import { db } from "@/lib/db";
 import { deleteDailyLog } from "@/lib/os/dayActions";
 import { DailyLogForm } from "@/components/os/DailyLogForm";
+import { PomoRow } from "@/components/os/PomoRow";
 import { ConfirmButton } from "@/components/os/formBits";
 import {
   addDaysISO,
@@ -23,7 +24,20 @@ export default async function LogDayPage({
   if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) notFound();
 
   const isToday = iso === todayISO();
-  const log = await db.dailyLog.findUnique({ where: { date: dayUTC(iso) } });
+
+  const [log, sessions, studyGoal] = await Promise.all([
+    db.dailyLog.findUnique({ where: { date: dayUTC(iso) } }),
+    db.pomoSession.findMany({
+      where: { date: dayUTC(iso) },
+      orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+      select: { id: true, order: true, skillId: true },
+    }),
+    db.studyGoal.findFirst({
+      where: { active: true },
+      orderBy: { targetDate: "asc" },
+      include: { skills: { orderBy: { order: "asc" } } },
+    }),
+  ]);
 
   return (
     <div className="max-w-[560px] space-y-10">
@@ -63,6 +77,23 @@ export default async function LogDayPage({
           )}
         </div>
       </header>
+
+      {/* Cùng hàng ô với /os, nhưng cho ĐÚNG ngày đang mở — đây là chỗ chữa
+          ngày đã qua mà quên tick. Cố ý không có ô nhập số hiệp trong form
+          bên dưới: hai đường ghi vào một con số là hai con số trôi khỏi nhau
+          (xem chú thích `jpPomo` trong schema). */}
+      <section>
+        <h2 className="mb-3 text-[12px] font-medium uppercase tracking-[0.08em] text-ink-3">
+          Pomodoro tiếng Nhật
+        </h2>
+        <PomoRow
+          iso={iso}
+          sessions={sessions}
+          skills={studyGoal?.skills ?? []}
+          targetPomo={studyGoal?.dailyPomo ?? 0}
+          extraMin={log?.jpMin ?? 0}
+        />
+      </section>
 
       <DailyLogForm iso={iso} log={log} />
 

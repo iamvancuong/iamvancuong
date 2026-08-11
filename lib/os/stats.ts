@@ -1,5 +1,6 @@
 import type { DailyLog } from "@prisma/client";
 import { addDaysISO, isoUTC, todayISO } from "./day";
+import { jpTotal } from "./japanese";
 
 /**
  * Mọi con số trên Dashboard tính ra từ đây — không nhập tay.
@@ -27,14 +28,28 @@ export function weekDates(offset = 0, end = todayISO()): string[] {
   return Array.from({ length: 7 }, (_, i) => addDaysISO(last, -(6 - i)));
 }
 
-export function weekStats(logs: DailyLog[], offset = 0): WeekStats {
+/**
+ * `end` nhận vào được để kiểm được — cùng khuôn với `weekDates(offset, end)`
+ * và `periodStats(logs, scope, today)`. Trước đây nó tự gọi `todayISO()` bên
+ * trong, nên phép kiểm dùng ngày ghim cứng chạy được đúng một tuần rồi hỏng,
+ * và triệu chứng («cộng phút tiếng Nhật trong tuần» sai) không hề chỉ về
+ * nguyên nhân là *hôm nay đã trôi qua cái tuần đó*.
+ */
+export function weekStats(
+  logs: DailyLog[],
+  offset = 0,
+  end = todayISO(),
+): WeekStats {
   const map = indexByDay(logs);
-  const week = weekDates(offset)
+  const week = weekDates(offset, end)
     .map((d) => map.get(d))
     .filter((l): l is DailyLog => l != null);
 
   return {
-    jpMin: week.reduce((s, l) => s + l.jpMin, 0),
+    // jpTotal, KHÔNG phải l.jpMin: từ khi có pomodoro thì `jpMin` chỉ còn là
+    // phần phút lẻ. Đọc thẳng nó ở đây từng làm cảnh báo `buildingTooMuch`
+    // nhìn thấy 0 phút tiếng Nhật của một tuần học 30 tiếng.
+    jpMin: week.reduce((s, l) => s + jpTotal(l), 0),
     itMin: week.reduce((s, l) => s + l.itMin, 0),
     webMin: week.reduce((s, l) => s + l.webMin, 0),
     workouts: week.filter((l) => l.workout).length,

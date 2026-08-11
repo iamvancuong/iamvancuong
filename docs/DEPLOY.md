@@ -12,6 +12,7 @@
 3. Quy trình đổi code: **máy local** `npm run build` → `git push` · **server** `bash deploy.sh`.
 4. ⚠️ **Luôn `npm run build` TRƯỚC khi commit.** Quên là server chạy code cũ dù source đã mới.
 5. Trên server dùng `bash deploy.sh`, **đừng** chỉ `git pull` (thiếu vá quyền + restart).
+6. ⚠️ **Đổi schema thì chạy SQL TRƯỚC `deploy.sh`** — `deploy.sh` không migrate. Xem §2b.
 
 ---
 
@@ -54,6 +55,38 @@ Chờ vài giây rồi tải lại web.
 > build ở máy bạn và **commit thẳng vào git**. Không build lại = đẩy `.next` cũ.
 
 ---
+
+### 2b. Khi thay đổi có ĐỘNG VÀO SCHEMA
+
+`deploy.sh` **không** chạy migration — nó chỉ kéo code và restart. Sửa
+`prisma/schema.prisma` mà chỉ deploy code thì `/os` chết ngay khi mở, với lỗi
+kiểu `Unknown column` / `Table doesn't exist`.
+
+Thứ tự bắt buộc: **SQL trước, deploy sau.**
+
+1. Máy local: `npx prisma migrate diff --from-schema <cũ> --to-schema prisma/schema.prisma --script`
+   → lưu thành `scripts/YYYY-MM-DD-<tên>.sql`, commit cùng code.
+2. **Chạy thử trên bản sao** trước khi giao — xem cách làm ở bước dưới.
+3. Server: cPanel → phpMyAdmin → DB → tab SQL → dán file → Go.
+4. Rồi mới `bash deploy.sh`.
+
+⚠️ **Đừng dùng `ADD COLUMN IF NOT EXISTS`** — đó là cú pháp MariaDB; MySQL từ
+chối ngay dòng đầu và toàn bộ phần còn lại của file không chạy. `CREATE TABLE
+IF NOT EXISTS` thì cả hai đều hiểu.
+
+Cách chạy thử migration trên bản sao đúng hình dạng production (Docker local):
+
+```bash
+M="docker exec -i vancuong_mysql mysql -uroot -pdevroot"
+$M -e "DROP DATABASE IF EXISTS scratch_prod; CREATE DATABASE scratch_prod CHARACTER SET utf8mb4;"
+$M scratch_prod < scripts/deploy-db.sql          # hình dạng production
+$M scratch_prod < scripts/<file-migration>.sql   # phải chạy sạch, không lỗi
+$M -e "DROP DATABASE scratch_prod;"
+```
+
+| Ngày | File | Nội dung |
+|---|---|---|
+| 12/08/2026 | `scripts/2026-08-12-pomodoro.sql` | `DailyLog.jpPomo` + 4 bảng `DayTask` · `StudyGoal` · `StudySkill` · `PomoSession` |
 
 ## 3. Cập nhật khi ĐỔI NỘI DUNG
 

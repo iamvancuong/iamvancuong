@@ -30,6 +30,7 @@ model Area {
   photos     Photo[]
   focusItems FocusItem[]
   metrics    Metric[]
+  studyGoals StudyGoal[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -396,9 +397,35 @@ model DailyLog {
   date DateTime @unique @db.Date
 
   sleepAt String? // "23:40"
-  jpMin   Int     @default(0)
-  itMin   Int     @default(0)
-  spend   Int? // ¥
+
+  /// Số hiệp pomodoro tiếng Nhật đã xong hôm nay. 1 hiệp = POMO_MIN phút
+  /// (lib/os/constants.ts). Đây là cách ghi giờ học CHÍNH: tick một ô ở /os.
+  ///
+  /// ⚠️ CỘT NÀY LÀ BẢN SAO. Nguồn thật là số dòng `PomoSession` của ngày đó —
+  /// mỗi hiệp một dòng, vì mỗi hiệp còn phải nhớ nó thuộc mảng nào (từ vựng /
+  /// nghe / đọc…). Giữ thêm bản sao ở đây để mọi thống kê cũ (chuỗi, lịch
+  /// nhiệt, cảnh báo tuần) chỉ cần đọc `DailyLog` như trước, không phải nối
+  /// bảng ở mười chỗ.
+  ///
+  /// Bất biến: `jpPomo == số dòng PomoSession cùng ngày`. Giữ được vì **chỉ
+  /// `setPomodoro()` được phép ghi cột này**, và nó ghi cả hai trong cùng một
+  /// transaction. Đừng thêm đường ghi thứ hai — form nhật ký cố ý KHÔNG còn
+  /// nhận `jpPomo` nữa, nó dùng chính hàng ô đó.
+  jpPomo Int @default(0)
+
+  /// Phút tiếng Nhật **LẺ, ngoài pomodoro** — nghe podcast trên tàu, nói
+  /// chuyện, xem phim. KHÔNG phải tổng.
+  ///
+  /// Vì sao tách khỏi `jpPomo` thay vì suy ngược `pomo = jpMin / 50`: gõ tay
+  /// 35 phút sẽ làm hàng ô tick nhảy loạn, và bỏ tick một ô sẽ xóa mất chính
+  /// số phút vừa gõ. Hai cột rời nghĩa nhau thì không bao giờ đếm hai lần.
+  ///
+  /// ⚠️ Tổng giờ tiếng Nhật của một ngày = `jpTotal(log)` trong
+  /// lib/os/japanese.ts. KHÔNG đọc thẳng `jpMin` ở bất cứ chỗ thống kê nào.
+  jpMin Int @default(0)
+
+  itMin Int  @default(0)
+  spend Int? // ¥
 
   /// Phút BỎ VÀO CHÍNH TRANG NÀY hôm nay.
   ///
@@ -427,6 +454,130 @@ model DailyLog {
   updatedAt DateTime @updatedAt
 
   @@index([date])
+}
+
+/// Việc phải làm của ĐÚNG MỘT NGÀY. "Ôn bài 2,3 · từ vựng bài 5".
+///
+/// `date` là **ngày phải làm**, không phải ngày viết. Nhờ vậy 12 giờ đêm ngồi
+/// viết cho mai thì sáng mai mở /os là nó đã nằm sẵn ở tab «Hôm nay» — không
+/// phải chép, không phải nhắc.
+///
+/// Vì sao KHÔNG dùng `FocusItem`: Focus là tầm tuần–tháng và trần cứng 3 dòng,
+/// sai tầm cho một danh sách việc trong ngày.
+/// Vì sao KHÔNG dùng một ô text trong `DailyLog`: cần tick được từng việc.
+/// Vì sao KHÔNG đưa vào /os/calendar: lịch ở đây cố ý không có ô giờ và không
+/// có sự kiện (STATE.md §8) — Google Calendar là nguồn duy nhất cho hẹn giờ.
+model DayTask {
+  id    String   @id @default(cuid())
+  date  DateTime @db.Date
+  title String
+  done  Boolean  @default(false)
+
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([date])
+}
+
+/// Một đợt học có kỳ hạn và có NHỊP MỖI NGÀY. "N3 trong 4 tháng, 7 hiệp/ngày".
+///
+/// Vì sao không nhét vào `Goal`: `Goal` chỉ có `horizon` (tuần/tháng/tuổi) —
+/// nó không có khoảng ngày→ngày, cũng không có nhịp mỗi ngày, mà một mục tiêu
+/// kiểu này cần đủ cả hai để trả lời được câu "hôm nay tôi đang nhanh hay
+/// chậm". Trộn vào sẽ phải thêm ba cột chỉ đúng hai giá trị horizon dùng tới.
+///
+/// Đặt mục tiêu khác sau này (N2 trong 6 tháng, 5 hiệp/ngày) = **thêm một
+/// dòng**, không sửa dòng code nào — cùng nguyên tắc với `Area`.
+///
+/// Nguồn giờ hiện là pomodoro tiếng Nhật (`DailyLog.jpPomo`). Muốn đo lĩnh vực
+/// khác thì thêm một cột `source` và một nhánh trong `lib/os/japanese.ts`;
+/// chưa làm vì chưa có lĩnh vực thứ hai nào đang bấm giờ.
+model StudyGoal {
+  id     String  @id @default(cuid())
+  areaId String?
+  area   Area?   @relation(fields: [areaId], references: [id], onDelete: SetNull)
+
+  name String // "JLPT N3"
+  note String? @db.Text
+
+  /// Cùng quy ước nửa đêm UTC với mọi cột @db.Date khác (lib/os/day.ts).
+  startDate  DateTime @db.Date
+  targetDate DateTime @db.Date
+
+  /// Nhịp: bao nhiêu hiệp pomodoro mỗi ngày thì tới đích.
+  dailyPomo Int @default(7)
+
+  /// Chỉ MỘT mục tiêu đang chạy được hiện ở /os. Xong đợt thì tắt, không xóa —
+  /// đợt cũ còn để nhìn lại mình từng cam kết nhịp nào.
+  active Boolean @default(true)
+
+  skills StudySkill[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active, targetDate])
+}
+
+/// Một mảng kỹ năng trong đợt, có NGÂN SÁCH GIỜ riêng.
+///
+///     🇯🇵 Từ vựng + Kanji   250h
+///     📖 Ngữ pháp           150h
+///     🎧 Nghe               150h
+///     📚 Đọc                150h
+///     📝 Đề N3 + chữa lỗi   100h
+///     🗣️ Kaiwa/shadowing     75h
+///
+/// Vì sao là bảng chứ không phải sáu cột: sáu mảng này là kế hoạch cho **N3**.
+/// Đợt N2 sẽ chia khác (thêm 語彙 học thuật, bỏ shadowing…), mà sáu cột cứng
+/// thì đổi kế hoạch là phải sửa schema. Ở đây đổi kế hoạch = sửa dữ liệu.
+///
+/// `targetHours` là GIỜ chứ không phải hiệp: chủ nhân nghĩ bằng giờ ("250h"),
+/// còn hiệp chỉ là cách bấm. Quy đổi ở lib/os/japanese.ts, một chỗ duy nhất.
+model StudySkill {
+  id          String    @id @default(cuid())
+  studyGoalId String
+  studyGoal   StudyGoal @relation(fields: [studyGoalId], references: [id], onDelete: Cascade)
+
+  name        String // "Từ vựng + Kanji"
+  icon        String? // emoji — nhận ra bằng mắt nhanh hơn đọc chữ
+  targetHours Int     @default(0)
+
+  sessions PomoSession[]
+
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([studyGoalId, order])
+}
+
+/// MỘT hiệp pomodoro = MỘT dòng.
+///
+/// Vì sao không phải một con số đếm trong `DailyLog`: một con số không nhớ
+/// được hiệp đó học **mảng nào**, mà đó chính là thứ cần để biết "từ vựng đã
+/// đi được 62/250 giờ". Đổi từ đếm sang dòng SAU KHI có dữ liệu thật là phải
+/// viết script suy đoán ngược — không suy được, vì thông tin chưa từng được
+/// ghi. Nên phải là dòng ngay từ đầu.
+///
+/// `skillId` cho phép null: bấm một hiệp mà chưa kịp nghĩ nó thuộc mảng nào
+/// vẫn phải ghi được. Giờ đó vẫn vào tổng, chỉ không vào mảng nào cả — và
+/// giao diện nói thẳng là "chưa gắn mảng" thay vì im lặng nuốt mất.
+model PomoSession {
+  id   String   @id @default(cuid())
+  date DateTime @db.Date
+
+  skillId String?
+  skill   StudySkill? @relation(fields: [skillId], references: [id], onDelete: SetNull)
+
+  /// Thứ tự trong ngày, 1..POMO_SLOTS. Có nó thì bỏ hiệp là bỏ đúng hiệp cuối.
+  order Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([date])
+  @@index([skillId])
 }
 
 /// Chủ đề bài viết. Nằm trong dữ liệu chứ không hard-code trong lib/site.ts,

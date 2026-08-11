@@ -6,22 +6,39 @@ import {
   AreasSection,
   type AreaWithCounts,
 } from "@/components/os/AreasSection";
+import { StudyGoalSection } from "@/components/os/StudyGoalSection";
 
 export const metadata: Metadata = { title: "Dữ liệu" };
 
 export default async function DataPage() {
-  const [areas, goals, principles, items, memories, photos, logs, focus, posts] =
-    await Promise.all([
-      db.area.count(),
-      db.goal.count(),
-      db.principle.count(),
-      db.item.count(),
-      db.memory.count(),
-      db.photo.count(),
-      db.dailyLog.count(),
-      db.focusItem.count(),
-      db.post.count(),
-    ]);
+  const [
+    areas,
+    goals,
+    principles,
+    items,
+    memories,
+    photos,
+    logs,
+    focus,
+    posts,
+    tasks,
+    studyGoals,
+  ] = await Promise.all([
+    db.area.count(),
+    db.goal.count(),
+    db.principle.count(),
+    db.item.count(),
+    db.memory.count(),
+    db.photo.count(),
+    db.dailyLog.count(),
+    db.focusItem.count(),
+    db.post.count(),
+    db.dayTask.count(),
+    db.studyGoal.findMany({
+      orderBy: [{ active: "desc" }, { targetDate: "desc" }],
+      include: { skills: { orderBy: { order: "asc" } } },
+    }),
+  ]);
 
   /**
    * Đếm bằng `_count` trong một lượt thay vì bảy truy vấn mỗi lĩnh vực: câu
@@ -72,6 +89,7 @@ export default async function DataPage() {
     { label: "Ngày nhật ký", value: logs },
     { label: "Việc trong Focus", value: focus },
     { label: "Bài viết", value: posts },
+    { label: "Việc trong ngày", value: tasks },
   ];
 
   return (
@@ -99,6 +117,11 @@ export default async function DataPage() {
           ))}
         </div>
       </section>
+
+      <StudyGoalSection
+        goals={studyGoals}
+        areas={areaRows.map((a) => ({ id: a.id, name: a.name }))}
+      />
 
       <AreasSection areas={areasWithCounts} />
 

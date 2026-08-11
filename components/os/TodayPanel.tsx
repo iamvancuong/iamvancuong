@@ -1,55 +1,25 @@
 import Link from "next/link";
-import { Check } from "lucide-react";
 import type { DailyLog } from "@prisma/client";
-import { toggleKeystone } from "@/lib/os/dayActions";
 import { buildingTooMuch, weekStats } from "@/lib/os/stats";
 import { fmtH } from "@/lib/os/day";
 
-/** Ba việc nền tảng + cảnh báo tuần. Tick ngay tại đây, không phải mở trang khác. */
-export function TodayPanel({
-  iso,
-  log,
-  logs,
-}: {
-  iso: string;
-  log: DailyLog | null;
-  logs: DailyLog[];
-}) {
+/**
+ * Cuối trang Hôm nay: cảnh báo tuần + đường sang nhật ký.
+ *
+ * ⚠️ Ba việc nền tảng ĐÃ BỊ GỠ khỏi đây (11/08/2026). Chúng vẫn sống ở
+ * `/os/log/[ngày]` và vẫn là thứ tính chuỗi + tô lịch nhiệt — chỉ là không
+ * còn nằm trên Dashboard nữa. Lý do: ba ô đó chỉ tick được vào **cuối ngày**
+ * (ngủ trước 12h, ăn đủ 3 bữa), mà Dashboard là màn hình mở lúc **sáng dậy**.
+ * Đặt việc-cuối-ngày lên màn hình-đầu-ngày thì sáng nào mở lên cũng thấy ba ô
+ * trống, và ba ô trống mỗi sáng dạy đúng một điều: đừng nhìn màn hình này.
+ */
+export function TodayPanel({ iso, logs }: { iso: string; logs: DailyLog[] }) {
   const week = weekStats(logs);
-
-  const rows = [
-    { field: "kSleep", label: "Ngủ trước 00:00", on: !!log?.kSleep, hint: undefined as string | undefined },
-    {
-      field: "kJapanese",
-      label: "Tiếng Nhật ≥ 60 phút",
-      on: !!log?.kJapanese,
-      hint: log?.jpMin ? `Đã ghi ${fmtH(log.jpMin)}` : undefined,
-    },
-    { field: "kEat", label: "Ăn đủ 3 bữa", on: !!log?.kEat, hint: undefined },
-  ] as const;
 
   return (
     <section>
-      <h2 className="mb-3 text-[12px] font-medium uppercase tracking-[0.08em] text-ink-3">
-        Ba việc nền tảng
-      </h2>
-
-      <div className="rounded-[var(--radius-lg)] border border-line p-2">
-        {rows.map((r) => (
-          <ToggleRow key={r.field} iso={iso} field={r.field} label={r.label} hint={r.hint} on={r.on} />
-        ))}
-        <div className="my-1 border-t border-line-soft" />
-        <ToggleRow
-          iso={iso}
-          field="workout"
-          label="Tập luyện"
-          hint={`${week.workouts}/3 buổi tuần này`}
-          on={!!log?.workout}
-        />
-      </div>
-
       {buildingTooMuch(week) && (
-        <p className="mt-3 rounded-[var(--radius-md)] border border-line bg-surface px-4 py-3 text-[14px] leading-relaxed">
+        <p className="rounded-[var(--radius-md)] border border-line bg-surface px-4 py-3 text-[14px] leading-relaxed">
           <strong className="font-medium">
             Bạn đang xây hệ thống thay vì dùng hệ thống.
           </strong>{" "}
@@ -64,54 +34,8 @@ export function TodayPanel({
         href={`/os/log/${iso}`}
         className="mt-3 inline-block text-[14px] text-accent underline decoration-accent/35 underline-offset-[3px] hover:decoration-accent"
       >
-        Ghi nhật ký hôm nay →
+        Ghi nhật ký hôm nay → <span className="text-ink-3">ba việc nền tảng, số đo, ba câu</span>
       </Link>
     </section>
-  );
-}
-
-function ToggleRow({
-  iso,
-  field,
-  label,
-  hint,
-  on,
-}: {
-  iso: string;
-  field: "kSleep" | "kJapanese" | "kEat" | "workout";
-  label: string;
-  hint?: string;
-  on: boolean;
-}) {
-  return (
-    <form action={toggleKeystone.bind(null, iso, field)}>
-      <button
-        type="submit"
-        aria-pressed={on}
-        className="flex w-full items-center gap-3 rounded-[var(--radius-md)] px-2 py-2.5 text-left transition-colors hover:bg-surface"
-      >
-        <span
-          /* Viền dùng `ink-3`, KHÔNG dùng `line`. `line` là màu của đường kẻ
-             trang trí (#e5e5e5 sáng / #2a2a2a tối) — đặt lên nền trang thì chỉ
-             được 1.3:1, tức là ở chế độ tối gần như không nhìn ra ô. Viền của
-             một ĐIỀU KHIỂN cần ≥3:1; `ink-3` cho 4.0:1 ở tối và 2.5:1 ở sáng. */
-          className={`flex size-[22px] shrink-0 items-center justify-center rounded-[var(--radius-sm)] border transition-colors ${
-            on ? "border-ink bg-ink text-bg" : "border-ink-3 bg-bg"
-          }`}
-        >
-          {on && <Check size={14} strokeWidth={3} />}
-        </span>
-        <span className="min-w-0">
-          <span
-            className={`block text-[15px] leading-snug ${
-              on ? "text-ink-3 line-through" : "text-ink"
-            }`}
-          >
-            {label}
-          </span>
-          {hint && <span className="block text-[12px] text-ink-3">{hint}</span>}
-        </span>
-      </button>
-    </form>
   );
 }

@@ -41,6 +41,16 @@ import {
   weekStats,
 } from "../lib/os/stats";
 import {
+  goalPace,
+  jpPeriodTotal,
+  jpStreak,
+  jpSum,
+  jpTotal,
+  monthlyBuckets,
+  skillProgress,
+  unassignedPomo,
+} from "../lib/os/japanese";
+import {
   costActiveIn,
   fixedTotal,
   monthKey,
@@ -130,7 +140,7 @@ const log = (iso: string, o: Record<string, unknown> = {}) =>
   ({
     id: iso, date: dayUTC(iso),
     kSleep: false, kJapanese: false, kEat: false, workout: false,
-    jpMin: 0, itMin: 0, webMin: 0, spend: null, ...o,
+    jpPomo: 0, jpMin: 0, itMin: 0, webMin: 0, spend: null, ...o,
   }) as never;
 
 const full = (iso: string, o: Record<string, unknown> = {}) =>
@@ -171,7 +181,10 @@ eq("tuần có đúng 7 ngày", weekDates(0, "2026-08-06").length, 7);
 eq("tuần kết thúc hôm nay", weekDates(0, "2026-08-06").at(-1), "2026-08-06");
 eq("offset 1 là tuần trước", weekDates(1, "2026-08-06").at(-1), "2026-07-30");
 
-const w = weekStats([log("2026-08-05", { jpMin: 60, webMin: 30, spend: 1000 }), log("2026-08-06", { jpMin: 30, webMin: 200 })], 0);
+// ⚠️ Truyền `end` vào, đừng để hàm tự đọc đồng hồ: ngày ghim cứng + đồng hồ
+// thật thì phép kiểm chạy được đúng một tuần rồi hỏng, mà lúc hỏng thì trông
+// như logic sai chứ không như "hôm nay đã trôi qua tuần đó".
+const w = weekStats([log("2026-08-05", { jpMin: 60, webMin: 30, spend: 1000 }), log("2026-08-06", { jpMin: 30, webMin: 200 })], 0, "2026-08-06");
 eq("cộng phút tiếng Nhật trong tuần", w.jpMin, 90);
 eq("cộng phút xây web", w.webMin, 230);
 eq("cộng chi tiêu tuần", w.spend, 1000);
@@ -240,6 +253,117 @@ eq("lùi qua tháng 2", recentMonths(2, "2026-03-31"), ["2026-03-01", "2026-02-0
 eq("12 tháng ra đủ 12", recentMonths(12, "2026-08-06").length, 12);
 eq("monthKey cắt đúng", monthKey("2026-08-01"), "2026-08");
 eq("nhãn tháng tiếng Việt", monthLabelVN("2026-08-01"), "Tháng 8/2026");
+
+/* ------------------------------------------------------------- japanese */
+
+describe("japanese.ts — pomodoro và nhịp học");
+
+/** Bản ghi rút gọn: chỉ ba trường mà japanese.ts thật sự đọc. */
+const jp = (iso: string, pomo: number, min = 0) => ({
+  date: dayUTC(iso),
+  jpPomo: pomo,
+  jpMin: min,
+});
+
+// ⚠️ Luật quan trọng nhất của file: TỔNG = hiệp × 50 + phút lẻ. Đọc thẳng
+// `jpMin` sẽ báo 0 phút cho một ngày học 5 tiếng mà không có lỗi nào hiện ra.
+eq("tổng = hiệp × 50 + phút lẻ", jpTotal(jp("2026-08-11", 7, 20)), 370);
+eq("không có bản ghi thì bằng 0", jpTotal(undefined), 0);
+eq("chỉ phút lẻ, không hiệp nào", jpTotal(jp("2026-08-11", 0, 25)), 25);
+
+const week = [
+  jp("2026-08-08", 3),
+  jp("2026-08-09", 0, 30),
+  jp("2026-08-10", 7),
+  jp("2026-08-11", 5, 10),
+];
+
+eq("cộng theo khoảng, hai đầu đều tính", jpSum(week, "2026-08-09", "2026-08-10"), 380);
+eq("khoảng không chạm ngày nào", jpSum(week, "2026-07-01", "2026-07-31"), 0);
+eq("tổng tháng", jpPeriodTotal(week, "month", "2026-08-11"), 790);
+eq("tổng năm", jpPeriodTotal(week, "year", "2026-08-11"), 790);
+eq("tháng khác thì không tính", jpPeriodTotal(week, "month", "2026-09-01"), 0);
+
+eq("chuỗi học liên tiếp", jpStreak(week, "2026-08-11"), 4);
+// Hôm nay chưa học thì tính từ hôm qua — buổi tối chưa tới không phải là đứt chuỗi.
+eq("hôm nay chưa học thì tính từ hôm qua", jpStreak(week, "2026-08-12"), 4);
+eq("nghỉ hẳn một ngày là đứt", jpStreak(week, "2026-08-13"), 0);
+
+// N3 trong 4 tháng, 7 hiệp/ngày — đúng đợt mà chủ nhân đang đặt.
+const goal = {
+  startDate: dayUTC("2026-08-01"),
+  targetDate: dayUTC("2026-11-30"),
+  dailyPomo: 7,
+};
+
+const paceDay1 = goalPace(goal, [], "2026-08-01");
+eq("đợt 4 tháng = 122 ngày", paceDay1.daysTotal, 122);
+eq("tổng giờ của cả đợt", paceDay1.totalMin, 122 * 7 * 50);
+// ⭐ Ngày đầu tiên KHÔNG được nợ gì: nếu tính cả hôm nay vào `dueMin` thì 8
+// giờ sáng hệ thống đã báo "nợ 7 hiệp" trong khi ngày còn chưa bắt đầu.
+eq("ngày đầu chưa nợ gì", paceDay1.dueMin, 0);
+eq("ngày đầu còn đủ 122 ngày", paceDay1.daysLeft, 122);
+
+// Ngày 11/08: đã đóng sổ 10 ngày (01→10), tức đáng lẽ phải có 10 × 350 phút.
+const pace11 = goalPace(goal, week, "2026-08-11");
+eq("mười ngày đã đóng sổ", pace11.daysClosed, 10);
+eq("nợ tính tới hết hôm qua", pace11.dueMin, 3500);
+eq("đã học gồm cả hôm nay", pace11.doneMin, 790);
+eq("đang nợ chứ không vượt", pace11.aheadMin, 790 - 3500);
+eq("đang chạy", pace11.state, "running");
+
+// Trước ngày bắt đầu: không nợ, không tính ngày âm.
+const paceBefore = goalPace(goal, [], "2026-07-20");
+eq("chưa tới ngày bắt đầu thì chưa nợ", paceBefore.dueMin, 0);
+eq("chưa bắt đầu", paceBefore.state, "future");
+
+// Sau ngày đích: nợ dừng ở tổng của đợt, không cộng thêm ngày ngoài đợt.
+const paceAfter = goalPace(goal, [], "2027-01-15");
+eq("hết đợt thì nợ dừng ở tổng", paceAfter.dueMin, paceAfter.totalMin);
+eq("hết đợt thì không còn ngày nào", paceAfter.daysLeft, 0);
+eq("hết đợt thì không tính nhịp còn lại", paceAfter.pomoPerDayLeft, null);
+eq("đã hết hạn", paceAfter.state, "ended");
+
+// ---- ngân sách từng mảng (từ vựng 250h · nghe 150h …)
+const skills = [
+  { id: "vocab", name: "Từ vựng + Kanji", icon: "🇯🇵", targetHours: 250 },
+  { id: "listen", name: "Nghe", icon: "🎧", targetHours: 150 },
+  { id: "read", name: "Đọc", icon: "📚", targetHours: 150 },
+];
+
+// 6 hiệp từ vựng, 3 hiệp nghe, 2 hiệp chưa gắn mảng.
+const sessions = [
+  ...Array(6).fill({ skillId: "vocab" }),
+  ...Array(3).fill({ skillId: "listen" }),
+  ...Array(2).fill({ skillId: null }),
+];
+
+const prog = skillProgress(skills, sessions);
+eq("mảng nào cũng có một dòng, kể cả chưa học", prog.length, 3);
+eq("6 hiệp từ vựng = 300 phút", prog[0].doneMin, 300);
+eq("250h quy ra phút", prog[0].targetMin, 15_000);
+eq("còn 294 hiệp mới đủ ngân sách từ vựng", prog[0].pomoLeft, 294);
+eq("mảng chưa đụng tới vẫn hiện 0", prog[2].doneMin, 0);
+eq("chưa đụng tới thì 0%", prog[2].percent, 0);
+// Hiệp chưa gắn mảng KHÔNG được im lặng biến mất — nó vẫn trong tổng giờ.
+eq("đếm được hiệp chưa gắn mảng", unassignedPomo(sessions), 2);
+eq(
+  "tổng các mảng ≤ tổng hiệp",
+  prog.reduce((s, p) => s + p.doneMin, 0) + unassignedPomo(sessions) * 50,
+  sessions.length * 50,
+);
+
+eq("12 tháng ra đủ 12 cột", monthlyBuckets(week, 12, "2026-08-11").length, 12);
+eq(
+  "cột cuối là tháng hiện tại",
+  monthlyBuckets(week, 12, "2026-08-11")[11].key,
+  "2026-08",
+);
+eq(
+  "cột đầu lùi đúng 11 tháng",
+  monthlyBuckets(week, 12, "2026-08-11")[0].key,
+  "2025-09",
+);
 
 /* ---------------------------------------------------------------- tổng */
 

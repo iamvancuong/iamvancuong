@@ -17,8 +17,22 @@ export async function GET() {
     return new Response("Not found", { status: 404 });
   }
 
-  const [areas, goals, principles, items, memories, photos, focus, logs, tags, posts] =
-    await Promise.all([
+  const [
+    areas,
+    goals,
+    principles,
+    items,
+    memories,
+    photos,
+    focus,
+    logs,
+    dayTasks,
+    studyGoals,
+    studySkills,
+    pomoSessions,
+    tags,
+    posts,
+  ] = await Promise.all([
       db.area.findMany(),
       db.goal.findMany(),
       db.principle.findMany(),
@@ -27,6 +41,12 @@ export async function GET() {
       db.photo.findMany(),
       db.focusItem.findMany(),
       db.dailyLog.findMany(),
+      db.dayTask.findMany(),
+      db.studyGoal.findMany(),
+      db.studySkill.findMany(),
+      // Một dòng mỗi hiệp. Thiếu bảng này thì phục hồi xong `jpPomo` vẫn còn
+      // mà chi tiết từng mảng biến mất — con số tổng đúng, ngân sách mảng về 0.
+      db.pomoSession.findMany(),
       db.tag.findMany(),
       // Kèm quan hệ nhiều-nhiều với Tag, nếu không phục hồi xong bài sẽ mất
       // hết nhãn chủ đề mà không ai nhận ra.
@@ -35,7 +55,10 @@ export async function GET() {
 
   const backup = {
     app: "iamvancuong-os",
-    version: 3,
+    // v4: thêm dayTasks · studyGoals · studySkills · pomoSessions. Tăng số này
+    // mỗi lần đổi hình dạng, nếu không thì file cũ và file mới trông giống hệt
+    // nhau lúc phục hồi.
+    version: 4,
     exportedAt: new Date().toISOString(),
     data: {
       areas,
@@ -46,6 +69,10 @@ export async function GET() {
       photos,
       focus,
       logs,
+      dayTasks,
+      studyGoals,
+      studySkills,
+      pomoSessions,
       tags,
       posts,
     },

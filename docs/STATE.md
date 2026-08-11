@@ -8,7 +8,8 @@
 
 ## 0. Nếu chỉ đọc được 5 dòng
 
-1. **Code xong. Sản phẩm gần như chưa được dùng.** Dữ liệu mẫu đã xóa sạch (06/08). Hiện có **1 ngày nhật ký thật**, 0 lần ghi số đo, 0 ký ức. 7 số đo đã lập nhưng chưa nhập con số nào.
+1. **Code xong. Sản phẩm gần như chưa được dùng.** Dữ liệu mẫu đã xóa sạch (06/08). Hiện có **1 ngày nhật ký thật**, 0 lần ghi số đo, 0 ký ức, **0 hiệp pomodoro**. 7 số đo đã lập nhưng chưa nhập con số nào.
+   - 🔴 12/08: đã lập đợt **JLPT N3** (12/08 → 12/12, 7 hiệp/ngày) + 6 mảng. **Ngân sách 6 mảng = 875h nhưng nhịp 7 hiệp chỉ chứa 717h** — kế hoạch vượt trần 157h ngay trên giấy. Phải chọn: 8.5 hiệp/ngày, hoặc kéo sang ~5 tháng, hoặc cắt bớt giờ. Sửa ở `/os/data`.
 2. **Đã lên GitHub**, repo `iamvancuong/iamvancuong` **công khai**. **Chưa deploy** — vẫn chỉ chạy trên một máy.
 3. 🔴 **Mật khẩu `/os` vẫn là mật khẩu tạm.** Nó *không* nằm trong repo (`.env` bị gitignore, lịch sử cũ đã mất), nhưng phải đổi **trước khi deploy**: `npm.cmd run hash-password` rồi thay dòng trong `.env` **và khởi động lại server** — Next chỉ đọc `.env` lúc tiến trình khởi động.
 4. Đợt 05–06/08 đã commit và push đủ. `git log` để xem.
@@ -46,7 +47,7 @@ Sống → ghi vào /os → chọn cái đáng kể → viết thành bài → c
 | CSS | Tailwind **v4** (token trong `app/globals.css`, không dùng UI framework) |
 | DB | MySQL **8.4** trong Docker · Prisma **7.9.1** + `@prisma/adapter-mariadb` |
 | Khác | `jose` + `bcryptjs` (đăng nhập) · `sharp` (ảnh) · `remark` (Markdown) · `lucide-react` |
-| Test | `npm run test` — 77 phép kiểm, **không dùng framework** (xem `scripts/test.ts`) |
+| Test | `npm run test` — **116** phép kiểm, **không dùng framework** (xem `scripts/test.ts`) |
 | Không có | CI |
 
 **Quy mô:** ~95 file nguồn. 23 trang, 6 API route (+ `/feed.xml`), 56 server action, 15 bảng, 9 enum.
@@ -135,7 +136,7 @@ Next 16 + Tailwind v4 + design token tập trung · Inter + Noto Sans JP (đẹp
 ### Life OS
 | Trang | Nội dung |
 |---|---|
-| `/os` | 3 việc NOW · cam kết kỳ này · kỳ đã qua chưa chấm · 3 việc nền tảng (tick tại chỗ) · chuỗi ngày + lịch nhiệt · 1 nguyên tắc/ngày · lĩnh vực đang có việc |
+| `/os` | **① việc hôm nay (tab Hôm nay/Ngày mai)** · **② pomodoro tiếng Nhật + nhịp đợt + biểu đồ** · 3 việc NOW · cam kết kỳ này · kỳ đã qua chưa chấm · chuỗi ngày + lịch nhiệt · **3 nguyên tắc/ngày** · lĩnh vực đang có việc. ⚠️ **3 việc nền tảng đã GỠ khỏi đây** (12/08) — chúng chỉ tick được cuối ngày, mà đây là màn hình mở lúc sáng dậy |
 | `/os/a/[slug]` | 1 file cho 7 lĩnh vực × 5 tab: Mục tiêu · Nguyên tắc · Đang dùng · **Số đo** · Ký ức. **Tab rỗng bị ẩn**, nằm sau nút `+` kèm một dòng nói nó dùng để làm gì |
 | `/os/calendar` | Lịch tháng **đọc theo tuần**: ô ngày (đậm nhạt theo việc nền tảng) cạnh cam kết của chính tuần đó |
 | `/os/focus` | NOW/NEXT/LATER/NO · **trần NOW = 3 enforce ở SERVER** · sắp xếp lên/xuống |
@@ -150,6 +151,39 @@ Next 16 + Tailwind v4 + design token tập trung · Inter + Noto Sans JP (đẹp
 - **Cam kết có kỳ** (Tuần/Tháng): gắn `periodStart`, nhập ngày nào trong kỳ cũng được, server nắn về thứ Hai / ngày 1. Hết kỳ **chấm ba mức** (đạt · một phần · không đạt) + **ba câu tự sự** (chuyện gì · **vì sao** · kỳ sau đổi gì). Có nút **làm lại kỳ sau** (chống trùng).
 - **Mốc dài hạn** (Năm nay/Năm sau/Tuổi/Cả đời): tick xong, hoặc bỏ kèm lý do.
 - **Mốc tuổi tính sẵn** từ ngày sinh: chọn "30 tuổi" → hiện ngay "06/07/2033 · còn 6 năm 11 tháng". Ô chọn chỉ hiện đúng thứ cần dùng.
+
+### Quản lý giờ học tiếng Nhật (12/08/2026)
+
+Bốn bảng mới: `DayTask` · `StudyGoal` · `StudySkill` · `PomoSession`.
+
+- **Pomodoro** — 10 ô ở `/os` và ở `/os/log/[ngày]` (cùng một component, nhận
+  `iso` nên chữa được ngày đã qua). Bấm ô thứ n = "xong n hiệp", **một chạm**;
+  bấm lại ô cuối đang sáng thì lùi một hiệp. Đủ 60 phút thì việc nền tảng
+  «Tiếng Nhật» **tự bật** (chỉ bật, không tự tắt).
+- **Ô reset theo ngày là hệ quả, không phải cơ chế**: mỗi ngày là một tập
+  `PomoSession` khóa theo `date`, `/os` luôn hỏi `todayISO()` (JST cố định).
+- **Mảng kỹ năng có ngân sách giờ** (từ vựng 250h · nghe 150h…). Vì thế MỘT
+  HIỆP LÀ MỘT DÒNG chứ không phải một con số đếm — một con số không nhớ được
+  hiệp đó học mảng nào, và đổi sau khi có dữ liệu thật thì **không suy ngược
+  được**, vì thông tin chưa từng được ghi.
+- **`/os/data` §Mục tiêu học** — đặt đợt + chia mảng. Cộng ngân sách các mảng
+  và **so thẳng với sức chứa của nhịp** ngay tại chỗ đặt kế hoạch.
+- **`/os/calendar`** — vạch giờ học dưới mỗi ô ngày + tổng giờ tháng. Chỉ ĐỌC;
+  vẫn không có ô giờ, không có sự kiện (xem §8 «cố ý không làm»).
+
+#### ⚠️ Bất biến phải giữ
+
+```
+DailyLog.jpPomo  ==  số dòng PomoSession cùng ngày
+```
+
+Giữ được vì **chỉ `setPomodoro()` được ghi `jpPomo`**, và nó ghi cả hai trong
+một transaction. Form nhật ký cố ý **không** còn nhận `jpPomo` nữa. Thêm đường
+ghi thứ hai là hai con số trôi khỏi nhau — hỏng âm thầm, cả hai vẫn trông hợp
+lý. Nghi thì chạy `npm run check:pomo` (kiểm cả hai chiều).
+
+⚠️ **Không đọc thẳng `DailyLog.jpMin`** ở bất cứ chỗ thống kê nào — nó chỉ còn
+là phút LẺ ngoài pomodoro. Tổng là `jpTotal()` trong `lib/os/japanese.ts`.
 
 ### Số đo (tab «Số đo»)
 Một con số có tên/đơn vị/đích/**hướng tốt**, ghi lại theo thời gian, vẽ đường SVG **tự viết** (không cài thư viện biểu đồ — PLAN §3).

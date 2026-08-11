@@ -13,6 +13,9 @@ import {
   prevPeriodStartISO,
 } from "@/lib/os/period";
 import { dayLevel } from "@/lib/os/stats";
+import { jpSum, jpTotal } from "@/lib/os/japanese";
+import { POMO_MIN } from "@/lib/os/constants";
+import { fmtH } from "@/lib/os/day";
 import { EmptyNote, MicroLabel } from "@/components/os/formBits";
 import { OutcomeBadge } from "@/components/os/GoalReview";
 
@@ -38,6 +41,12 @@ const FILL: Record<0 | 1 | 2 | 3, string> = {
   3: "bg-ink",
 };
 
+/**
+ * Mốc để vẽ vạch giờ học khi CHƯA đặt đợt nào — 5 giờ là vạch đầy.
+ * Chỉ để các vạch so được với nhau; không có ý nghĩa như một cái đích.
+ */
+const NO_GOAL_FULL_MIN = 300;
+
 export default async function CalendarPage({
   searchParams,
 }: PageProps<"/os/calendar">) {
@@ -53,7 +62,7 @@ export default async function CalendarPage({
   const gridStart = mondayISO(monthStart); // lùi về thứ Hai để hàng đầu đủ 7 ô
   const gridEnd = addDaysISO(mondayISO(monthEnd), 6);
 
-  const [logs, goals] = await Promise.all([
+  const [logs, goals, studyGoal] = await Promise.all([
     db.dailyLog.findMany({
       where: { date: { gte: dayUTC(gridStart), lte: dayUTC(gridEnd) } },
     }),
@@ -67,9 +76,30 @@ export default async function CalendarPage({
       include: { area: { select: { name: true, slug: true } } },
       orderBy: [{ periodStart: "asc" }, { order: "asc" }],
     }),
+    db.studyGoal.findFirst({ where: { active: true }, orderBy: { targetDate: "asc" } }),
   ]);
 
   const logByDay = new Map(logs.map((l) => [isoUTC(l.date), l]));
+
+  /**
+   * Giờ học chỉ ĐỌC ở đây, không nhập.
+   *
+   * Vạch dưới mỗi ô ngày là số hiệp so với nhịp đã cam kết. Cố ý không thêm ô
+   * giờ hay sự kiện: STATE.md §8 ghi lịch hẹn giờ là thứ **cố ý không làm**,
+   * Google Calendar là nguồn duy nhất. Ở đây chỉ trả lời "tháng này tôi học
+   * đều tới đâu" — câu mà bảng ngày + cam kết tuần đã sẵn sàng trả lời.
+   */
+  const dailyTargetMin = studyGoal ? studyGoal.dailyPomo * POMO_MIN : 0;
+  const inGoal = (iso: string) =>
+    !!studyGoal &&
+    isoUTC(studyGoal.startDate) <= iso &&
+    iso <= isoUTC(studyGoal.targetDate);
+
+  const monthJpMin = jpSum(
+    logs,
+    monthStart,
+    periodEndISO(Horizon.MONTH, monthStart),
+  );
 
   const weekGoals = new Map<string, typeof goals>();
   const monthGoals: typeof goals = [];
@@ -118,6 +148,11 @@ export default async function CalendarPage({
           Mỗi hàng là một tuần: ô ngày bên trái là mình đã sống thế nào, cam kết
           bên phải là mình đã hứa gì.
         </p>
+        <p className="mt-1.5 text-[13px] tabular-nums text-ink-3">
+          Tiếng Nhật tháng này:{" "}
+          <strong className="font-medium text-ink-2">{fmtH(monthJpMin)}</strong>
+          {studyGoal && ` · đang chạy đợt «${studyGoal.name}», nhịp ${studyGoal.dailyPomo} hiệp/ngày`}
+        </p>
       </header>
 
       {monthGoals.length > 0 && (
@@ -165,24 +200,49 @@ export default async function CalendarPage({
                     {Array.from({ length: 7 }, (_, i) => {
                       const iso = addDaysISO(w, i);
                       const inMonth = iso.slice(0, 7) === monthStart.slice(0, 7);
-                      const level = dayLevel(logByDay.get(iso));
+                      const log = logByDay.get(iso);
+                      const level = dayLevel(log);
+                      const jpMin = jpTotal(log);
+                      const target = inGoal(iso) ? dailyTargetMin : 0;
+
                       return (
-                        <Link
-                          key={iso}
-                          href={`/os/log/${iso}`}
-                          title={`${iso} — ${level}/3 việc nền tảng`}
-                          className={`flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-[11px] tabular-nums transition-opacity hover:opacity-70 ${
-                            FILL[level]
-                          } ${level >= 2 ? "text-bg" : "text-ink-2"} ${
-                            inMonth ? "" : "opacity-30"
-                          } ${
-                            iso === today
-                              ? "ring-1 ring-ink ring-offset-1 ring-offset-bg"
-                              : ""
-                          }`}
-                        >
-                          {Number(iso.slice(8))}
-                        </Link>
+                        <div key={iso} className={inMonth ? "" : "opacity-30"}>
+                          <Link
+                            href={`/os/log/${iso}`}
+                            title={`${iso} — ${level}/3 việc nền tảng · tiếng Nhật ${fmtH(jpMin)}${
+                              target ? ` / đích ${fmtH(target)}` : ""
+                            }`}
+                            className={`flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-[11px] tabular-nums transition-opacity hover:opacity-70 ${
+                              FILL[level]
+                            } ${level >= 2 ? "text-bg" : "text-ink-2"} ${
+                              iso === today
+                                ? "ring-1 ring-ink ring-offset-1 ring-offset-bg"
+                                : ""
+                            }`}
+                          >
+                            {Number(iso.slice(8))}
+                          </Link>
+
+                          {/* Vạch giờ tiếng Nhật. Nền xám = đích ngày đó,
+                              phần đậm = đã học. Đủ nhịp thì vạch đầy hẳn. */}
+                          <div className="mt-0.5 h-[3px] w-8 overflow-hidden rounded-full bg-surface-2">
+                            {jpMin > 0 && (
+                              <div
+                                className={`h-full rounded-full ${
+                                  target && jpMin >= target ? "bg-ink" : "bg-ink/45"
+                                }`}
+                                style={{
+                                  width: `${Math.min(
+                                    100,
+                                    Math.round(
+                                      (jpMin / (target || NO_GOAL_FULL_MIN)) * 100,
+                                    ),
+                                  )}%`,
+                                }}
+                              />
+                            )}
+                          </div>
+                        </div>
                       );
                     })}
                   </div>
@@ -223,7 +283,8 @@ export default async function CalendarPage({
       )}
 
       <p className="border-t border-line pt-6 text-[13px] leading-relaxed text-ink-3">
-        Ô ngày càng đậm là hôm đó làm được càng nhiều việc nền tảng. Đặt cạnh
+        Ô ngày càng đậm là hôm đó làm được càng nhiều việc nền tảng; vạch mảnh
+        dưới ô là giờ tiếng Nhật so với nhịp đã cam kết. Đặt cạnh
         cam kết để thấy thứ khó thấy nhất:{" "}
         <strong className="font-medium text-ink-2">
           tuần mình hứa nhiều nhất có phải tuần mình sống tốt nhất không.
