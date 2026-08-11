@@ -28,6 +28,7 @@ import {
   inputSmCls,
 } from "./formBits";
 import { Disclosure } from "./Disclosure";
+import { InlineEditor } from "./InlineEditor";
 import { HorizonPicker } from "./HorizonPicker";
 import { OutcomeBadge, OutcomeButtons, ReviewForm, ReviewText } from "./GoalReview";
 import { POMO_MIN, POMO_SLOTS } from "@/lib/os/constants";
@@ -811,12 +812,18 @@ function StudyChildren({
 
             {/* Sửa / xóa NGAY TẠI CHỖ. Con bị lọc khỏi danh sách chính nên
                 không đi qua GoalRow — không có khối này thì tạo xong là chịu. */}
-            <div className="mt-1 flex items-center gap-3">
-              <Disclosure label="sửa" small>
-                <form
-                  action={updateGoal.bind(null, k.id, slug)}
-                  className="mt-1 grid gap-2 rounded-[var(--radius-md)] border border-line p-2.5 sm:grid-cols-4"
-                >
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-2">
+              {/*
+                `sửa` và `xóa` phải TRÔNG NHƯ NHAU — trước đây `sửa` là
+                <Disclosure> (có mũi tên › và `mt-2` riêng) còn `xóa` là nút chữ
+                thuần, nên hai thứ lệch hàng và lệch baseline.
+
+                `open:w-full` là mấu chốt: lúc đóng, <details> chỉ rộng bằng chữ
+                "sửa" nên nằm gọn cạnh "xóa"; lúc mở nó chiếm trọn hàng và form
+                xuống dòng dưới thay vì bị bóp trong ô flex.
+              */}
+              <InlineEditor action={updateGoal.bind(null, k.id, slug)}>
+                <div className="grid gap-2 sm:grid-cols-4">
                   <input
                     name="icon"
                     maxLength={8}
@@ -857,11 +864,8 @@ function StudyChildren({
                     aria-label="Ngày đích"
                     className={`sm:col-span-2 ${inputSmCls}`}
                   />
-                  <div className="flex justify-end sm:col-span-4">
-                    <SubmitButton>Lưu</SubmitButton>
-                  </div>
-                </form>
-              </Disclosure>
+                </div>
+              </InlineEditor>
 
               <form action={deleteGoal.bind(null, k.id, slug)}>
                 <ConfirmButton
@@ -878,7 +882,13 @@ function StudyChildren({
       })}
 
       <li>
-        <Disclosure label="+ Thêm mục tiêu con" small>
+        {/* Dùng chung InlineEditor với nút «sửa»: thêm xong là form tự đóng và
+            chặng mới hiện ngay phía trên. Trước đây form ở lại, ô vẫn còn chữ
+            vừa gõ, nhìn như chưa thêm được. */}
+        <InlineEditor
+          label="+ Thêm mục tiêu con"
+          action={createGoal.bind(null, slug, parent.id)}
+        >
           {/*
             Form GỌN, không dùng GoalFields: một chặng chỉ cần tên · icon ·
             ngân sách giờ · khoảng ngày. Bày cả mốc tuổi và cách đo ở đây là
@@ -887,11 +897,7 @@ function StudyChildren({
             `parentId` bind sẵn — cha là dòng đang mở, không phải chọn từ một ô
             select. Không có cách nào gắn nhầm cha.
           */}
-          <form
-            action={createGoal.bind(null, slug, parent.id)}
-            className="space-y-2 rounded-[var(--radius-md)] border border-line p-2.5"
-          >
-            <div className="grid gap-2 sm:grid-cols-4">
+          <div className="grid gap-2 sm:grid-cols-4">
               <input
                 name="icon"
                 maxLength={8}
@@ -938,18 +944,14 @@ function StudyChildren({
                   className={`mt-1 ${inputSmCls}`}
                 />
               </label>
-            </div>
-            <p className="text-[12px] leading-relaxed text-ink-3">
-              Có ngày = một <strong className="font-medium text-ink-2">chặng</strong>{" "}
-              (N5–N4 rồi tới N3). Không ngày = một{" "}
-              <strong className="font-medium text-ink-2">mảng kỹ năng</strong>{" "}
-              chạy suốt đợt (từ vựng · nghe · đọc).
-            </p>
-            <div className="flex justify-end">
-              <SubmitButton>Thêm</SubmitButton>
-            </div>
-          </form>
-        </Disclosure>
+          </div>
+          <p className="text-[12px] leading-relaxed text-ink-3">
+            Có ngày = một <strong className="font-medium text-ink-2">chặng</strong>{" "}
+            (N5–N4 rồi tới N3). Không ngày = một{" "}
+            <strong className="font-medium text-ink-2">mảng kỹ năng</strong>{" "}
+            chạy suốt đợt (từ vựng · nghe · đọc).
+          </p>
+        </InlineEditor>
       </li>
       </ul>
     </div>
