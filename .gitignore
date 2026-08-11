@@ -70,3 +70,8 @@ content/private/
 
 # Danh sách ngày do dữ liệu mẫu tạo — máy nào cũng khác
 prisma/.demo-days.json
+
+# File kích hoạt restart của Passenger — do deploy.sh tạo TRÊN SERVER.
+# Lọt vào git là lần `git pull` sau chết với "untracked working tree files
+# would be overwritten by merge", vì server đã có sẵn file này dạng untracked.
+/tmp/
