@@ -1,10 +1,11 @@
-import { ChevronDown, ChevronUp, Eye, EyeOff } from "lucide-react";
+import { ChevronDown, ChevronUp, Eye, EyeOff, Timer } from "lucide-react";
 import type { Area } from "@prisma/client";
 import {
   createArea,
   deleteArea,
   reorderArea,
   toggleAreaActive,
+  toggleAreaStudy,
   updateArea,
 } from "@/lib/os/areaActions";
 import {
@@ -127,6 +128,31 @@ export function AreasSection({ areas }: { areas: AreaWithCounts[] }) {
                     disabled={i === areas.length - 1}
                     name={a.name}
                   />
+                </form>
+                {/* Bật bấm giờ pomodoro cho lĩnh vực này. Tắt hết theo mặc
+                    định — chỉ lĩnh vực được tick mới thấy hàng ô pomodoro và
+                    cụm ô đợt học. Đây là chỗ DUY NHẤT quyết định điều đó;
+                    không slug nào bị hard-code trong code. */}
+                <form action={toggleAreaStudy.bind(null, a.id)}>
+                  <button
+                    type="submit"
+                    aria-pressed={a.tracksStudy}
+                    aria-label={
+                      a.tracksStudy
+                        ? `Tắt bấm giờ cho ${a.name}`
+                        : `Bật bấm giờ cho ${a.name}`
+                    }
+                    title={
+                      a.tracksStudy
+                        ? "Đang bấm giờ — bấm để tắt"
+                        : "Bật pomodoro + đợt học cho lĩnh vực này"
+                    }
+                    className={`p-1 transition-colors ${
+                      a.tracksStudy ? "text-ink" : "text-ink-3 hover:text-ink"
+                    }`}
+                  >
+                    <Timer size={15} strokeWidth={1.75} />
+                  </button>
                 </form>
                 <form action={toggleAreaActive.bind(null, a.id)}>
                   <button

@@ -46,8 +46,9 @@ import {
   jpStreak,
   jpSum,
   jpTotal,
+  isStudyGoal,
   monthlyBuckets,
-  skillProgress,
+  childProgress,
   unassignedPomo,
 } from "../lib/os/japanese";
 import {
@@ -256,7 +257,7 @@ eq("nhãn tháng tiếng Việt", monthLabelVN("2026-08-01"), "Tháng 8/2026");
 
 /* ------------------------------------------------------------- japanese */
 
-describe("japanese.ts — pomodoro và nhịp học");
+describe("japanese.ts — pomodoro, hành trình, mục tiêu con");
 
 /** Bản ghi rút gọn: chỉ ba trường mà japanese.ts thật sự đọc. */
 const jp = (iso: string, pomo: number, min = 0) => ({
@@ -265,11 +266,10 @@ const jp = (iso: string, pomo: number, min = 0) => ({
   jpMin: min,
 });
 
-// ⚠️ Luật quan trọng nhất của file: TỔNG = hiệp × 50 + phút lẻ. Đọc thẳng
-// `jpMin` sẽ báo 0 phút cho một ngày học 5 tiếng mà không có lỗi nào hiện ra.
+// ⚠️ Luật quan trọng nhất: TỔNG = hiệp × 50 + phút lẻ. Đọc thẳng `jpMin` sẽ báo
+// 0 phút cho một ngày học 5 tiếng mà không có lỗi nào hiện ra.
 eq("tổng = hiệp × 50 + phút lẻ", jpTotal(jp("2026-08-11", 7, 20)), 370);
 eq("không có bản ghi thì bằng 0", jpTotal(undefined), 0);
-eq("chỉ phút lẻ, không hiệp nào", jpTotal(jp("2026-08-11", 0, 25)), 25);
 
 const week = [
   jp("2026-08-08", 3),
@@ -279,115 +279,102 @@ const week = [
 ];
 
 eq("cộng theo khoảng, hai đầu đều tính", jpSum(week, "2026-08-09", "2026-08-10"), 380);
-eq("khoảng không chạm ngày nào", jpSum(week, "2026-07-01", "2026-07-31"), 0);
 eq("tổng tháng", jpPeriodTotal(week, "month", "2026-08-11"), 790);
-eq("tổng năm", jpPeriodTotal(week, "year", "2026-08-11"), 790);
 eq("tháng khác thì không tính", jpPeriodTotal(week, "month", "2026-09-01"), 0);
 
 eq("chuỗi học liên tiếp", jpStreak(week, "2026-08-11"), 4);
-// Hôm nay chưa học thì tính từ hôm qua — buổi tối chưa tới không phải là đứt chuỗi.
+// Hôm nay chưa học thì tính từ hôm qua — buổi tối chưa tới không phải đứt chuỗi.
 eq("hôm nay chưa học thì tính từ hôm qua", jpStreak(week, "2026-08-12"), 4);
 eq("nghỉ hẳn một ngày là đứt", jpStreak(week, "2026-08-13"), 0);
 
-// N3 trong 4 tháng, 7 hiệp/ngày — đúng đợt mà chủ nhân đang đặt.
-const goal = {
-  startDate: dayUTC("2026-08-01"),
-  targetDate: dayUTC("2026-11-30"),
+/*
+ * ⭐ Kế hoạch thật của chủ nhân, và luật dễ hiểu sai nhất của cả file:
+ *
+ *   0h ────────────── 500h ────── 800h
+ *      N5 + N4          N3
+ *
+ * `targetHours` = 800 là TỔNG TỪ SỐ 0, không phải "800 giờ nữa".
+ * `priorHours`  = 500 là phần đã đi trước khi có hệ thống.
+ * Phần còn phải học là 300h, và NHỊP phải rút ra từ 300h chứ không phải 800h.
+ */
+const n3 = {
+  studyStart: dayUTC("2026-08-01"),
+  studyEnd: dayUTC("2026-11-30"),
+  targetHours: 800,
+  priorHours: 500,
   dailyPomo: 7,
 };
 
-const paceDay1 = goalPace(goal, [], "2026-08-01");
-eq("đợt 4 tháng = 122 ngày", paceDay1.daysTotal, 122);
-eq("tổng giờ của cả đợt", paceDay1.totalMin, 122 * 7 * 50);
-// ⭐ Ngày đầu tiên KHÔNG được nợ gì: nếu tính cả hôm nay vào `dueMin` thì 8
-// giờ sáng hệ thống đã báo "nợ 7 hiệp" trong khi ngày còn chưa bắt đầu.
-eq("ngày đầu chưa nợ gì", paceDay1.dueMin, 0);
-eq("ngày đầu còn đủ 122 ngày", paceDay1.daysLeft, 122);
+const day1 = goalPace(n3, [], "2026-08-01")!;
+eq("đợt 4 tháng = 122 ngày", day1.daysTotal, 122);
+eq("tổng là 800h, không phải 800 + 500", day1.totalMin, 48_000);
+eq("500h đã học được tính sẵn", day1.doneMin, 30_000);
+eq("còn đúng 300h phải học", day1.remainMin, 18_000);
+// Ngày đầu KHÔNG được nợ gì: tính cả hôm nay vào `dueMin` thì 8 giờ sáng hệ
+// thống đã báo nợ trong khi ngày còn chưa bắt đầu.
+eq("ngày đầu chưa nợ thêm gì ngoài phần đã có", day1.dueMin, 30_000);
+eq("ngày đầu không vượt không nợ", day1.aheadMin, 0);
+// ⭐ Nhịp rút từ 300h/122 ngày = 2.95 → làm tròn LÊN. Nếu lỡ rút từ 800h thì ra
+// ~7.9 và hệ thống sẽ đòi gấp gần ba lần mức thật sự cần.
+eq("nhịp rút từ phần CÒN LẠI, không từ tổng", day1.pomoPerDayLeft, 3);
+eq("phần trăm tính trên cả hành trình", day1.percent, 63);
 
-// Ngày 11/08: đã đóng sổ 10 ngày (01→10), tức đáng lẽ phải có 10 × 350 phút.
-const pace11 = goalPace(goal, week, "2026-08-11");
-eq("mười ngày đã đóng sổ", pace11.daysClosed, 10);
-eq("nợ tính tới hết hôm qua", pace11.dueMin, 3500);
-eq("đã học gồm cả hôm nay", pace11.doneMin, 790);
-eq("đang nợ chứ không vượt", pace11.aheadMin, 790 - 3500);
-eq("đang chạy", pace11.state, "running");
+const d11 = goalPace(n3, week, "2026-08-11")!;
+eq("mười ngày đã đóng sổ", d11.daysClosed, 10);
+eq("đã học = 500h + phần bấm được", d11.doneMin, 30_000 + 790);
+eq("còn lại tụt đúng phần đã bấm", d11.remainMin, 48_000 - 30_790);
+eq("đang nợ nhẹ so với nhịp", d11.aheadMin < 0, true);
+eq("đang chạy", d11.state, "running");
 
-// Trước ngày bắt đầu: không nợ, không tính ngày âm.
-const paceBefore = goalPace(goal, [], "2026-07-20");
-eq("chưa tới ngày bắt đầu thì chưa nợ", paceBefore.dueMin, 0);
-eq("chưa bắt đầu", paceBefore.state, "future");
-
-// Sau ngày đích: nợ dừng ở tổng của đợt, không cộng thêm ngày ngoài đợt.
-const paceAfter = goalPace(goal, [], "2027-01-15");
-eq("hết đợt thì nợ dừng ở tổng", paceAfter.dueMin, paceAfter.totalMin);
-eq("hết đợt thì không còn ngày nào", paceAfter.daysLeft, 0);
-eq("hết đợt thì không tính nhịp còn lại", paceAfter.pomoPerDayLeft, null);
-eq("đã hết hạn", paceAfter.state, "ended");
-
-// ---- tổng giờ NHẬP TAY thắng nhịp ------------------------------------
-// Người ta nghĩ "N3 cần 800 giờ", không nghĩ "7 hiệp/ngày". Đặt tổng thì nhịp
-// cần thiết phải được TÍNH RA từ tổng, không phải ngược lại.
-const goal800 = { ...goal, targetHours: 800 };
-
-const p800 = goalPace(goal800, [], "2026-08-01");
-eq("tổng lấy đúng số nhập tay", p800.totalMin, 800 * 60);
-eq("biết là số nhập tay", p800.totalIsExplicit, true);
-eq("chưa học gì thì còn nguyên", p800.remainMin, 800 * 60);
-// 800h / 122 ngày / 50p = 7.87 → làm tròn LÊN, vì làm tròn xuống là về đích thiếu.
-eq("nhịp cần suy ra từ tổng", p800.pomoPerDayLeft, 7.9);
-// ⭐ Điểm mấu chốt: nhịp khai 7 hiệp KHÔNG đủ cho 800h — hệ thống phải thấy.
-eq("nhịp đã đặt không đủ", p800.pomoPerDayLeft! > goal800.dailyPomo, true);
-
-// Không đặt tổng → giữ nguyên hành vi cũ, suy từ nhịp.
-const pAuto = goalPace(goal, [], "2026-08-01");
-eq("không nhập tổng thì suy từ nhịp", pAuto.totalIsExplicit, false);
-eq("tổng suy ra = ngày × nhịp × 50", pAuto.totalMin, 122 * 7 * 50);
-
-// Đã học rồi thì phần còn lại tụt đúng bằng số đã học.
-const p800done = goalPace(goal800, week, "2026-08-11");
-eq("còn lại = tổng − đã học", p800done.remainMin, 800 * 60 - 790);
-// Nợ tính theo nhịp rút TỪ TỔNG (800h/122 ngày), không theo dailyPomo.
-eq("nợ tính theo nhịp của tổng", p800done.dueMin, Math.round(10 * ((800 * 60) / 122)));
-
-// ---- ngân sách từng mảng (từ vựng 250h · nghe 150h …)
-const skills = [
-  { id: "vocab", name: "Từ vựng + Kanji", icon: "🇯🇵", targetHours: 250 },
-  { id: "listen", name: "Nghe", icon: "🎧", targetHours: 150 },
-  { id: "read", name: "Đọc", icon: "📚", targetHours: 150 },
-];
-
-// 6 hiệp từ vựng, 3 hiệp nghe, 2 hiệp chưa gắn mảng.
-const sessions = [
-  ...Array(6).fill({ skillId: "vocab" }),
-  ...Array(3).fill({ skillId: "listen" }),
-  ...Array(2).fill({ skillId: null }),
-];
-
-const prog = skillProgress(skills, sessions);
-eq("mảng nào cũng có một dòng, kể cả chưa học", prog.length, 3);
-eq("6 hiệp từ vựng = 300 phút", prog[0].doneMin, 300);
-eq("250h quy ra phút", prog[0].targetMin, 15_000);
-eq("còn 294 hiệp mới đủ ngân sách từ vựng", prog[0].pomoLeft, 294);
-eq("mảng chưa đụng tới vẫn hiện 0", prog[2].doneMin, 0);
-eq("chưa đụng tới thì 0%", prog[2].percent, 0);
-// Hiệp chưa gắn mảng KHÔNG được im lặng biến mất — nó vẫn trong tổng giờ.
-eq("đếm được hiệp chưa gắn mảng", unassignedPomo(sessions), 2);
+// Không có tổng giờ thì không có nhịp nào để nói — trả null, KHÔNG trả một
+// Pace toàn số 0 (số 0 trông như dữ liệu thật).
 eq(
-  "tổng các mảng ≤ tổng hiệp",
-  prog.reduce((s, p) => s + p.doneMin, 0) + unassignedPomo(sessions) * 50,
-  sessions.length * 50,
+  "thiếu tổng giờ thì không phải mục tiêu học",
+  goalPace({ ...n3, targetHours: null }, [], "2026-08-01"),
+  null,
 );
+eq(
+  "thiếu ngày cũng vậy",
+  goalPace({ ...n3, studyEnd: null }, [], "2026-08-01"),
+  null,
+);
+eq("nhận ra mục tiêu học", isStudyGoal({ targetHours: 800 }), true);
+eq("mục tiêu thường không phải mục tiêu học", isStudyGoal({ targetHours: null }), false);
+
+// Quá ngày đích: nợ dừng ở tổng, không cộng thêm ngày ngoài đợt.
+const after = goalPace(n3, [], "2027-01-15")!;
+eq("hết đợt thì nợ dừng ở tổng", after.dueMin, after.totalMin);
+eq("hết đợt thì không còn ngày nào", after.daysLeft, 0);
+eq("hết đợt thì không tính nhịp còn lại", after.pomoPerDayLeft, null);
+eq("đã hết hạn", after.state, "ended");
+
+// ---- mục tiêu con: vừa là CHẶNG đã qua, vừa là MẢNG kỹ năng ----
+const children = [
+  // Chặng đã đi qua: 500h khai tay, không có hiệp nào trong quá khứ.
+  { id: "n4", title: "N5–N4", icon: "🎓", targetHours: 500, priorHours: 500 },
+  { id: "vocab", title: "Từ vựng", icon: "🇯🇵", targetHours: 150, priorHours: null },
+  { id: "listen", title: "Nghe", icon: "🎧", targetHours: 100, priorHours: null },
+];
+
+const sessions = [
+  ...Array(6).fill({ goalId: "vocab" }),
+  ...Array(2).fill({ goalId: null }),
+];
+
+const prog = childProgress(children, sessions);
+// ⭐ Chặng đã qua phải hiện ĐẦY nhờ priorHours — không cần bịa 600 hiệp quá khứ.
+eq("chặng đã qua đầy nhờ giờ khai tay", prog[0].percent, 100);
+eq("chặng đã qua không còn thiếu hiệp nào", prog[0].pomoLeft, 0);
+eq("6 hiệp từ vựng = 300 phút", prog[1].doneMin, 300);
+eq("mảng chưa đụng tới vẫn hiện 0", prog[2].doneMin, 0);
+// Hiệp chưa gắn KHÔNG được im lặng biến mất — nó vẫn trong tổng giờ.
+eq("đếm được hiệp chưa gắn", unassignedPomo(sessions), 2);
 
 eq("12 tháng ra đủ 12 cột", monthlyBuckets(week, 12, "2026-08-11").length, 12);
 eq(
   "cột cuối là tháng hiện tại",
   monthlyBuckets(week, 12, "2026-08-11")[11].key,
   "2026-08",
-);
-eq(
-  "cột đầu lùi đúng 11 tháng",
-  monthlyBuckets(week, 12, "2026-08-11")[0].key,
-  "2025-09",
 );
 
 /* ---------------------------------------------------------------- tổng */

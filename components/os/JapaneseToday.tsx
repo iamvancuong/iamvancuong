@@ -1,11 +1,11 @@
 import Link from "next/link";
-import type { DailyLog, PomoSession, StudyGoal, StudySkill } from "@prisma/client";
+import type { DailyLog, Goal, PomoSession } from "@prisma/client";
 import {
   goalPace,
   jpPeriodTotal,
   jpStreak,
   jpTotal,
-  skillProgress,
+  childProgress,
   unassignedPomo,
   type Bucket,
 } from "@/lib/os/japanese";
@@ -24,36 +24,39 @@ import { MicroLabel } from "./formBits";
  */
 export function JapaneseToday({
   iso,
+  areaSlug,
   log,
   logs,
   goal,
-  skills,
   todaySessions,
   goalSessions,
   daily,
   monthly,
 }: {
   iso: string;
+  /** Lĩnh vực chủ của mục tiêu học — đường quay lại chỗ sửa. */
+  areaSlug: string | null;
   log: DailyLog | null;
   logs: DailyLog[];
-  goal: (StudyGoal & { skills: StudySkill[] }) | null;
-  skills: StudySkill[];
-  todaySessions: Pick<PomoSession, "id" | "order" | "skillId">[];
-  /** Mọi hiệp NẰM TRONG đợt — ngân sách mảng tính trên đợt, không phải cả đời. */
-  goalSessions: { skillId: string | null }[];
+  /** Mục tiêu học đang chạy, kèm các mục tiêu con. Null = lĩnh vực chưa đặt. */
+  goal: (Goal & { children: Goal[] }) | null;
+  todaySessions: Pick<PomoSession, "id" | "order" | "goalId">[];
+  /** Mọi hiệp NẰM TRONG đợt — ngân sách con tính trên đợt, không phải cả đời. */
+  goalSessions: { goalId: string | null }[];
   daily: Bucket[];
   monthly: Bucket[];
 }) {
   const pomo = todaySessions.length;
   const todayMin = jpTotal(log);
   const targetPomo = goal?.dailyPomo ?? 0;
+  const subGoals = goal?.children ?? [];
 
   const pace = goal ? goalPace(goal, logs, iso) : null;
   const month = jpPeriodTotal(logs, "month", iso);
   const year = jpPeriodTotal(logs, "year", iso);
   const streak = jpStreak(logs, iso);
 
-  const bySkill = skillProgress(skills, goalSessions);
+  const byChild = childProgress(subGoals, goalSessions);
   const unassigned = unassignedPomo(goalSessions);
 
   return (
@@ -89,7 +92,7 @@ export function JapaneseToday({
         <PomoRow
           iso={iso}
           sessions={todaySessions}
-          skills={skills}
+          subGoals={subGoals}
           targetPomo={targetPomo}
           extraMin={log?.jpMin ?? 0}
         />
@@ -99,13 +102,22 @@ export function JapaneseToday({
       {goal && pace ? (
         <div className="mt-5 border-t border-line-soft pt-4">
           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-            <span className="text-[15px] font-medium">{goal.name}</span>
+            {/* Tên đợt LÀ đường vào chỗ sửa. Trước đây link tới «Mục tiêu học»
+                chỉ hiện khi CHƯA có đợt nào — tạo xong là nó biến mất, và từ
+                /os không còn đường nào quay lại để đổi tổng giờ hay ngày đích. */}
+            <Link
+              href={`/os/a/${areaSlug}?tab=goals`}
+              className="text-[15px] font-medium transition-colors hover:text-accent"
+              title="Mở mục tiêu của lĩnh vực để sửa"
+            >
+              {goal.title} <span className="text-[12px] text-ink-3">· sửa</span>
+            </Link>
             <span className="text-[12px] tabular-nums text-ink-3">
               {pace.state === "future"
-                ? `bắt đầu ${fmtDateVN(isoUTC(goal.startDate))}`
+                ? `bắt đầu ${fmtDateVN(isoUTC(goal.studyStart!))}`
                 : pace.state === "ended"
-                  ? `đã hết hạn ${fmtDateVN(isoUTC(goal.targetDate))}`
-                  : `còn ${pace.daysLeft} ngày · tới ${fmtDateVN(isoUTC(goal.targetDate))}`}
+                  ? `đã hết hạn ${fmtDateVN(isoUTC(goal.studyEnd!))}`
+                  : `còn ${pace.daysLeft} ngày · tới ${fmtDateVN(isoUTC(goal.studyEnd!))}`}
             </span>
           </div>
 
@@ -162,11 +174,11 @@ export function JapaneseToday({
                   {/* Nói thẳng khi nhịp đã đặt KHÔNG đủ để tới đích. Không có
                       câu này thì hàng ô sáng đủ 7/7 mỗi ngày vẫn về đích thiếu
                       cả trăm giờ, mà mỗi ngày đều thấy "hoàn thành". */}
-                  {pace.pomoPerDayLeft > goal.dailyPomo ? (
+                  {pace.pomoPerDayLeft > (goal.dailyPomo ?? 0) ? (
                     <>
                       {" "}— nhịp đang đặt là {goal.dailyPomo}, tức là{" "}
                       <strong className="font-medium text-accent">
-                        đủ 7/7 mỗi ngày vẫn không kịp
+                        đủ mỗi ngày vẫn không kịp
                       </strong>
                       . Nâng nhịp, lùi ngày đích, hoặc bớt giờ.
                     </>
@@ -180,14 +192,14 @@ export function JapaneseToday({
 
           {/* Ngân sách từng mảng. Đây mới là chỗ nói được "học nhiều rồi
               nhưng nghe thì chưa đụng tới" — con số tổng giấu mất điều đó. */}
-          {bySkill.length > 0 && (
+          {byChild.length > 0 && (
             <ul className="mt-4 space-y-2.5">
-              {bySkill.map((s) => (
+              {byChild.map((s) => (
                 <li key={s.id}>
                   <div className="flex flex-wrap items-baseline justify-between gap-x-2 text-[13px]">
                     <span>
                       {s.icon && <span className="mr-1.5">{s.icon}</span>}
-                      {s.name}
+                      {s.title}
                     </span>
                     <span className="tabular-nums text-ink-3">
                       {fmtH(s.doneMin)}
@@ -210,7 +222,7 @@ export function JapaneseToday({
 
           {unassigned > 0 && (
             <p className="mt-2.5 text-[12px] leading-relaxed text-ink-3">
-              {unassigned} hiệp chưa gắn mảng nào — chúng vẫn vào tổng giờ, chỉ
+              {unassigned} hiệp chưa gắn mục tiêu con nào — chúng vẫn vào tổng giờ, chỉ
               không vào ngân sách nào cả.
             </p>
           )}
@@ -219,12 +231,14 @@ export function JapaneseToday({
         <p className="mt-5 border-t border-line-soft pt-4 text-[13px] leading-relaxed text-ink-3">
           Chưa đặt đợt học nào, nên các ô trên chỉ đếm chứ không so được với
           đích nào cả.{" "}
-          <Link
-            href="/os/data#muc-tieu-hoc"
-            className="text-accent underline decoration-accent/35 underline-offset-[3px] hover:decoration-accent"
-          >
-            Đặt mục tiêu →
-          </Link>
+          {areaSlug && (
+            <Link
+              href={`/os/a/${areaSlug}?tab=goals`}
+              className="text-accent underline decoration-accent/35 underline-offset-[3px] hover:decoration-accent"
+            >
+              Đặt mục tiêu →
+            </Link>
+          )}
         </p>
       )}
 

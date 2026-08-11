@@ -111,7 +111,13 @@ export default async function AreaPage({
       <AreaTabs slug={slug} current={tab} counts={counts} />
 
       <div className={contentWidth}>
-        {tab === "goals" && <GoalsTab slug={slug} goals={area.goals} />}
+        {tab === "goals" && (
+          <GoalsTab
+            slug={slug}
+            goals={area.goals}
+            tracksStudy={area.tracksStudy}
+          />
+        )}
         {tab === "principles" && (
           <PrinciplesTab slug={slug} principles={area.principles} />
         )}

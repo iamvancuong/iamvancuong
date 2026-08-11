@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { PomoSession, StudySkill } from "@prisma/client";
+import type { Goal, PomoSession } from "@prisma/client";
 import { setPomodoro } from "@/lib/os/dayActions";
 import { POMO_MIN, POMO_SLOTS } from "@/lib/os/constants";
 import { fmtH } from "@/lib/os/day";
@@ -14,19 +14,22 @@ import { fmtH } from "@/lib/os/day";
  * tập `PomoSession` khóa theo `date`, còn `/os` luôn hỏi `todayISO()` (giờ Nhật
  * cố định). Nửa đêm JST là hàng ô trắng lại, ngày cũ giữ nguyên số của nó.
  *
- * Chọn mảng TRƯỚC rồi bấm ô: hiệp mới ghi vào mảng đang chọn. Học hai mảng
- * trong một ngày thì đổi chip rồi bấm tiếp — hiệp cũ giữ nguyên mảng của chúng.
+ * Chọn mục tiêu con TRƯỚC rồi bấm ô: hiệp mới ghi vào cái đang chọn. Học hai
+ * mảng trong một ngày thì đổi chip rồi bấm tiếp — hiệp cũ giữ nguyên chỗ của
+ * chúng. Chip sinh từ mục tiêu con của mục tiêu học, nên chia mảng khác đi là
+ * hàng chip tự đổi theo, không sửa dòng code nào.
  */
 export function PomoRow({
   iso,
   sessions,
-  skills,
+  subGoals,
   targetPomo,
   extraMin,
 }: {
   iso: string;
-  sessions: (Pick<PomoSession, "id" | "order"> & { skillId: string | null })[];
-  skills: Pick<StudySkill, "id" | "name" | "icon">[];
+  sessions: (Pick<PomoSession, "id" | "order"> & { goalId: string | null })[];
+  /** Mục tiêu con. KHÔNG đặt tên `children` — trùng prop JSX của React. */
+  subGoals: Pick<Goal, "id" | "title" | "icon">[];
   targetPomo: number;
   extraMin: number;
 }) {
@@ -36,43 +39,43 @@ export function PomoRow({
    * Mảng đang chọn. Mặc định là mảng của hiệp GẦN NHẤT hôm đó — đang học dở
    * từ vựng thì bấm hiệp kế tiếp không phải chọn lại. Chưa học gì thì mảng đầu.
    */
-  const [skillId, setSkillId] = useState<string | null>(
-    sessions.at(-1)?.skillId ?? skills[0]?.id ?? null,
+  const [goalId, setGoalId] = useState<string | null>(
+    sessions.at(-1)?.goalId ?? subGoals[0]?.id ?? null,
   );
 
-  const skillOf = new Map(skills.map((s) => [s.id, s]));
+  const byId = new Map(subGoals.map((c) => [c.id, c]));
   const label = (id: string | null) => {
-    const s = id ? skillOf.get(id) : null;
-    return s ? (s.icon ?? s.name.slice(0, 1)) : "";
+    const c = id ? byId.get(id) : null;
+    return c ? (c.icon ?? c.title.slice(0, 1)) : "";
   };
 
   return (
     <div>
-      {skills.length > 0 && (
+      {subGoals.length > 0 && (
         <div className="mb-2 flex flex-wrap gap-1.5">
-          {skills.map((s) => (
+          {subGoals.map((c) => (
             <button
-              key={s.id}
+              key={c.id}
               type="button"
-              onClick={() => setSkillId(s.id)}
-              aria-pressed={s.id === skillId}
+              onClick={() => setGoalId(c.id)}
+              aria-pressed={c.id === goalId}
               className={`rounded-full px-2.5 py-1 text-[12px] transition-colors ${
-                s.id === skillId
+                c.id === goalId
                   ? "bg-ink text-bg"
                   : "border border-line text-ink-2 hover:bg-surface hover:text-ink"
               }`}
             >
-              {s.icon && <span className="mr-1">{s.icon}</span>}
-              {s.name}
+              {c.icon && <span className="mr-1">{c.icon}</span>}
+              {c.title}
             </button>
           ))}
           <button
             type="button"
-            onClick={() => setSkillId(null)}
-            aria-pressed={skillId === null}
-            title="Ghi hiệp mà chưa gắn mảng nào"
+            onClick={() => setGoalId(null)}
+            aria-pressed={goalId === null}
+            title="Ghi hiệp mà chưa gắn mục tiêu con nào"
             className={`rounded-full px-2.5 py-1 text-[12px] transition-colors ${
-              skillId === null
+              goalId === null
                 ? "bg-ink text-bg"
                 : "border border-dashed border-line text-ink-3 hover:text-ink"
             }`}
@@ -89,12 +92,12 @@ export function PomoRow({
           // Ô vượt đích vẫn bấm được nhưng vẽ nhạt hơn: học thêm là tốt, chỉ
           // là nó không còn là thứ đang bị đòi hỏi.
           const beyond = targetPomo > 0 && n > targetPomo;
-          const mark = on ? label(sessions[i]?.skillId ?? null) : "";
+          const mark = on ? label(sessions[i]?.goalId ?? null) : "";
 
           return (
             <form
               key={n}
-              action={setPomodoro.bind(null, iso, n, skillId)}
+              action={setPomodoro.bind(null, iso, n, goalId)}
               className="flex-1"
             >
               <button

@@ -29,6 +29,7 @@ import {
 import { Disclosure } from "./Disclosure";
 import { HorizonPicker } from "./HorizonPicker";
 import { OutcomeBadge, OutcomeButtons, ReviewForm, ReviewText } from "./GoalReview";
+import { POMO_MIN, POMO_SLOTS } from "@/lib/os/constants";
 
 const HORIZON_LABEL: Record<Horizon, string> = {
   WEEK: "Tuần",
@@ -51,7 +52,22 @@ export function horizonText(
   return HORIZON_LABEL[g.horizon];
 }
 
-export function GoalsTab({ slug, goals }: { slug: string; goals: Goal[] }) {
+export function GoalsTab({
+  slug,
+  goals,
+  tracksStudy = false,
+}: {
+  slug: string;
+  goals: Goal[];
+  /**
+   * Lĩnh vực này có bấm giờ pomodoro không (`Area.tracksStudy`).
+   *
+   * Tắt = form mục tiêu KHÔNG có cụm ô đợt học. Sáu lĩnh vực còn lại không
+   * thấy gì thêm — đúng yêu cầu "để nó không bị loạn". Bật thêm lĩnh vực nào
+   * thì tick một ô ở /os/data, không sửa dòng code nào.
+   */
+  tracksStudy?: boolean;
+}) {
   // Mốc tuổi tính ở server rồi truyền xuống: tính lại ở client sẽ lệch múi giờ.
   const milestones = ageMilestones();
 
@@ -82,6 +98,7 @@ export function GoalsTab({ slug, goals }: { slug: string; goals: Goal[] }) {
           goals={unreviewed}
           slug={slug}
           milestones={milestones}
+          tracksStudy={tracksStudy}
         />
       )}
 
@@ -92,6 +109,7 @@ export function GoalsTab({ slug, goals }: { slug: string; goals: Goal[] }) {
           goals={current}
           slug={slug}
           milestones={milestones}
+          tracksStudy={tracksStudy}
         />
       )}
 
@@ -101,6 +119,7 @@ export function GoalsTab({ slug, goals }: { slug: string; goals: Goal[] }) {
           goals={future}
           slug={slug}
           milestones={milestones}
+          tracksStudy={tracksStudy}
         />
       )}
 
@@ -114,7 +133,12 @@ export function GoalsTab({ slug, goals }: { slug: string; goals: Goal[] }) {
           <ul className="divide-y divide-line-soft">
             {longTerm.map((g) => (
               <li key={g.id} className="py-4 first:pt-0">
-                <GoalRow goal={g} slug={slug} milestones={milestones} />
+                <GoalRow
+              goal={g}
+              slug={slug}
+              milestones={milestones}
+              tracksStudy={tracksStudy}
+            />
               </li>
             ))}
           </ul>
@@ -126,7 +150,12 @@ export function GoalsTab({ slug, goals }: { slug: string; goals: Goal[] }) {
           <ul className="divide-y divide-line-soft">
             {done.map((g) => (
               <li key={g.id} className="py-3">
-                <GoalRow goal={g} slug={slug} milestones={milestones} />
+                <GoalRow
+                  goal={g}
+                  slug={slug}
+                  milestones={milestones}
+                  tracksStudy={tracksStudy}
+                />
               </li>
             ))}
           </ul>
@@ -182,7 +211,7 @@ export function GoalsTab({ slug, goals }: { slug: string; goals: Goal[] }) {
           action={createGoal.bind(null, slug)}
           className="space-y-2 rounded-[var(--radius-lg)] border border-line p-3"
         >
-          <GoalFields milestones={milestones} />
+          <GoalFields milestones={milestones} tracksStudy={tracksStudy} />
           <div className="flex justify-end">
             <SubmitButton>Thêm mục tiêu</SubmitButton>
           </div>
@@ -198,12 +227,14 @@ function PeriodSection({
   goals,
   slug,
   milestones,
+  tracksStudy = false,
 }: {
   title: string;
   hint?: string;
   goals: Goal[];
   slug: string;
   milestones: AgeMilestone[];
+  tracksStudy?: boolean;
 }) {
   return (
     <section>
@@ -214,7 +245,12 @@ function PeriodSection({
       <ul className="divide-y divide-line-soft">
         {goals.map((g) => (
           <li key={g.id} className="py-4">
-            <GoalRow goal={g} slug={slug} milestones={milestones} />
+            <GoalRow
+                  goal={g}
+                  slug={slug}
+                  milestones={milestones}
+                  tracksStudy={tracksStudy}
+                />
           </li>
         ))}
       </ul>
@@ -226,10 +262,12 @@ function GoalRow({
   goal: g,
   slug,
   milestones,
+  tracksStudy = false,
 }: {
   goal: Goal;
   slug: string;
   milestones: AgeMilestone[];
+  tracksStudy?: boolean;
 }) {
   const done = g.status === GoalStatus.DONE;
   const period = isPeriod(g.horizon) && g.periodStart;
@@ -341,7 +379,7 @@ function GoalRow({
         <Disclosure label="Sửa" small>
           <div className="space-y-3 rounded-[var(--radius-lg)] border border-line p-3">
             <form action={updateGoal.bind(null, g.id, slug)} className="space-y-2">
-              <GoalFields goal={g} milestones={milestones} />
+              <GoalFields goal={g} milestones={milestones} tracksStudy={tracksStudy} />
               <div className="flex justify-end">
                 <SubmitButton>Lưu thay đổi</SubmitButton>
               </div>
@@ -386,9 +424,11 @@ function GoalRow({
 function GoalFields({
   goal,
   milestones,
+  tracksStudy = false,
 }: {
   goal?: Goal;
   milestones: AgeMilestone[];
+  tracksStudy?: boolean;
 }) {
   const horizon = goal?.horizon ?? Horizon.WEEK;
 
@@ -431,6 +471,100 @@ function GoalFields({
         defaultAge={goal?.horizonAge ?? null}
         defaultPeriod={defaultPeriod}
       />
+
+      {/*
+        Đợt học có bấm giờ — CHỈ hiện ở lĩnh vực đã bật `tracksStudy`.
+
+        Để trống cả cụm là mục tiêu bình thường: `targetHours` ra null và không
+        chỗ nào coi nó là đợt học. Không có cột "loại" nào cả — một mục tiêu
+        thành đợt học đúng lúc nó được cho một tổng số giờ.
+      */}
+      {tracksStudy && (
+        <fieldset className="rounded-[var(--radius-md)] border border-line-soft p-2.5">
+          <legend className="px-1">
+            <MicroLabel>Bấm giờ — không bắt buộc</MicroLabel>
+          </legend>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <label className="block">
+              <span className="block text-[12px] text-ink-3">
+                Tổng số giờ cần, tính từ 0
+              </span>
+              <input
+                type="number"
+                name="targetHours"
+                min={0}
+                max={5000}
+                placeholder="800"
+                defaultValue={goal?.targetHours ?? ""}
+                className={`mt-1 ${inputSmCls}`}
+              />
+            </label>
+            <label className="block">
+              <span className="block text-[12px] text-ink-3">
+                Trong đó đã học trước đây
+              </span>
+              <input
+                type="number"
+                name="priorHours"
+                min={0}
+                max={2000}
+                placeholder="500"
+                defaultValue={goal?.priorHours ?? ""}
+                className={`mt-1 ${inputSmCls}`}
+              />
+            </label>
+            <label className="block">
+              <span className="block text-[12px] text-ink-3">Bắt đầu</span>
+              <input
+                type="date"
+                name="studyStart"
+                defaultValue={goal?.studyStart ? isoUTC(goal.studyStart) : ""}
+                className={`mt-1 ${inputSmCls}`}
+              />
+            </label>
+            <label className="block">
+              <span className="block text-[12px] text-ink-3">Ngày đích</span>
+              <input
+                type="date"
+                name="studyEnd"
+                defaultValue={goal?.studyEnd ? isoUTC(goal.studyEnd) : ""}
+                className={`mt-1 ${inputSmCls}`}
+              />
+            </label>
+            <label className="block">
+              <span className="block text-[12px] text-ink-3">
+                Hiệp mỗi ngày ({POMO_MIN}p/hiệp)
+              </span>
+              <input
+                type="number"
+                name="dailyPomo"
+                min={1}
+                max={POMO_SLOTS}
+                placeholder="7"
+                defaultValue={goal?.dailyPomo ?? ""}
+                className={`mt-1 ${inputSmCls}`}
+              />
+            </label>
+            <label className="block">
+              <span className="block text-[12px] text-ink-3">
+                Icon (cho mục tiêu con)
+              </span>
+              <input
+                name="icon"
+                maxLength={8}
+                placeholder="🎧"
+                defaultValue={goal?.icon ?? ""}
+                className={`mt-1 ${inputSmCls}`}
+              />
+            </label>
+          </div>
+          <p className="mt-1.5 text-[12px] leading-relaxed text-ink-3">
+            <strong className="font-medium text-ink-2">Tổng tính từ 0.</strong>{" "}
+            &laquo;N3 = 800h&raquo; nghĩa là N5+N4+N3 cộng lại 800 — nếu đang ở
+            N4 thì điền <em>đã học trước đây</em> 500, hệ thống hiểu còn 300h.
+          </p>
+        </fieldset>
+      )}
 
       {/* PLAN §9 chống ảo tưởng tiến bộ: neo vào thứ đo được thật, không phải
           "Vocabulary 72%" — % của cái gì thì không ai biết. Ba ô này để trống

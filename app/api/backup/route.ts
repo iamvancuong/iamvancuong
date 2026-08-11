@@ -27,8 +27,6 @@ export async function GET() {
     focus,
     logs,
     dayTasks,
-    studyGoals,
-    studySkills,
     pomoSessions,
     tags,
     posts,
@@ -42,8 +40,6 @@ export async function GET() {
       db.focusItem.findMany(),
       db.dailyLog.findMany(),
       db.dayTask.findMany(),
-      db.studyGoal.findMany(),
-      db.studySkill.findMany(),
       // Một dòng mỗi hiệp. Thiếu bảng này thì phục hồi xong `jpPomo` vẫn còn
       // mà chi tiết từng mảng biến mất — con số tổng đúng, ngân sách mảng về 0.
       db.pomoSession.findMany(),
@@ -55,7 +51,8 @@ export async function GET() {
 
   const backup = {
     app: "iamvancuong-os",
-    // v4: thêm dayTasks · studyGoals · studySkills · pomoSessions. Tăng số này
+    // v4: thêm dayTasks · pomoSessions. Đợt học nay là Goal nên đã nằm sẵn
+    // trong `goals` — không cần khóa riêng. Tăng số này
     // mỗi lần đổi hình dạng, nếu không thì file cũ và file mới trông giống hệt
     // nhau lúc phục hồi.
     version: 4,
@@ -70,8 +67,6 @@ export async function GET() {
       focus,
       logs,
       dayTasks,
-      studyGoals,
-      studySkills,
       pomoSessions,
       tags,
       posts,

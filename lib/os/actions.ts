@@ -25,6 +25,7 @@ import {
   text,
   valuesOf,
 } from "./formData";
+import { POMO_SLOTS } from "./constants";
 
 /**
  * Server Actions cho Life OS.
@@ -102,14 +103,41 @@ function goalFields(fd: FormData) {
         ? (num(fd, "horizonAge", { min: AGE_MIN, max: AGE_MAX }) ?? 25)
         : null,
     periodStart,
-    // Cách đo. Để trống nếu mục tiêu không đo được bằng số.
+    // Cách đo — dành cho KẾT QUẢ ("điểm mock" · "≥95"), không phải giờ học.
     metric: str(fd, "metric", 120),
     target: str(fd, "target", 120),
     current: str(fd, "current", 120),
+
+    /**
+     * Đợt học có bấm giờ. Chỉ hiện ở lĩnh vực có bật `Area.tracksStudy`, nên
+     * mục tiêu bình thường gửi form không có mấy ô này và tất cả ra `null` —
+     * đúng nghĩa "mục tiêu này không bấm giờ".
+     *
+     * `targetHours` là TỔNG TỪ SỐ 0 (N5+N4+N3 = 800), còn `priorHours` là phần
+     * đã đi trước khi có hệ thống. Trần 5000h/2000h: hơn thế là gõ nhầm.
+     */
+    studyStart: dateISO(fd, "studyStart"),
+    studyEnd: dateISO(fd, "studyEnd"),
+    targetHours: num(fd, "targetHours", { min: 0, max: 5000 }),
+    priorHours: num(fd, "priorHours", { min: 0, max: 2000 }),
+    dailyPomo: num(fd, "dailyPomo", { min: 1, max: POMO_SLOTS }),
+    icon: str(fd, "icon", 8),
   };
 }
 
-export async function createGoal(areaSlug: string, fd: FormData) {
+/**
+ * `parentId` khác null = tạo MỤC TIÊU CON (một chặng hoặc một mảng kỹ năng
+ * nằm trong mục tiêu lớn hơn).
+ *
+ * ⚠️ Chỉ cho phép MỘT TẦNG. Con của con thì cộng giờ phải đệ quy và "tổng của
+ * cha" thành câu hỏi không ai trả lời chắc được. Chặn ở SERVER, không ở giao
+ * diện — gọi thẳng action cũng không lách được.
+ */
+export async function createGoal(
+  areaSlug: string,
+  fd: FormData,
+  parentId?: string,
+) {
   await assertOwner();
 
   const f = goalFields(fd);
@@ -117,7 +145,17 @@ export async function createGoal(areaSlug: string, fd: FormData) {
 
   const area = await db.area.findUniqueOrThrow({ where: { slug: areaSlug } });
 
-  await db.goal.create({ data: { areaId: area.id, ...f, title: f.title } });
+  if (parentId) {
+    const parent = await db.goal.findUniqueOrThrow({
+      where: { id: parentId },
+      select: { parentId: true },
+    });
+    if (parent.parentId) return; // đã là con rồi thì không được có con
+  }
+
+  await db.goal.create({
+    data: { areaId: area.id, parentId: parentId ?? null, ...f, title: f.title },
+  });
 
   revalidateGoal(areaSlug);
 }

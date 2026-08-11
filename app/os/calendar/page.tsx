@@ -76,7 +76,14 @@ export default async function CalendarPage({
       include: { area: { select: { name: true, slug: true } } },
       orderBy: [{ periodStart: "asc" }, { order: "asc" }],
     }),
-    db.studyGoal.findFirst({ where: { active: true }, orderBy: { targetDate: "asc" } }),
+    db.goal.findFirst({
+      where: {
+        parentId: null,
+        targetHours: { not: null },
+        area: { tracksStudy: true },
+      },
+      orderBy: { studyEnd: "asc" },
+    }),
   ]);
 
   const logByDay = new Map(logs.map((l) => [isoUTC(l.date), l]));
@@ -89,11 +96,12 @@ export default async function CalendarPage({
    * Google Calendar là nguồn duy nhất. Ở đây chỉ trả lời "tháng này tôi học
    * đều tới đâu" — câu mà bảng ngày + cam kết tuần đã sẵn sàng trả lời.
    */
-  const dailyTargetMin = studyGoal ? studyGoal.dailyPomo * POMO_MIN : 0;
+  const dailyTargetMin = (studyGoal?.dailyPomo ?? 0) * POMO_MIN;
   const inGoal = (iso: string) =>
-    !!studyGoal &&
-    isoUTC(studyGoal.startDate) <= iso &&
-    iso <= isoUTC(studyGoal.targetDate);
+    !!studyGoal?.studyStart &&
+    !!studyGoal.studyEnd &&
+    isoUTC(studyGoal.studyStart) <= iso &&
+    iso <= isoUTC(studyGoal.studyEnd);
 
   const monthJpMin = jpSum(
     logs,
@@ -151,7 +159,7 @@ export default async function CalendarPage({
         <p className="mt-1.5 text-[13px] tabular-nums text-ink-3">
           Tiếng Nhật tháng này:{" "}
           <strong className="font-medium text-ink-2">{fmtH(monthJpMin)}</strong>
-          {studyGoal && ` · đang chạy đợt «${studyGoal.name}», nhịp ${studyGoal.dailyPomo} hiệp/ngày`}
+          {studyGoal && ` · đang chạy đợt «${studyGoal.title}», nhịp ${studyGoal.dailyPomo} hiệp/ngày`}
         </p>
       </header>
 

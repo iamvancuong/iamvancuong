@@ -30,12 +30,16 @@ export default async function LogDayPage({
     db.pomoSession.findMany({
       where: { date: dayUTC(iso) },
       orderBy: [{ order: "asc" }, { createdAt: "asc" }],
-      select: { id: true, order: true, skillId: true },
+      select: { id: true, order: true, goalId: true },
     }),
-    db.studyGoal.findFirst({
-      where: { active: true },
-      orderBy: { targetDate: "asc" },
-      include: { skills: { orderBy: { order: "asc" } } },
+    db.goal.findFirst({
+      where: {
+        parentId: null,
+        targetHours: { not: null },
+        area: { tracksStudy: true },
+      },
+      orderBy: { studyEnd: "asc" },
+      include: { children: { orderBy: { order: "asc" } } },
     }),
   ]);
 
@@ -89,7 +93,7 @@ export default async function LogDayPage({
         <PomoRow
           iso={iso}
           sessions={sessions}
-          skills={studyGoal?.skills ?? []}
+          subGoals={studyGoal?.children ?? []}
           targetPomo={studyGoal?.dailyPomo ?? 0}
           extraMin={log?.jpMin ?? 0}
         />

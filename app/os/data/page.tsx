@@ -6,7 +6,6 @@ import {
   AreasSection,
   type AreaWithCounts,
 } from "@/components/os/AreasSection";
-import { StudyGoalSection } from "@/components/os/StudyGoalSection";
 
 export const metadata: Metadata = { title: "Dữ liệu" };
 
@@ -22,7 +21,6 @@ export default async function DataPage() {
     focus,
     posts,
     tasks,
-    studyGoals,
   ] = await Promise.all([
     db.area.count(),
     db.goal.count(),
@@ -34,10 +32,7 @@ export default async function DataPage() {
     db.focusItem.count(),
     db.post.count(),
     db.dayTask.count(),
-    db.studyGoal.findMany({
-      orderBy: [{ active: "desc" }, { targetDate: "desc" }],
-      include: { skills: { orderBy: { order: "asc" } } },
-    }),
+
   ]);
 
   /**
@@ -117,11 +112,6 @@ export default async function DataPage() {
           ))}
         </div>
       </section>
-
-      <StudyGoalSection
-        goals={studyGoals}
-        areas={areaRows.map((a) => ({ id: a.id, name: a.name }))}
-      />
 
       <AreasSection areas={areasWithCounts} />
 

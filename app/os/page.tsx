@@ -106,11 +106,25 @@ export default async function DashboardPage() {
         orderBy: [{ done: "asc" }, { order: "asc" }],
       }),
       db.dayTask.count({ where: { date: dayUTC(yesterday), done: false } }),
-      // Chỉ MỘT đợt học đang chạy (ràng buộc ở studyActions.ts).
-      db.studyGoal.findFirst({
-        where: { active: true },
-        orderBy: { targetDate: "asc" },
-        include: { skills: { orderBy: { order: "asc" } } },
+      /**
+       * Mục tiêu học đang chạy: một `Goal` CHA (không có parentId) có
+       * `targetHours`, thuộc lĩnh vực đã bật `tracksStudy`.
+       *
+       * `targetHours != null` là dấu hiệu duy nhất — không có cột "loại" nào,
+       * nên mục tiêu thường không bao giờ lọt vào đây.
+       */
+      db.goal.findFirst({
+        where: {
+          parentId: null,
+          targetHours: { not: null },
+          status: { not: GoalStatus.DROPPED },
+          area: { tracksStudy: true },
+        },
+        orderBy: { studyEnd: "asc" },
+        include: {
+          area: { select: { slug: true } },
+          children: { orderBy: { order: "asc" } },
+        },
       }),
     ]);
 
@@ -121,14 +135,14 @@ export default async function DashboardPage() {
     db.pomoSession.findMany({
       where: { date: dayUTC(iso) },
       orderBy: [{ order: "asc" }, { createdAt: "asc" }],
-      select: { id: true, order: true, skillId: true },
+      select: { id: true, order: true, goalId: true },
     }),
-    studyGoal
+    studyGoal?.studyStart && studyGoal.studyEnd
       ? db.pomoSession.findMany({
           where: {
-            date: { gte: studyGoal.startDate, lte: studyGoal.targetDate },
+            date: { gte: studyGoal.studyStart, lte: studyGoal.studyEnd },
           },
-          select: { skillId: true },
+          select: { goalId: true },
         })
       : Promise.resolve([]),
   ]);
@@ -144,11 +158,11 @@ export default async function DashboardPage() {
    * ngoài đợt trả 0 nên biểu đồ không vẽ vạch đích ở đó, thay vì vẽ một vạch
    * mà ngày đó chưa hề cam kết gì.
    */
-  const startISO = studyGoal ? isoUTC(studyGoal.startDate) : null;
-  const endISO = studyGoal ? isoUTC(studyGoal.targetDate) : null;
+  const startISO = studyGoal?.studyStart ? isoUTC(studyGoal.studyStart) : null;
+  const endISO = studyGoal?.studyEnd ? isoUTC(studyGoal.studyEnd) : null;
   const targetOn = (d: string) =>
-    studyGoal && startISO! <= d && d <= endISO!
-      ? studyGoal.dailyPomo * POMO_MIN
+    startISO && endISO && startISO <= d && d <= endISO
+      ? (studyGoal?.dailyPomo ?? 0) * POMO_MIN
       : 0;
 
   const daily = dailyBuckets(logs, 30, targetOn, iso);
@@ -232,8 +246,8 @@ export default async function DashboardPage() {
         iso={iso}
         log={todayLog}
         logs={logs}
+        areaSlug={studyGoal?.area.slug ?? null}
         goal={studyGoal}
-        skills={studyGoal?.skills ?? []}
         todaySessions={todaySessions}
         goalSessions={goalSessions}
         daily={daily}

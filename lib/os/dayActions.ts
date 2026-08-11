@@ -226,13 +226,14 @@ export async function deleteDailyLog(iso: string) {
  * `jpPomo == số dòng PomoSession cùng ngày`. Thêm một chỗ ghi thứ hai là hai
  * con số bắt đầu trôi khỏi nhau, và không có lỗi nào hiện ra.
  *
- * Chỉ những hiệp MỚI THÊM mới nhận `skillId`. Học hai mảng trong một ngày thì
- * chọn mảng rồi bấm tiếp — các hiệp cũ giữ nguyên mảng của chúng.
+ * Chỉ những hiệp MỚI THÊM mới nhận `goalId` (một MỤC TIÊU CON: chặng N5-N4,
+ * mảng từ vựng...). Học hai mảng trong một ngày thì đổi chip rồi bấm tiếp —
+ * các hiệp cũ giữ nguyên mục tiêu của chúng.
  */
 export async function setPomodoro(
   iso: string,
   n: number,
-  skillId: string | null,
+  goalId: string | null,
 ) {
   await assertOwner();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
@@ -281,7 +282,7 @@ export async function setPomodoro(
       db.pomoSession.createMany({
         data: Array.from({ length: jpPomo - current }, (_, i) => ({
           date,
-          skillId,
+          goalId,
           order: current + i + 1,
         })),
       }),
@@ -295,10 +296,10 @@ export async function setPomodoro(
   revalidatePath("/os/calendar");
 }
 
-/** Đổi mảng của một hiệp đã ghi — bấm xong mới nhớ ra mình học cái khác. */
-export async function setSessionSkill(id: string, skillId: string | null) {
+/** Đổi mục tiêu của một hiệp đã ghi — bấm xong mới nhớ ra mình học cái khác. */
+export async function setSessionGoal(id: string, goalId: string | null) {
   await assertOwner();
-  await db.pomoSession.update({ where: { id }, data: { skillId } });
+  await db.pomoSession.update({ where: { id }, data: { goalId } });
   revalidatePath("/os");
   revalidatePath("/os/log");
 }

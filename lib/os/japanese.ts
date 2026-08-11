@@ -1,19 +1,34 @@
-import type { DailyLog, StudyGoal, StudySkill } from "@prisma/client";
+import type { DailyLog, Goal } from "@prisma/client";
 import { addDaysISO, daysBetweenISO, isoUTC, todayISO } from "./day";
 import { POMO_MIN } from "./constants";
 
 /**
- * Giờ học tiếng Nhật — gom mọi phép tính về một chỗ.
+ * Giờ học có bấm giờ — gom mọi phép tính về một chỗ.
  *
- * Hàm thuần, không chạm database, nhận thẳng bản ghi `DailyLog`. Cùng lý do
- * với `stats.ts` và `money.ts`: đây là chỗ sai **âm thầm** nhất của cả hệ
- * thống — cộng nhầm một ngày thì không có lỗi nào hiện ra, chỉ có một con số
- * trông hợp lý mà sai, và ba tháng sau mới biết thì đã không lần ngược được.
- * Vì vậy mọi hàm ở đây nhận `today` vào làm tham số để còn kiểm được.
+ * Hàm thuần, không chạm database. Cùng lý do với `stats.ts` và `money.ts`:
+ * đây là chỗ sai **âm thầm** nhất — cộng nhầm một ngày thì không có lỗi nào
+ * hiện ra, chỉ có một con số trông hợp lý mà sai, và ba tháng sau mới biết thì
+ * đã không lần ngược được. Vì vậy mọi hàm ở đây nhận `today` vào để kiểm được.
  */
 
 /** Chỉ những trường cần cho phép tính — nhận cả bản ghi rút gọn. */
 type JpLog = Pick<DailyLog, "date" | "jpPomo" | "jpMin">;
+
+/**
+ * Một mục tiêu có bấm giờ. Nhận ra bằng `targetHours != null` — đó là dấu
+ * hiệu duy nhất; mọi mục tiêu khác để trống cả cụm này.
+ */
+export type StudyGoal = Pick<
+  Goal,
+  "studyStart" | "studyEnd" | "targetHours" | "priorHours" | "dailyPomo"
+>;
+
+/** `Goal` có phải mục tiêu bấm giờ không. */
+export function isStudyGoal<T extends { targetHours: number | null }>(
+  g: T,
+): boolean {
+  return g.targetHours != null && g.targetHours > 0;
+}
 
 /**
  * ⚠️ TỔNG phút tiếng Nhật của một ngày. KHÔNG chỗ nào được đọc thẳng `jpMin`:
@@ -68,19 +83,19 @@ export type Pace = {
   daysClosed: number;
   /** Số ngày còn lại, TÍNH CẢ hôm nay. 0 nghĩa là đợt đã hết. */
   daysLeft: number;
-  /** Phút đã học được tính tới hết hôm nay. */
+  /** Phút đã có: giờ học TRƯỚC ĐÂY cộng phút bấm được trong đợt. */
   doneMin: number;
+  /** Riêng phần giờ đã học trước khi có hệ thống — vẽ khác màu trên thanh. */
+  priorMin: number;
   /** Phút đáng lẽ phải có tính tới hết HÔM QUA — mốc để nói nhanh hay chậm. */
   dueMin: number;
-  /** Phút của cả đợt. Từ `targetHours` nếu có, không thì suy từ nhịp. */
+  /** TỔNG của cả hành trình, tính từ số 0. */
   totalMin: number;
   /** Còn bao nhiêu phút nữa mới đủ tổng. Đây là con số người ta muốn thấy. */
   remainMin: number;
-  /** Tổng là số NHẬP TAY hay số suy ra từ nhịp — giao diện nói rõ, khỏi đoán. */
-  totalIsExplicit: boolean;
   /** doneMin − dueMin. Dương là đang vượt, âm là đang nợ. */
   aheadMin: number;
-  /** Phần trăm của cả đợt, kẹp 0–100. */
+  /** Phần trăm của cả hành trình, kẹp 0–100. */
   percent: number;
   /** Nhịp cần cho những ngày CÒN LẠI để vẫn kịp. null = đợt đã hết. */
   pomoPerDayLeft: number | null;
@@ -88,65 +103,60 @@ export type Pace = {
 };
 
 /**
- * Nhanh hay chậm so với nhịp đã cam kết.
+ * Nhanh hay chậm so với nhịp cần thiết.
  *
- * Điểm quan trọng: `dueMin` chỉ tính tới **hết hôm qua**. Nếu tính cả hôm nay
- * thì 8 giờ sáng hệ thống đã báo "đang nợ 7 hiệp" trong khi ngày còn chưa bắt
- * đầu — sai về mặt sự thật và làm người ta bỏ nhìn cái thanh tiến độ.
+ * Hai điểm dễ làm sai:
+ *
+ * 1. `targetHours` là TỔNG TỪ SỐ 0, không phải "thêm bao nhiêu nữa". "N3 cần
+ *    800 giờ" nghĩa là N5+N4+N3 cộng lại 800. Phần còn phải học là
+ *    `800 − priorHours`, và nhịp cần được rút ra từ ĐÓ.
+ *
+ * 2. `dueMin` chỉ tính tới **hết hôm qua**. Nếu tính cả hôm nay thì 8 giờ sáng
+ *    hệ thống đã báo "đang nợ 7 hiệp" trong khi ngày còn chưa bắt đầu — sai về
+ *    sự thật, và làm người ta bỏ nhìn cái thanh tiến độ.
  */
 export function goalPace(
-  goal: Pick<StudyGoal, "startDate" | "targetDate" | "dailyPomo"> & {
-    targetHours?: number | null;
-  },
+  goal: StudyGoal,
   logs: JpLog[],
   today = todayISO(),
-): Pace {
-  const start = isoUTC(goal.startDate);
-  const end = isoUTC(goal.targetDate);
+): Pace | null {
+  // Thiếu ngày hoặc thiếu tổng thì không có nhịp nào để nói. Trả null thay vì
+  // một Pace toàn số 0 — số 0 trông như dữ liệu thật.
+  if (!goal.studyStart || !goal.studyEnd || !goal.targetHours) return null;
+
+  const start = isoUTC(goal.studyStart);
+  const end = isoUTC(goal.studyEnd);
 
   const daysTotal = Math.max(1, daysBetweenISO(start, end) + 1);
-
-  /**
-   * Tổng giờ nhập tay THẮNG nhịp.
-   *
-   * Đặt 800h thì 800h là sự thật, còn nhịp bao nhiêu là hệ quả — hệ thống tự
-   * chia ra. Ngược lại (suy tổng từ nhịp) thì đổi nhịp một cái là "tổng giờ
-   * cần cho N3" cũng đổi theo, mà con số đó đâu có phụ thuộc vào việc mình
-   * chăm hay lười.
-   */
-  const totalIsExplicit = !!goal.targetHours && goal.targetHours > 0;
-  const totalMin = totalIsExplicit
-    ? goal.targetHours! * 60
-    : daysTotal * goal.dailyPomo * POMO_MIN;
-
-  // Nhịp dùng để chấm nhanh/chậm phải rút ra TỪ TỔNG, không phải từ `dailyPomo` —
-  // nếu không thì đặt 800h mà nhịp khai 7 hiệp sẽ báo "đang đúng nhịp" trong
-  // khi thực tế còn thiếu cả trăm giờ.
-  const perDay = totalMin / daysTotal;
+  const totalMin = goal.targetHours * 60;
+  const priorMin = Math.min(totalMin, (goal.priorHours ?? 0) * 60);
 
   const state = today < start ? "future" : today > end ? "ended" : "running";
 
-  // Kẹp hai đầu: chưa tới ngày bắt đầu thì chưa nợ gì, quá ngày đích thì
-  // không cộng thêm nợ của những ngày ngoài đợt.
+  // Kẹp hai đầu: chưa tới ngày bắt đầu thì chưa nợ gì, quá ngày đích thì không
+  // cộng thêm nợ của những ngày ngoài đợt.
   const cursor = today < start ? start : today > end ? addDaysISO(end, 1) : today;
   const daysClosed = Math.max(0, Math.min(daysTotal, daysBetweenISO(start, cursor)));
   const daysLeft = Math.max(0, daysTotal - daysClosed);
 
-  const doneMin = jpSum(logs, start, today < end ? today : end);
-  // Làm tròn: `perDay` giờ có thể lẻ (800h / 123 ngày), mà "nợ 3499.7 phút"
-  // thì không phải là một câu nói được.
-  const dueMin = Math.round(daysClosed * perDay);
+  // Chỉ phần CÒN PHẢI HỌC mới trải ra theo ngày — giờ đã học trước đây không
+  // thuộc về đợt này, nó là điểm xuất phát.
+  const perDay = (totalMin - priorMin) / daysTotal;
+
+  const doneMin = priorMin + jpSum(logs, start, today < end ? today : end);
   const remainMin = Math.max(0, totalMin - doneMin);
+  // Làm tròn: perDay lẻ (300h / 123 ngày), mà "nợ 3499.7 phút" không nói được.
+  const dueMin = Math.round(priorMin + daysClosed * perDay);
 
   return {
     daysTotal,
     daysClosed,
     daysLeft,
     doneMin,
+    priorMin,
     dueMin,
     totalMin,
     remainMin,
-    totalIsExplicit,
     aheadMin: doneMin - dueMin,
     percent: Math.min(100, Math.round((doneMin / totalMin) * 100)),
     pomoPerDayLeft:
@@ -157,13 +167,13 @@ export function goalPace(
   };
 }
 
-/* ------------------------------------------------------------- mảng kỹ năng */
+/* ------------------------------------------------------------ mục tiêu con */
 
-export type SkillProgress = {
+export type ChildProgress = {
   id: string;
-  name: string;
+  title: string;
   icon: string | null;
-  /** Phút đã học của mảng này. */
+  /** Phút đã học của mục tiêu con này (hiệp đã gắn + giờ khai trước đây). */
   doneMin: number;
   /** Ngân sách, quy từ `targetHours` sang phút. 0 = chưa đặt ngân sách. */
   targetMin: number;
@@ -172,44 +182,51 @@ export type SkillProgress = {
   pomoLeft: number;
 };
 
+type ChildLike = Pick<Goal, "id" | "title" | "icon" | "targetHours" | "priorHours">;
+
 /**
- * Tiến độ từng mảng: 「từ vựng 62h / 250h」.
+ * Tiến độ từng mục tiêu con: 「Từ vựng 62h / 250h」·「N5–N4 500h / 500h」.
  *
- * Đếm bằng SỐ HIỆP của mảng đó rồi mới nhân `POMO_MIN` — phút lẻ (`jpMin`)
- * cố ý KHÔNG chia vào mảng nào: nó là phần nghe podcast trên tàu, không gắn
- * với ngân sách nào cả. Vì vậy tổng các mảng luôn ≤ tổng giờ học, và chênh
- * lệch đó có nghĩa chứ không phải lỗi làm tròn.
+ * Đếm bằng SỐ HIỆP đã gắn rồi mới nhân `POMO_MIN`, cộng thêm `priorHours` của
+ * chính mục tiêu con đó — nhờ vậy một chặng đã đi qua (N5–N4) hiện đầy mà
+ * không cần bịa ra hàng trăm hiệp trong quá khứ.
+ *
+ * Phút lẻ (`jpMin`) cố ý KHÔNG chia vào con nào: nó là phần nghe podcast trên
+ * tàu, không gắn với ngân sách nào. Vì vậy tổng các con luôn ≤ tổng giờ, và
+ * chênh lệch đó có nghĩa chứ không phải lỗi làm tròn.
  */
-export function skillProgress(
-  skills: Pick<StudySkill, "id" | "name" | "icon" | "targetHours">[],
-  sessions: { skillId: string | null }[],
-): SkillProgress[] {
+export function childProgress(
+  children: ChildLike[],
+  sessions: { goalId: string | null }[],
+): ChildProgress[] {
   const count = new Map<string, number>();
   for (const s of sessions) {
-    if (!s.skillId) continue;
-    count.set(s.skillId, (count.get(s.skillId) ?? 0) + 1);
+    if (!s.goalId) continue;
+    count.set(s.goalId, (count.get(s.goalId) ?? 0) + 1);
   }
 
-  return skills.map((s) => {
-    const doneMin = (count.get(s.id) ?? 0) * POMO_MIN;
-    const targetMin = s.targetHours * 60;
+  return children.map((c) => {
+    const doneMin =
+      (count.get(c.id) ?? 0) * POMO_MIN + (c.priorHours ?? 0) * 60;
+    const targetMin = (c.targetHours ?? 0) * 60;
 
     return {
-      id: s.id,
-      name: s.name,
-      icon: s.icon,
+      id: c.id,
+      title: c.title,
+      icon: c.icon,
       doneMin,
       targetMin,
-      percent: targetMin > 0 ? Math.min(100, Math.round((doneMin / targetMin) * 100)) : 0,
+      percent:
+        targetMin > 0 ? Math.min(100, Math.round((doneMin / targetMin) * 100)) : 0,
       pomoLeft:
         targetMin > doneMin ? Math.ceil((targetMin - doneMin) / POMO_MIN) : 0,
     };
   });
 }
 
-/** Số hiệp chưa gắn mảng nào — giao diện nói thẳng thay vì im lặng nuốt mất. */
-export function unassignedPomo(sessions: { skillId: string | null }[]): number {
-  return sessions.filter((s) => !s.skillId).length;
+/** Số hiệp chưa gắn mục tiêu con nào — nói thẳng thay vì im lặng nuốt mất. */
+export function unassignedPomo(sessions: { goalId: string | null }[]): number {
+  return sessions.filter((s) => !s.goalId).length;
 }
 
 /** Một cột của biểu đồ. */

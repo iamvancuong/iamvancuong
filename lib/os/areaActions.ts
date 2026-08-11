@@ -86,6 +86,25 @@ export async function updateArea(id: string, fd: FormData) {
  * vẫn mở được bằng địa chỉ trực tiếp, và dữ liệu bên trong còn nguyên.
  * Đây là cách đúng để tạm gác một lĩnh vực chưa tới lúc.
  */
+/**
+ * Bật/tắt bấm giờ pomodoro cho một lĩnh vực.
+ *
+ * Mặc định tắt hết. Bật cho Tiếng Nhật là hàng ô pomodoro + đợt học hiện ra ở
+ * /os và trong tab «Mục tiêu» của chính lĩnh vực đó; lĩnh vực khác không thấy
+ * gì thêm. Đây là chỗ duy nhất quyết định — không hard-code slug ở đâu cả.
+ */
+export async function toggleAreaStudy(id: string) {
+  await assertOwner();
+  const area = await db.area.findUniqueOrThrow({ where: { id } });
+  await db.area.update({
+    where: { id },
+    data: { tracksStudy: !area.tracksStudy },
+  });
+  revalidatePath("/os/data");
+  revalidatePath(`/os/a/${area.slug}`);
+  revalidatePath("/os");
+}
+
 export async function toggleAreaActive(id: string) {
   await assertOwner();
 

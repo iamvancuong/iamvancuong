@@ -23,6 +23,14 @@ model Area {
   order   Int     @default(0)
   active  Boolean @default(true) // tạm ẩn mà không xóa dữ liệu
 
+  /// Lĩnh vực này có bấm giờ pomodoro và có đợt học không?
+  ///
+  /// Mặc định TẮT. Hiện chỉ Tiếng Nhật bật — các lĩnh vực khác không thấy gì
+  /// thêm, đúng yêu cầu "để nó không bị loạn". Muốn bấm giờ cho IT sau này thì
+  /// tick thêm một ô ở /os/data, không sửa dòng code nào — cùng nguyên tắc
+  /// "lĩnh vực nằm trong dữ liệu, không nằm trong code" ở đầu file.
+  tracksStudy Boolean @default(false)
+
   goals      Goal[]
   principles Principle[]
   items      Item[]
@@ -30,7 +38,6 @@ model Area {
   photos     Photo[]
   focusItems FocusItem[]
   metrics    Metric[]
-  studyGoals StudyGoal[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -92,7 +99,60 @@ model Goal {
   /// Luôn là nửa đêm UTC như mọi cột @db.Date khác (lib/os/day.ts).
   periodStart DateTime? @db.Date
 
+  /// ---- Đợt học có bấm giờ ----
+  /// Chỉ dùng khi lĩnh vực có bật `Area.tracksStudy` (hiện chỉ Tiếng Nhật).
+  /// `targetHours != null` là dấu hiệu DUY NHẤT nhận ra một mục tiêu kiểu này —
+  /// mọi mục tiêu khác để trống cả cụm và không thấy gì thêm trên giao diện.
+  ///
+  /// Trước đây đây là một bảng riêng `StudyGoal`. Gộp vào `Goal` vì hai thứ
+  /// trả lời cùng một câu — "tôi muốn gì ở lĩnh vực này" — và tách ra thành
+  /// hai chỗ tạo khiến chính chủ nhân đi tìm không thấy.
+  studyStart DateTime? @db.Date
+  studyEnd   DateTime? @db.Date
+
+  /// TỔNG giờ của CẢ hành trình, tính từ số 0. "N3 cần 800 giờ" nghĩa là
+  /// N5+N4+N3 cộng lại 800, KHÔNG phải 800 giờ thêm vào cái đã học.
+  targetHours Int?
+
+  /// Giờ đã học TRƯỚC khi có hệ thống này — phần hành trình đã đi mà pomodoro
+  /// không ghi lại được. Đang ở trình độ N4 thì đây là ~500.
+  ///
+  /// Không có ô này thì thanh tiến độ nói dối ngay dòng đầu: hiện 0/800 cho
+  /// một người đã học mấy trăm giờ.
+  priorHours Int?
+
+  /// Nhịp: bao nhiêu hiệp pomodoro mỗi ngày. Dùng làm ĐÍCH HIỂN THỊ của hàng ô.
+  /// Chỉ đặt ở mục tiêu CHA; mục tiêu con không có nhịp riêng.
+  dailyPomo Int?
+
+  /// ---- Mục tiêu con ----
+  /// Một mục tiêu có thể chia thành nhiều mục tiêu con có ngân sách giờ riêng:
+  ///
+  ///     JLPT N3 · 800h
+  ///     ├── N5–N4        500h   ← chặng đã đi qua
+  ///     ├── Từ vựng      250h   ← mảng kỹ năng
+  ///     └── Nghe         150h
+  ///
+  /// Vì sao là quan hệ tự thân chứ không phải một bảng `StudySkill` riêng:
+  /// "chặng N5–N4 500h" và "mảng từ vựng 250h" có CÙNG hình dạng — đều là một
+  /// cái tên kèm ngân sách giờ nằm trong một mục tiêu lớn hơn. Hai bảng cho
+  /// cùng một hình dạng là hai bộ CRUD, hai chỗ sửa, và sớm muộn lệch nhau.
+  ///
+  /// ⚠️ CHỈ MỘT TẦNG. Mục tiêu con không được có con — nếu không thì cộng giờ
+  /// phải đệ quy và "tổng của cha" thành một câu hỏi không ai trả lời chắc
+  /// được. Chặn ở server, xem `lib/os/studyActions.ts`.
+  parentId String?
+  parent   Goal?   @relation("GoalTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children Goal[]  @relation("GoalTree")
+  pomos    PomoSession[] @relation("GoalPomo")
+
+  /// Emoji cho mục tiêu con — nhận ra bằng mắt nhanh hơn đọc chữ, và hàng chip
+  /// chọn mảng lúc bấm pomodoro chỉ đủ chỗ cho một ký tự.
+  icon String?
+
   /// Cách đo. Để trống nếu mục tiêu không đo được bằng số.
+  /// ⚠️ Chuỗi tự do, dành cho KẾT QUẢ ("điểm mock" · "≥95"). Giờ học là NỖ LỰC
+  /// và có chỗ riêng ở trên — đừng nhét giờ vào đây.
   metric String?
   target String?
   current String?
@@ -480,96 +540,6 @@ model DayTask {
   @@index([date])
 }
 
-/// Một đợt học có kỳ hạn và có NHỊP MỖI NGÀY. "N3 trong 4 tháng, 7 hiệp/ngày".
-///
-/// Vì sao không nhét vào `Goal`: `Goal` chỉ có `horizon` (tuần/tháng/tuổi) —
-/// nó không có khoảng ngày→ngày, cũng không có nhịp mỗi ngày, mà một mục tiêu
-/// kiểu này cần đủ cả hai để trả lời được câu "hôm nay tôi đang nhanh hay
-/// chậm". Trộn vào sẽ phải thêm ba cột chỉ đúng hai giá trị horizon dùng tới.
-///
-/// Đặt mục tiêu khác sau này (N2 trong 6 tháng, 5 hiệp/ngày) = **thêm một
-/// dòng**, không sửa dòng code nào — cùng nguyên tắc với `Area`.
-///
-/// Nguồn giờ hiện là pomodoro tiếng Nhật (`DailyLog.jpPomo`). Muốn đo lĩnh vực
-/// khác thì thêm một cột `source` và một nhánh trong `lib/os/japanese.ts`;
-/// chưa làm vì chưa có lĩnh vực thứ hai nào đang bấm giờ.
-model StudyGoal {
-  id     String  @id @default(cuid())
-  areaId String?
-  area   Area?   @relation(fields: [areaId], references: [id], onDelete: SetNull)
-
-  name String // "JLPT N3"
-  note String? @db.Text
-
-  /// Cùng quy ước nửa đêm UTC với mọi cột @db.Date khác (lib/os/day.ts).
-  startDate  DateTime @db.Date
-  targetDate DateTime @db.Date
-
-  /// TỔNG số giờ của cả đợt, nhập tay. "N3 cần 800 giờ".
-  ///
-  /// Để trống = suy ra từ nhịp (`số ngày × dailyPomo × POMO_MIN`), tức là
-  /// hành vi cũ. Có giá trị = con số này thắng, và nhịp cần thiết được TÍNH
-  /// RA từ nó.
-  ///
-  /// Vì sao phải nhập được thay vì luôn suy ra: người ta nghĩ bằng TỔNG GIỜ
-  /// ("N3 khoảng 800 giờ" — con số đọc được ở mọi nơi), không nghĩ bằng nhịp.
-  /// Bắt khai bằng nhịp là bắt tự làm phép chia trước khi được dùng, và khi
-  /// ngân sách các mảng cộng lại ra 875h trong khi nhịp chỉ chứa 717h thì hai
-  /// con số chỏi nhau mà không con số nào sai — chúng chỉ đang trả lời hai câu
-  /// hỏi khác nhau.
-  targetHours Int?
-
-  /// Nhịp mỗi ngày — dùng làm ĐÍCH HIỂN THỊ của hàng ô pomodoro (bao nhiêu ô
-  /// được tính là "đủ hôm nay"). Khi có `targetHours` thì nhịp THẬT SỰ CẦN
-  /// được tính lại mỗi ngày theo số giờ còn lại; cột này vẫn giữ vì đích của
-  /// một ngày nên là con số tròn, ổn định, không nhảy theo hôm qua học ít hay nhiều.
-  dailyPomo Int @default(7)
-
-  /// Chỉ MỘT mục tiêu đang chạy được hiện ở /os. Xong đợt thì tắt, không xóa —
-  /// đợt cũ còn để nhìn lại mình từng cam kết nhịp nào.
-  active Boolean @default(true)
-
-  skills StudySkill[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([active, targetDate])
-}
-
-/// Một mảng kỹ năng trong đợt, có NGÂN SÁCH GIỜ riêng.
-///
-///     🇯🇵 Từ vựng + Kanji   250h
-///     📖 Ngữ pháp           150h
-///     🎧 Nghe               150h
-///     📚 Đọc                150h
-///     📝 Đề N3 + chữa lỗi   100h
-///     🗣️ Kaiwa/shadowing     75h
-///
-/// Vì sao là bảng chứ không phải sáu cột: sáu mảng này là kế hoạch cho **N3**.
-/// Đợt N2 sẽ chia khác (thêm 語彙 học thuật, bỏ shadowing…), mà sáu cột cứng
-/// thì đổi kế hoạch là phải sửa schema. Ở đây đổi kế hoạch = sửa dữ liệu.
-///
-/// `targetHours` là GIỜ chứ không phải hiệp: chủ nhân nghĩ bằng giờ ("250h"),
-/// còn hiệp chỉ là cách bấm. Quy đổi ở lib/os/japanese.ts, một chỗ duy nhất.
-model StudySkill {
-  id          String    @id @default(cuid())
-  studyGoalId String
-  studyGoal   StudyGoal @relation(fields: [studyGoalId], references: [id], onDelete: Cascade)
-
-  name        String // "Từ vựng + Kanji"
-  icon        String? // emoji — nhận ra bằng mắt nhanh hơn đọc chữ
-  targetHours Int     @default(0)
-
-  sessions PomoSession[]
-
-  order     Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([studyGoalId, order])
-}
-
 /// MỘT hiệp pomodoro = MỘT dòng.
 ///
 /// Vì sao không phải một con số đếm trong `DailyLog`: một con số không nhớ
@@ -585,8 +555,11 @@ model PomoSession {
   id   String   @id @default(cuid())
   date DateTime @db.Date
 
-  skillId String?
-  skill   StudySkill? @relation(fields: [skillId], references: [id], onDelete: SetNull)
+  /// Hiệp này học cho mục tiêu con nào. Null = chưa gắn — giờ vẫn vào tổng,
+  /// chỉ không vào ngân sách nào cả, và giao diện nói thẳng thay vì nuốt mất.
+  /// `SetNull`: xóa một mục tiêu con KHÔNG làm mất giờ đã học.
+  goalId String?
+  goal   Goal?   @relation("GoalPomo", fields: [goalId], references: [id], onDelete: SetNull)
 
   /// Thứ tự trong ngày, 1..POMO_SLOTS. Có nó thì bỏ hiệp là bỏ đúng hiệp cuối.
   order Int @default(0)
@@ -594,7 +567,7 @@ model PomoSession {
   createdAt DateTime @default(now())
 
   @@index([date])
-  @@index([skillId])
+  @@index([goalId])
 }
 
 /// Chủ đề bài viết. Nằm trong dữ liệu chứ không hard-code trong lib/site.ts,
