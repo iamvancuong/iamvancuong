@@ -72,8 +72,12 @@ export type Pace = {
   doneMin: number;
   /** Phút đáng lẽ phải có tính tới hết HÔM QUA — mốc để nói nhanh hay chậm. */
   dueMin: number;
-  /** Phút của cả đợt nếu giữ đúng nhịp. */
+  /** Phút của cả đợt. Từ `targetHours` nếu có, không thì suy từ nhịp. */
   totalMin: number;
+  /** Còn bao nhiêu phút nữa mới đủ tổng. Đây là con số người ta muốn thấy. */
+  remainMin: number;
+  /** Tổng là số NHẬP TAY hay số suy ra từ nhịp — giao diện nói rõ, khỏi đoán. */
+  totalIsExplicit: boolean;
   /** doneMin − dueMin. Dương là đang vượt, âm là đang nợ. */
   aheadMin: number;
   /** Phần trăm của cả đợt, kẹp 0–100. */
@@ -91,16 +95,34 @@ export type Pace = {
  * đầu — sai về mặt sự thật và làm người ta bỏ nhìn cái thanh tiến độ.
  */
 export function goalPace(
-  goal: Pick<StudyGoal, "startDate" | "targetDate" | "dailyPomo">,
+  goal: Pick<StudyGoal, "startDate" | "targetDate" | "dailyPomo"> & {
+    targetHours?: number | null;
+  },
   logs: JpLog[],
   today = todayISO(),
 ): Pace {
   const start = isoUTC(goal.startDate);
   const end = isoUTC(goal.targetDate);
 
-  const perDay = goal.dailyPomo * POMO_MIN;
   const daysTotal = Math.max(1, daysBetweenISO(start, end) + 1);
-  const totalMin = daysTotal * perDay;
+
+  /**
+   * Tổng giờ nhập tay THẮNG nhịp.
+   *
+   * Đặt 800h thì 800h là sự thật, còn nhịp bao nhiêu là hệ quả — hệ thống tự
+   * chia ra. Ngược lại (suy tổng từ nhịp) thì đổi nhịp một cái là "tổng giờ
+   * cần cho N3" cũng đổi theo, mà con số đó đâu có phụ thuộc vào việc mình
+   * chăm hay lười.
+   */
+  const totalIsExplicit = !!goal.targetHours && goal.targetHours > 0;
+  const totalMin = totalIsExplicit
+    ? goal.targetHours! * 60
+    : daysTotal * goal.dailyPomo * POMO_MIN;
+
+  // Nhịp dùng để chấm nhanh/chậm phải rút ra TỪ TỔNG, không phải từ `dailyPomo` —
+  // nếu không thì đặt 800h mà nhịp khai 7 hiệp sẽ báo "đang đúng nhịp" trong
+  // khi thực tế còn thiếu cả trăm giờ.
+  const perDay = totalMin / daysTotal;
 
   const state = today < start ? "future" : today > end ? "ended" : "running";
 
@@ -111,7 +133,9 @@ export function goalPace(
   const daysLeft = Math.max(0, daysTotal - daysClosed);
 
   const doneMin = jpSum(logs, start, today < end ? today : end);
-  const dueMin = daysClosed * perDay;
+  // Làm tròn: `perDay` giờ có thể lẻ (800h / 123 ngày), mà "nợ 3499.7 phút"
+  // thì không phải là một câu nói được.
+  const dueMin = Math.round(daysClosed * perDay);
   const remainMin = Math.max(0, totalMin - doneMin);
 
   return {
@@ -121,6 +145,8 @@ export function goalPace(
     doneMin,
     dueMin,
     totalMin,
+    remainMin,
+    totalIsExplicit,
     aheadMin: doneMin - dueMin,
     percent: Math.min(100, Math.round((doneMin / totalMin) * 100)),
     pomoPerDayLeft:

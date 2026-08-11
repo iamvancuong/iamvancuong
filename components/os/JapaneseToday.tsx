@@ -10,6 +10,7 @@ import {
   type Bucket,
 } from "@/lib/os/japanese";
 import { fmtDateVN, fmtH, isoUTC } from "@/lib/os/day";
+import { POMO_MIN } from "@/lib/os/constants";
 import { PomoRow } from "./PomoRow";
 import { StudyChart } from "./StudyChart";
 import { MicroLabel } from "./formBits";
@@ -64,6 +65,25 @@ export function JapaneseToday({
           <strong className="font-medium text-ink">{fmtH(todayMin)}</strong>
         </span>
       </div>
+
+      {/* Số CÒN LẠI đặt ngay trên hàng ô, không giấu dưới thanh tiến độ: đây
+          là câu duy nhất mà mỗi lần bấm một ô đều trả lời — "còn bao nhiêu
+          nữa". Nó tụt đúng một hiệp mỗi lần bấm. */}
+      {pace && pace.totalMin > 0 && (
+        <div className="mt-3 flex flex-wrap items-baseline gap-x-2 border-t border-line-soft pt-3">
+          <span className="text-[24px] font-semibold leading-none tabular-nums tracking-[-0.02em]">
+            {fmtH(pace.remainMin)}
+          </span>
+          <span className="text-[13px] text-ink-2">
+            còn lại / {fmtH(pace.totalMin)}
+          </span>
+          <span className="text-[12px] text-ink-3">
+            {pace.remainMin === 0
+              ? "· đã đủ số giờ của cả đợt"
+              : `· ${Math.ceil(pace.remainMin / POMO_MIN)} hiệp nữa`}
+          </span>
+        </div>
+      )}
 
       <div className="mt-3">
         <PomoRow
@@ -130,9 +150,31 @@ export function JapaneseToday({
 
           {pace.state === "running" && pace.pomoPerDayLeft != null && (
             <p className="mt-1.5 text-[12px] leading-relaxed text-ink-3">
-              {pace.pomoPerDayLeft <= 0
-                ? "Đã đủ số giờ của cả đợt. Phần học thêm từ giờ là lãi."
-                : `Còn ${pace.daysLeft} ngày, cần ${pace.pomoPerDayLeft} hiệp/ngày để vẫn kịp (nhịp đã đặt là ${goal.dailyPomo}).`}
+              {pace.pomoPerDayLeft <= 0 ? (
+                "Đã đủ số giờ của cả đợt. Phần học thêm từ giờ là lãi."
+              ) : (
+                <>
+                  Còn {pace.daysLeft} ngày, cần{" "}
+                  <strong className="font-medium text-ink-2">
+                    {pace.pomoPerDayLeft} hiệp/ngày
+                  </strong>{" "}
+                  để vẫn kịp
+                  {/* Nói thẳng khi nhịp đã đặt KHÔNG đủ để tới đích. Không có
+                      câu này thì hàng ô sáng đủ 7/7 mỗi ngày vẫn về đích thiếu
+                      cả trăm giờ, mà mỗi ngày đều thấy "hoàn thành". */}
+                  {pace.pomoPerDayLeft > goal.dailyPomo ? (
+                    <>
+                      {" "}— nhịp đang đặt là {goal.dailyPomo}, tức là{" "}
+                      <strong className="font-medium text-accent">
+                        đủ 7/7 mỗi ngày vẫn không kịp
+                      </strong>
+                      . Nâng nhịp, lùi ngày đích, hoặc bớt giờ.
+                    </>
+                  ) : (
+                    ` (nhịp đã đặt là ${goal.dailyPomo}).`
+                  )}
+                </>
+              )}
             </p>
           )}
 

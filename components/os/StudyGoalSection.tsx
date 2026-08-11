@@ -45,7 +45,12 @@ export function StudyGoalSection({
             const start = isoUTC(g.startDate);
             const end = isoUTC(g.targetDate);
             const days = daysBetweenISO(start, end) + 1;
-            const totalMin = days * g.dailyPomo * POMO_MIN;
+            // Tổng nhập tay thắng nhịp — cùng luật với `goalPace`, đừng để hai
+            // chỗ tính khác nhau rồi /os và /os/data nói hai con số.
+            const totalMin = g.targetHours
+              ? g.targetHours * 60
+              : days * g.dailyPomo * POMO_MIN;
+            const capacityMin = days * g.dailyPomo * POMO_MIN;
             const left = daysBetweenISO(today, end);
 
             return (
@@ -70,8 +75,20 @@ export function StudyGoalSection({
                   <div className="mt-0.5 text-[12px] tabular-nums text-ink-3">
                     {fmtDateVN(start)} → {fmtDateVN(end)} · {days} ngày ·{" "}
                     {g.dailyPomo} hiệp/ngày · tổng {fmtH(totalMin)}
+                    {g.targetHours ? " (nhập tay)" : " (suy từ nhịp)"}
                     {g.active && left >= 0 && ` · còn ${left + 1} ngày`}
                   </div>
+
+                  {/* Nhịp đã đặt không chứa nổi tổng giờ đã cam kết — nói ngay
+                      tại chỗ đặt kế hoạch, đừng để phát hiện vào tháng thứ ba. */}
+                  {g.targetHours && capacityMin < totalMin && (
+                    <p className="mt-1 text-[12px] leading-relaxed text-accent">
+                      Nhịp {g.dailyPomo} hiệp/ngày chỉ chứa {fmtH(capacityMin)}{" "}
+                      trong {days} ngày — thiếu {fmtH(totalMin - capacityMin)}.
+                      Cần {(totalMin / days / POMO_MIN).toFixed(1)} hiệp/ngày,
+                      hoặc lùi ngày đích.
+                    </p>
+                  )}
                   {g.note && (
                     <p className="mt-1 text-[13px] leading-relaxed text-ink-2">
                       {g.note}
@@ -132,6 +149,22 @@ export function StudyGoalSection({
                 type="date"
                 name="targetDate"
                 required
+                className={`mt-1 ${inputSmCls}`}
+              />
+            </label>
+            {/* Ô quan trọng nhất của form: người ta nghĩ bằng TỔNG GIỜ
+                ("N3 khoảng 800 giờ"), không nghĩ bằng nhịp. Để trống thì hệ
+                thống suy tổng từ nhịp như trước. */}
+            <label className="block">
+              <span className="block text-[12px] text-ink-3">
+                Tổng số giờ cần
+              </span>
+              <input
+                type="number"
+                name="targetHours"
+                min={0}
+                max={5000}
+                placeholder="800"
                 className={`mt-1 ${inputSmCls}`}
               />
             </label>
@@ -231,9 +264,13 @@ function Skills({
               over ? "text-accent" : "text-ink-3"
             }`}
           >
-            Tổng ngân sách các mảng {Math.round(budgetMin / 60)}h / nhịp đợt cho{" "}
+            Ngân sách các mảng {Math.round(budgetMin / 60)}h / tổng đợt{" "}
             {Math.round(totalMin / 60)}h
-            {over && " — kế hoạch đã vượt trần ngay trên giấy, phải cắt bớt hoặc tăng nhịp."}
+            {over
+              ? " — các mảng cộng lại vượt tổng, phải cắt bớt hoặc nâng tổng."
+              : budgetMin < totalMin
+                ? ` · chưa chia ${Math.round((totalMin - budgetMin) / 60)}h`
+                : ""}
           </p>
         </>
       )}

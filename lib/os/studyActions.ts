@@ -43,6 +43,9 @@ export async function createStudyGoal(fd: FormData) {
         areaId: str(fd, "areaId", 40),
         startDate,
         targetDate,
+        // Trần 5000h: một đợt vài tháng mà hơn thế chắc chắn là gõ nhầm.
+        // Để trống → null → tổng suy ra từ nhịp, đúng hành vi cũ.
+        targetHours: num(fd, "targetHours", { min: 0, max: 5000 }),
         dailyPomo: num(fd, "dailyPomo", { min: 1, max: POMO_SLOTS }) ?? 7,
         note: text(fd, "note", 500),
       },
@@ -69,6 +72,7 @@ export async function updateStudyGoal(id: string, fd: FormData) {
       areaId: str(fd, "areaId", 40),
       startDate,
       targetDate,
+      targetHours: num(fd, "targetHours", { min: 0, max: 5000 }),
       dailyPomo: num(fd, "dailyPomo", { min: 1, max: POMO_SLOTS }) ?? 7,
       note: text(fd, "note", 500),
     },

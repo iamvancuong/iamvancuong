@@ -505,7 +505,24 @@ model StudyGoal {
   startDate  DateTime @db.Date
   targetDate DateTime @db.Date
 
-  /// Nhịp: bao nhiêu hiệp pomodoro mỗi ngày thì tới đích.
+  /// TỔNG số giờ của cả đợt, nhập tay. "N3 cần 800 giờ".
+  ///
+  /// Để trống = suy ra từ nhịp (`số ngày × dailyPomo × POMO_MIN`), tức là
+  /// hành vi cũ. Có giá trị = con số này thắng, và nhịp cần thiết được TÍNH
+  /// RA từ nó.
+  ///
+  /// Vì sao phải nhập được thay vì luôn suy ra: người ta nghĩ bằng TỔNG GIỜ
+  /// ("N3 khoảng 800 giờ" — con số đọc được ở mọi nơi), không nghĩ bằng nhịp.
+  /// Bắt khai bằng nhịp là bắt tự làm phép chia trước khi được dùng, và khi
+  /// ngân sách các mảng cộng lại ra 875h trong khi nhịp chỉ chứa 717h thì hai
+  /// con số chỏi nhau mà không con số nào sai — chúng chỉ đang trả lời hai câu
+  /// hỏi khác nhau.
+  targetHours Int?
+
+  /// Nhịp mỗi ngày — dùng làm ĐÍCH HIỂN THỊ của hàng ô pomodoro (bao nhiêu ô
+  /// được tính là "đủ hôm nay"). Khi có `targetHours` thì nhịp THẬT SỰ CẦN
+  /// được tính lại mỗi ngày theo số giờ còn lại; cột này vẫn giữ vì đích của
+  /// một ngày nên là con số tròn, ổn định, không nhảy theo hôm qua học ít hay nhiều.
   dailyPomo Int @default(7)
 
   /// Chỉ MỘT mục tiêu đang chạy được hiện ở /os. Xong đợt thì tắt, không xóa —

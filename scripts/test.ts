@@ -324,6 +324,31 @@ eq("hết đợt thì không còn ngày nào", paceAfter.daysLeft, 0);
 eq("hết đợt thì không tính nhịp còn lại", paceAfter.pomoPerDayLeft, null);
 eq("đã hết hạn", paceAfter.state, "ended");
 
+// ---- tổng giờ NHẬP TAY thắng nhịp ------------------------------------
+// Người ta nghĩ "N3 cần 800 giờ", không nghĩ "7 hiệp/ngày". Đặt tổng thì nhịp
+// cần thiết phải được TÍNH RA từ tổng, không phải ngược lại.
+const goal800 = { ...goal, targetHours: 800 };
+
+const p800 = goalPace(goal800, [], "2026-08-01");
+eq("tổng lấy đúng số nhập tay", p800.totalMin, 800 * 60);
+eq("biết là số nhập tay", p800.totalIsExplicit, true);
+eq("chưa học gì thì còn nguyên", p800.remainMin, 800 * 60);
+// 800h / 122 ngày / 50p = 7.87 → làm tròn LÊN, vì làm tròn xuống là về đích thiếu.
+eq("nhịp cần suy ra từ tổng", p800.pomoPerDayLeft, 7.9);
+// ⭐ Điểm mấu chốt: nhịp khai 7 hiệp KHÔNG đủ cho 800h — hệ thống phải thấy.
+eq("nhịp đã đặt không đủ", p800.pomoPerDayLeft! > goal800.dailyPomo, true);
+
+// Không đặt tổng → giữ nguyên hành vi cũ, suy từ nhịp.
+const pAuto = goalPace(goal, [], "2026-08-01");
+eq("không nhập tổng thì suy từ nhịp", pAuto.totalIsExplicit, false);
+eq("tổng suy ra = ngày × nhịp × 50", pAuto.totalMin, 122 * 7 * 50);
+
+// Đã học rồi thì phần còn lại tụt đúng bằng số đã học.
+const p800done = goalPace(goal800, week, "2026-08-11");
+eq("còn lại = tổng − đã học", p800done.remainMin, 800 * 60 - 790);
+// Nợ tính theo nhịp rút TỪ TỔNG (800h/122 ngày), không theo dailyPomo.
+eq("nợ tính theo nhịp của tổng", p800done.dueMin, Math.round(10 * ((800 * 60) / 122)));
+
 // ---- ngân sách từng mảng (từ vựng 250h · nghe 150h …)
 const skills = [
   { id: "vocab", name: "Từ vựng + Kanji", icon: "🇯🇵", targetHours: 250 },
