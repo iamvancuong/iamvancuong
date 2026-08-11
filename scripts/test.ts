@@ -60,6 +60,7 @@ import {
   perMonth,
   recentMonths,
 } from "../lib/os/money";
+import { slugify } from "../lib/posts-format";
 
 let ran = 0;
 let failed = 0;
@@ -421,6 +422,20 @@ eq(
   monthlyBuckets(week, 12, "2026-08-11")[11].key,
   "2026-08",
 );
+
+/* ---------------------------------------------------------------- slug */
+
+describe("posts-format.ts — slug là ĐỊA CHỈ công khai, sai là link chết");
+
+eq("bỏ dấu tiếng Việt", slugify("Học tiếng Nhật ở Nhật"), "hoc-tieng-nhat-o-nhat");
+// `đ` KHÔNG phải `d` + dấu, nên NFD không tách được — phải thay riêng.
+eq("đ thành d", slugify("Đường tới N3"), "duong-toi-n3");
+eq("gộp khoảng trắng và dấu câu", slugify("  Ăn gì hôm nay?? "), "an-gi-hom-nay");
+eq("không để lại gạch thừa hai đầu", slugify("--- xin chào ---"), "xin-chao");
+// Tiêu đề toàn tiếng Nhật ra chuỗi rỗng — chỗ gọi phải có giá trị dự phòng,
+// nếu không slug rỗng làm /blog/ trỏ vào hư không.
+eq("chữ Nhật không ra được slug", slugify("日本語"), "");
+eq("cắt ở 60 ký tự", slugify("a".repeat(80)).length, 60);
 
 /* ---------------------------------------------------------------- tổng */
 

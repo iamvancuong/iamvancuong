@@ -144,6 +144,32 @@ export default async function EditPostPage({
           className="w-full rounded-[var(--radius-sm)] border border-line px-3 py-2.5 text-[20px] font-semibold tracking-[-0.01em] outline-none focus:border-ink-3"
         />
 
+        {/*
+          Địa chỉ bài viết. Trước đây KHÔNG sửa được: slug sinh ra lúc bấm «bài
+          mới» — khi bài chưa có tiêu đề — rồi đóng băng ở đó, nên mọi bài đều
+          là `bai-viet-chua-dat-ten`, `-2`, `-3`…
+
+          Để trống thì tự lấy theo tiêu đề. Đó là hành vi người ta mong đợi, và
+          nó chữa luôn cả những bài đã lỡ mang tên xấu: xóa trắng ô này rồi Lưu.
+        */}
+        <label className="block">
+          <span className="text-[12px] text-ink-3">
+            Địa chỉ · iamvancuong.com/blog/
+          </span>
+          <input
+            name="slug"
+            defaultValue={post.slug}
+            placeholder="để trống thì lấy theo tiêu đề"
+            className="mt-1 w-full rounded-[var(--radius-sm)] border border-line px-3 py-2 font-mono text-[13px] outline-none focus:border-ink-3"
+          />
+          {post.publishedAt && (
+            <span className="mt-1 block text-[12px] leading-relaxed text-ink-3">
+              Bài đã công khai — đổi địa chỉ là mọi link đã chia sẻ và kết quả
+              Google trỏ tới bài này đều chết. Chỉ đổi khi thật sự cần.
+            </span>
+          )}
+        </label>
+
         <input
           name="excerpt"
           defaultValue={post.excerpt ?? ""}

@@ -23,14 +23,24 @@ function revalidateAll(slug: string) {
   // có ghi rõ vì sao) nên mỗi lượt truy cập đều đọc lại từ database.
 }
 
-/** Slug phải là duy nhất — thêm hậu tố nếu đã có bài trùng tên. */
-async function uniqueSlug(title: string): Promise<string> {
-  const base = slugify(title) || "bai-viet";
+/**
+ * Slug phải là duy nhất — thêm hậu tố nếu đã có bài trùng tên.
+ *
+ * `exceptId` để lúc SỬA bài không tự đụng chính mình: không có nó thì bấm Lưu
+ * mà không đổi gì cũng biến `bai-cua-toi` thành `bai-cua-toi-2`, rồi `-3`…
+ */
+async function uniqueSlug(raw: string, exceptId?: string): Promise<string> {
+  const base = slugify(raw) || "bai-viet";
   let slug = base;
-  for (let i = 2; await db.post.findUnique({ where: { slug } }); i++) {
+
+  for (let i = 2; ; i++) {
+    const taken = await db.post.findUnique({
+      where: { slug },
+      select: { id: true },
+    });
+    if (!taken || taken.id === exceptId) return slug;
     slug = `${base}-${i}`;
   }
-  return slug;
 }
 
 export async function createPost(fd: FormData) {
@@ -107,13 +117,30 @@ export async function savePost(id: string, fd: FormData) {
 
   const title = str(fd, "title", 200) ?? "Bài chưa đặt tên";
 
+  /**
+   * ⚠️ Trước đây hàm này KHÔNG đụng tới `slug`, nên slug bị đóng băng ở giá trị
+   * sinh ra lúc bấm «bài mới» — lúc đó bài chưa có tiêu đề, nên mọi bài đều
+   * thành `bai-viet-chua-dat-ten`, `-2`, `-3`… và không có cách nào sửa.
+   *
+   * Nay: ô slug để trống thì LẤY THEO TIÊU ĐỀ, gõ vào thì dùng đúng cái đó
+   * (vẫn qua `slugify` để không lọt dấu cách hay ký tự lạ vào địa chỉ).
+   */
+  const wanted = str(fd, "slug", 200);
+  const slug = await uniqueSlug(wanted || title, id);
+
   // Checkbox không được tick thì không có trong FormData — getAll trả về
   // đúng những chủ đề đang được chọn.
   const tagIds = fd.getAll("tagIds").map(String).filter(Boolean);
 
+  const before = await db.post.findUniqueOrThrow({
+    where: { id },
+    select: { slug: true },
+  });
+
   const post = await db.post.update({
     where: { id },
     data: {
+      slug,
       title,
       excerpt: str(fd, "excerpt", 300),
       body: fd.get("body")?.toString() ?? "",
@@ -126,6 +153,13 @@ export async function savePost(id: string, fd: FormData) {
   });
 
   revalidateAll(post.slug);
+
+  // Đổi slug là đổi cả địa chỉ trang đang mở và địa chỉ công khai cũ. Phải xóa
+  // cache đường dẫn CŨ, nếu không /blog/<slug-cũ> còn phục vụ bản đã chết.
+  if (before.slug !== post.slug) {
+    revalidateAll(before.slug);
+    redirect(`/os/write/${post.slug}`);
+  }
 }
 
 /**
