@@ -56,6 +56,19 @@ export function JapaneseToday({
   const year = jpPeriodTotal(logs, "year", iso);
   const streak = jpStreak(logs, iso);
 
+  /**
+   * Chặng đang chạy: mục tiêu con có hôm nay nằm trong khoảng ngày của nó.
+   * Con không khai ngày (mảng kỹ năng thuần) thì không bao giờ là "chặng".
+   */
+  const activeChild =
+    subGoals.find(
+      (c) =>
+        c.studyStart &&
+        c.studyEnd &&
+        isoUTC(c.studyStart) <= iso &&
+        iso <= isoUTC(c.studyEnd),
+    ) ?? null;
+
   const byChild = childProgress(subGoals, goalSessions);
   const unassigned = unassignedPomo(goalSessions);
 
@@ -190,7 +203,29 @@ export function JapaneseToday({
             </p>
           )}
 
-          {/* Ngân sách từng mảng. Đây mới là chỗ nói được "học nhiều rồi
+              {/*
+            Chặng ĐANG CHẠY — chặng nào có hôm nay nằm trong khoảng ngày của nó.
+            Tách riêng khỏi danh sách bên dưới vì đây là câu trả lời cho "bây
+            giờ tôi đang ở đoạn nào của hành trình", còn danh sách kia trả lời
+            "cả hành trình chia thế nào".
+          */}
+          {activeChild && (
+            <div className="mt-3 rounded-[var(--radius-md)] border border-line bg-surface px-3 py-2.5">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-2">
+                <span className="text-[13px] font-medium">
+                  {activeChild.icon && (
+                    <span className="mr-1.5">{activeChild.icon}</span>
+                  )}
+                  Đang ở chặng: {activeChild.title}
+                </span>
+                <span className="text-[12px] tabular-nums text-ink-3">
+                  tới {fmtDateVN(isoUTC(activeChild.studyEnd!))}
+                </span>
+              </div>
+            </div>
+          )}
+
+      {/* Ngân sách từng mảng. Đây mới là chỗ nói được "học nhiều rồi
               nhưng nghe thì chưa đụng tới" — con số tổng giấu mất điều đó. */}
           {byChild.length > 0 && (
             <ul className="mt-4 space-y-2.5">

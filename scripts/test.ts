@@ -370,6 +370,51 @@ eq("mảng chưa đụng tới vẫn hiện 0", prog[2].doneMin, 0);
 // Hiệp chưa gắn KHÔNG được im lặng biến mất — nó vẫn trong tổng giờ.
 eq("đếm được hiệp chưa gắn", unassignedPomo(sessions), 2);
 
+/*
+ * ⭐ Kịch bản A → B của chủ nhân, và cái bẫy nằm trong đó:
+ *
+ *   A  N4  1 tháng  300h   01/09 → 30/09
+ *   B  N3  tổng 800h       01/09 → 31/12   ← PHẢI bao trùm A
+ *
+ * B cộng MỌI phút rơi vào khoảng của nó, bất kể hiệp gắn vào A hay B. Nên học
+ * 280h trong tháng của A thì B tự thấy 280h và còn 520h — "kế thừa" là hệ quả
+ * của khoảng ngày, không phải một cơ chế riêng.
+ *
+ * Bẫy: đặt B bắt đầu SAU khi A kết thúc thì 280h đó im lặng biến mất. Hai phép
+ * kiểm dưới canh đúng chỗ đó.
+ */
+const hoursIn = (fromISO: string, hours: number) =>
+  // 1 ngày 1 hiệp × N ngày cho đủ số giờ — chỉ cần TỔNG đúng.
+  Array.from({ length: (hours * 60) / 50 }, (_, i) => jp(addDaysISO(fromISO, i % 30), 1));
+
+const aWork = hoursIn("2026-09-01", 280);
+
+const bCovers = {
+  studyStart: dayUTC("2026-09-01"), // bao trùm cả A
+  studyEnd: dayUTC("2026-12-31"),
+  targetHours: 800,
+  priorHours: null,
+  dailyPomo: 7,
+};
+const bAfter = { ...bCovers, studyStart: dayUTC("2026-10-01") }; // bắt đầu SAU A
+
+eq(
+  "B bao trùm A thì kế thừa đủ 280h",
+  goalPace(bCovers, aWork, "2026-10-01")!.doneMin,
+  280 * 60,
+);
+eq(
+  "còn đúng 520h",
+  goalPace(bCovers, aWork, "2026-10-01")!.remainMin,
+  520 * 60,
+);
+// ⚠️ Cùng dữ liệu, chỉ lệch ngày bắt đầu — và 280 giờ biến mất không một lời.
+eq(
+  "B bắt đầu sau A thì MẤT trắng 280h",
+  goalPace(bAfter, aWork, "2026-10-01")!.doneMin,
+  0,
+);
+
 eq("12 tháng ra đủ 12 cột", monthlyBuckets(week, 12, "2026-08-11").length, 12);
 eq(
   "cột cuối là tháng hiện tại",

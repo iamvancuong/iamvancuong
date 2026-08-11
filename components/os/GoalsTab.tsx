@@ -1,7 +1,7 @@
 import { GoalStatus, Horizon, type Goal } from "@prisma/client";
 import { Check, CopyPlus, X, Undo2 } from "lucide-react";
 import { ageMilestones, timeUntilAge, type AgeMilestone } from "@/lib/os/age";
-import { isoUTC, todayISO } from "@/lib/os/day";
+import { fmtDateVN, isoUTC, todayISO } from "@/lib/os/day";
 import {
   currentPeriodStart,
   isPeriod,
@@ -71,11 +71,44 @@ export function GoalsTab({
   // Mốc tuổi tính ở server rồi truyền xuống: tính lại ở client sẽ lệch múi giờ.
   const milestones = ageMilestones();
 
-  const alive = goals.filter((g) => g.status !== GoalStatus.DROPPED);
-  const dropped = goals.filter((g) => g.status === GoalStatus.DROPPED);
+  /**
+   * ⚠️ MỤC TIÊU CON không được đứng ngang hàng trong danh sách.
+   *
+   * `area.goals` trả về CẢ con lẫn cha (con cũng thuộc lĩnh vực đó), nên nếu
+   * không lọc thì "N5–N4" nằm cạnh "JLPT N3" như hai mục tiêu rời — mất hẳn
+   * quan hệ lồng nhau, và cùng một số giờ bị đọc thành hai mục tiêu khác nhau.
+   * Con được vẽ BÊN TRONG dòng của cha (xem `StudyChildren`).
+   */
+  const childrenOf = new Map<string, Goal[]>();
+  for (const g of goals) {
+    if (!g.parentId) continue;
+    if (!childrenOf.has(g.parentId)) childrenOf.set(g.parentId, []);
+    childrenOf.get(g.parentId)!.push(g);
+  }
+  const top = goals.filter((g) => !g.parentId);
+
+  const alive = top.filter((g) => g.status !== GoalStatus.DROPPED);
+  const dropped = top.filter((g) => g.status === GoalStatus.DROPPED);
 
   const periods = alive.filter((g) => isPeriod(g.horizon) && g.periodStart);
-  const longTerm = alive.filter((g) => !isPeriod(g.horizon));
+
+  /**
+   * Xếp theo NGÀY cho dễ đọc: đợt học theo ngày bắt đầu, mục tiêu không có
+   * ngày thì rơi xuống cuối (giữ thứ tự `order` cũ giữa chúng với nhau).
+   * Trước đây xếp theo [status, order] nên hai đợt nối tiếp nhau hiện lộn xộn.
+   */
+  const kidsOf = (g: Goal) =>
+    (childrenOf.get(g.id) ?? []).sort((a, b) =>
+      (a.studyStart ? isoUTC(a.studyStart) : "9999").localeCompare(
+        b.studyStart ? isoUTC(b.studyStart) : "9999",
+      ),
+    );
+
+  const dateKey = (g: Goal) =>
+    g.studyStart ? isoUTC(g.studyStart) : "9999-99-99";
+  const longTerm = alive
+    .filter((g) => !isPeriod(g.horizon))
+    .sort((a, b) => dateKey(a).localeCompare(dateKey(b)));
 
   const today = todayISO();
   const stateOf = (g: Goal) =>
@@ -99,6 +132,7 @@ export function GoalsTab({
           slug={slug}
           milestones={milestones}
           tracksStudy={tracksStudy}
+          kidsOf={kidsOf}
         />
       )}
 
@@ -110,6 +144,7 @@ export function GoalsTab({
           slug={slug}
           milestones={milestones}
           tracksStudy={tracksStudy}
+          kidsOf={kidsOf}
         />
       )}
 
@@ -120,6 +155,7 @@ export function GoalsTab({
           slug={slug}
           milestones={milestones}
           tracksStudy={tracksStudy}
+          kidsOf={kidsOf}
         />
       )}
 
@@ -138,6 +174,7 @@ export function GoalsTab({
               slug={slug}
               milestones={milestones}
               tracksStudy={tracksStudy}
+              kids={kidsOf?.(g) ?? []}
             />
               </li>
             ))}
@@ -155,6 +192,7 @@ export function GoalsTab({
                   slug={slug}
                   milestones={milestones}
                   tracksStudy={tracksStudy}
+                  kids={kidsOf(g)}
                 />
               </li>
             ))}
@@ -228,6 +266,7 @@ function PeriodSection({
   slug,
   milestones,
   tracksStudy = false,
+  kidsOf,
 }: {
   title: string;
   hint?: string;
@@ -235,6 +274,7 @@ function PeriodSection({
   slug: string;
   milestones: AgeMilestone[];
   tracksStudy?: boolean;
+  kidsOf?: (g: Goal) => Goal[];
 }) {
   return (
     <section>
@@ -250,6 +290,7 @@ function PeriodSection({
                   slug={slug}
                   milestones={milestones}
                   tracksStudy={tracksStudy}
+                  kids={kidsOf?.(g) ?? []}
                 />
           </li>
         ))}
@@ -263,11 +304,14 @@ function GoalRow({
   slug,
   milestones,
   tracksStudy = false,
+  kids = [],
 }: {
   goal: Goal;
   slug: string;
   milestones: AgeMilestone[];
   tracksStudy?: boolean;
+  /** Mục tiêu con, đã xếp theo ngày bắt đầu. */
+  kids?: Goal[];
 }) {
   const done = g.status === GoalStatus.DONE;
   const period = isPeriod(g.horizon) && g.periodStart;
@@ -375,6 +419,9 @@ function GoalRow({
             </div>
           </div>
         )}
+
+        {/* Mục tiêu con — chặng và mảng kỹ năng nằm TRONG mục tiêu này. */}
+        {kids.length > 0 && <StudyChildren parent={g} kids={kids} />}
 
         <Disclosure label="Sửa" small>
           <div className="space-y-3 rounded-[var(--radius-lg)] border border-line p-3">
@@ -602,5 +649,80 @@ function GoalFields({
         </p>
       </fieldset>
     </>
+  );
+}
+
+/**
+ * Các chặng / mảng nằm trong một mục tiêu có bấm giờ.
+ *
+ * ⚠️ Cảnh báo quan trọng nhất ở đây: giờ học của một chặng chỉ được CHA cộng
+ * vào khi khoảng ngày của chặng nằm TRONG khoảng ngày của cha
+ * (`goalPace` cộng mọi phút tiếng Nhật rơi vào khoảng của cha, bất kể hiệp đó
+ * gắn vào con nào). Đặt cha "3 tháng học N3" bắt đầu SAU khi chặng N4 kết thúc
+ * là 280 giờ của N4 im lặng biến mất khỏi tổng — con số vẫn trông hợp lý, chỉ
+ * là thiếu. Nên chỗ này nói thẳng ra.
+ */
+function StudyChildren({ parent, kids }: { parent: Goal; kids: Goal[] }) {
+  const today = todayISO();
+  const pStart = parent.studyStart ? isoUTC(parent.studyStart) : null;
+  const pEnd = parent.studyEnd ? isoUTC(parent.studyEnd) : null;
+
+  return (
+    <ul className="mt-2.5 space-y-1.5 border-l border-line-soft pl-3">
+      {kids.map((k) => {
+        const s = k.studyStart ? isoUTC(k.studyStart) : null;
+        const e = k.studyEnd ? isoUTC(k.studyEnd) : null;
+
+        const state =
+          s && e
+            ? today < s
+              ? "chưa tới"
+              : today > e
+                ? "đã xong"
+                : "đang chạy"
+            : null;
+
+        // Ngoài khoảng của cha = giờ của chặng này KHÔNG vào tổng của cha.
+        const outside =
+          !!s && !!e && !!pStart && !!pEnd && (s < pStart || e > pEnd);
+
+        return (
+          <li key={k.id} className="text-[13px]">
+            <div className="flex flex-wrap items-baseline gap-x-2">
+              <span className={state === "đang chạy" ? "font-medium" : ""}>
+                {k.icon && <span className="mr-1">{k.icon}</span>}
+                {k.title}
+              </span>
+              {k.targetHours != null && (
+                <span className="tabular-nums text-ink-3">
+                  {k.targetHours}h
+                </span>
+              )}
+              {s && e && (
+                <span className="tabular-nums text-ink-3">
+                  · {fmtDateVN(s)} → {fmtDateVN(e)}
+                </span>
+              )}
+              {state && (
+                <span
+                  className={`text-[11px] ${
+                    state === "đang chạy" ? "text-ink" : "text-ink-3"
+                  }`}
+                >
+                  · {state}
+                </span>
+              )}
+            </div>
+            {outside && (
+              <p className="mt-0.5 text-[12px] leading-relaxed text-accent">
+                Khoảng ngày này nằm NGOÀI khoảng của «{parent.title}» — giờ học
+                ở đây sẽ không được cộng vào tổng của mục tiêu cha. Kéo ngày của
+                cha cho bao trùm cả chặng này.
+              </p>
+            )}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
