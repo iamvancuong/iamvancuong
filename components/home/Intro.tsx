@@ -253,7 +253,15 @@ export function Intro({
           dòng thời gian, bấm vào ảnh bài viết là sang bài đó — hai đích khác
           nhau thì phải nhìn ra được TRƯỚC khi bấm, không thì mỗi cú bấm là một
           lần đoán. */}
-      <section className="space-y-10 py-14 md:py-20">
+      {/* Cả hai dải rỗng thì bỏ luôn khoảng đệm của mục — nếu không, trang chủ
+          có một khoảng trắng 200px không giải thích được ở giữa. */}
+      <section
+        className={
+          stripJourney.length + stripBlog.length > 0
+            ? "space-y-10 py-14 md:py-20"
+            : ""
+        }
+      >
         <Reveal className="w-full">
           <PhotoStrip label="Hành trình" items={stripJourney} />
         </Reveal>

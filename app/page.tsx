@@ -4,7 +4,7 @@ import { Intro } from "@/components/home/Intro";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { getPublicStreaks } from "@/lib/streaks";
 import { getPublicJourney } from "@/lib/journey";
-import { getHomeStrips, SAMPLE_BLOG, SAMPLE_JOURNEY } from "@/lib/strips";
+import { getHomeStrips } from "@/lib/strips";
 import { site } from "@/lib/site";
 import { personLd, websiteLd } from "@/lib/seo";
 
@@ -33,11 +33,10 @@ export default async function HomePage() {
       <Intro
         streaks={streaks}
         journey={journey}
-        // Dải nào chưa có tấm nào thì dùng ảnh mẫu — xem chú thích ở lib/strips.ts
-        stripJourney={
-          strips.journey.length > 0 ? strips.journey : SAMPLE_JOURNEY
-        }
-        stripBlog={strips.blog.length > 0 ? strips.blog : SAMPLE_BLOG}
+        // Dải nào rỗng thì PhotoStrip tự ẩn cả mục — KHÔNG đổ ảnh mẫu vào.
+        // Ảnh giả trên trang thật thì người xem không có cách nào biết là giả.
+        stripJourney={strips.journey}
+        stripBlog={strips.blog}
       />
     </Container>
   );

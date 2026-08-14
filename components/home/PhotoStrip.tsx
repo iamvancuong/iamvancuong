@@ -52,7 +52,20 @@ export function PhotoStrip({
   label: string;
   items: StripItem[];
 }) {
+  // Chưa có tấm nào thì ẩn CẢ mục, kể cả cái nhãn. Trước đây chỗ này đổ ảnh
+  // mẫu vào cho "đỡ trống" — sai: ảnh giả trên trang thật của một người thật
+  // thì người xem không có cách nào biết là giả, và chính chủ nhân nhìn vào
+  // cũng không phân biệt được cái gì đã bật, cái gì chưa.
   if (items.length === 0) return null;
+
+  /**
+   * Tấm GIỮA cao hơn.
+   *
+   * Cả hàng cùng một chiều cao thì dù mỗi tấm nghiêng một góc, mắt vẫn đọc ra
+   * một dải đều — mà đều thì lại quay về cảm giác "lưới ảnh". Cho tấm giữa
+   * nhô lên là hàng có một điểm nhấn, và mắt có chỗ để rơi vào.
+   */
+  const mid = Math.floor((items.length - 1) / 2);
 
   return (
     <div className="w-full">
@@ -80,7 +93,11 @@ export function PhotoStrip({
                     aspectRatio: String(ratio),
                     ["--tilt" as string]: `${TILT[i % TILT.length]}deg`,
                   }}
-                  className="group relative block h-[180px] overflow-hidden rounded-[var(--radius-xl)] border border-line bg-surface shadow-sm transition-[transform,box-shadow] duration-300 ease-out [transform:rotate(var(--tilt))] hover:z-10 hover:shadow-lg hover:[transform:rotate(0deg)_translateY(-6px)] md:h-[240px]"
+                  className={`group relative block overflow-hidden rounded-[var(--radius-xl)] border border-line bg-surface shadow-sm transition-[transform,box-shadow] duration-300 ease-out [transform:rotate(var(--tilt))] hover:z-10 hover:shadow-lg hover:[transform:rotate(0deg)_translateY(-6px)] ${
+                    i === mid
+                      ? "h-[210px] md:h-[290px]"
+                      : "h-[180px] md:h-[240px]"
+                  }`}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element -- ảnh đi
                       qua /api/uploads (kiểm quyền từng tấm), next/image không qua đó */}

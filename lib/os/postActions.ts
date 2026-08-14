@@ -6,6 +6,7 @@ import { Visibility } from "@prisma/client";
 import { db } from "@/lib/db";
 import { isOwner } from "@/lib/session";
 import { slugify } from "@/lib/posts";
+import { deleteUpload, saveImage } from "./upload";
 import { dayUTC, fmtDateVN } from "./day";
 import { str, text } from "./formData";
 
@@ -239,6 +240,114 @@ export async function togglePublish(id: string) {
   });
 
   revalidateAll(post.slug);
+}
+
+/* ---------------- Ảnh của bài ---------------- */
+
+/**
+ * Tải ảnh cho một bài viết.
+ *
+ * Trước đây bài viết **không có đường nào để thêm ảnh** — `Post.photos` có
+ * trong schema từ đầu nhưng không giao diện nào ghi vào nó. Hậu quả là nút
+ * «Lên trang chủ» (chỉ hiện khi bài có ảnh) không bao giờ hiện được, và dải
+ * ảnh "Viết" ở trang chủ vĩnh viễn trống.
+ *
+ * Tấm ĐẦU TIÊN theo `order` là ảnh bìa — thứ hiện ở trang chủ.
+ */
+export async function uploadPostPhotos(id: string, fd: FormData) {
+  await assertOwner();
+
+  const post = await db.post.findUniqueOrThrow({
+    where: { id },
+    select: { slug: true, visibility: true, _count: { select: { photos: true } } },
+  });
+
+  const files = fd.getAll("photos").filter((f): f is File => f instanceof File);
+  const saved = [];
+  for (const f of files) {
+    const s = await saveImage(f);
+    if (s) saved.push(s);
+  }
+  if (saved.length === 0) return;
+
+  try {
+    await db.photo.createMany({
+      data: saved.map((s, i) => ({
+        url: s.url,
+        thumbUrl: s.thumbUrl,
+        width: s.width,
+        height: s.height,
+        bytes: s.bytes,
+        takenAt: s.takenAt,
+        postId: id,
+        // Ảnh theo quyền của bài chứa nó — bài riêng tư mà ảnh công khai thì
+        // ảnh bìa lộ ra ngoài dù bài chưa đăng.
+        visibility: post.visibility,
+        order: post._count.photos + i,
+      })),
+    });
+  } catch (e) {
+    // Ghi database hỏng thì phải dọn file đã nằm trên đĩa, nếu không thư mục
+    // uploads đầy dần bằng những tấm không bản ghi nào trỏ tới.
+    for (const s of saved) {
+      await deleteUpload(s.url);
+      await deleteUpload(s.thumbUrl);
+    }
+    throw e;
+  }
+
+  revalidateAll(post.slug);
+}
+
+/**
+ * Đưa một tấm lên đầu = đặt nó làm ảnh bìa.
+ *
+ * Gán lại cả cột `order` theo vị trí mới chứ không chỉ sửa một dòng: dữ liệu
+ * cũ đang cùng `order = 0` hết, nên chỉ đổi một dòng thì thứ tự vẫn do
+ * `createdAt` quyết định và nút bấm trông như không có tác dụng.
+ */
+export async function setPostCover(photoId: string) {
+  await assertOwner();
+
+  const photo = await db.photo.findUniqueOrThrow({
+    where: { id: photoId },
+    select: { postId: true, post: { select: { slug: true } } },
+  });
+  if (!photo.postId) return;
+
+  const siblings = await db.photo.findMany({
+    where: { postId: photo.postId },
+    orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+    select: { id: true },
+  });
+
+  const reordered = [
+    photoId,
+    ...siblings.map((s) => s.id).filter((id) => id !== photoId),
+  ];
+
+  await db.$transaction(
+    reordered.map((id, idx) =>
+      db.photo.update({ where: { id }, data: { order: idx } }),
+    ),
+  );
+
+  if (photo.post) revalidateAll(photo.post.slug);
+}
+
+export async function deletePostPhoto(photoId: string) {
+  await assertOwner();
+
+  const photo = await db.photo.findUniqueOrThrow({
+    where: { id: photoId },
+    select: { url: true, thumbUrl: true, post: { select: { slug: true } } },
+  });
+
+  await db.photo.delete({ where: { id: photoId } });
+  await deleteUpload(photo.url);
+  if (photo.thumbUrl) await deleteUpload(photo.thumbUrl);
+
+  if (photo.post) revalidateAll(photo.post.slug);
 }
 
 /**

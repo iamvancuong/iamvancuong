@@ -15,6 +15,7 @@ import {
   togglePublish,
 } from "@/lib/os/postActions";
 import { MarkdownEditor } from "@/components/os/MarkdownEditor";
+import { PostPhotos } from "@/components/os/PostPhotos";
 
 export const metadata: Metadata = { title: "Soạn bài" };
 
@@ -28,7 +29,14 @@ export default async function EditPostPage({
       where: { slug },
       // `photos` để biết bài có ảnh bìa hay chưa — nút «lên trang chủ»
       // chỉ có nghĩa khi có ít nhất một tấm.
-      include: { tags: true, photos: { select: { id: true } } },
+      include: {
+        tags: true,
+        // Ảnh bìa là tấm đầu theo `order` — cùng thứ tự mà trang chủ dùng.
+        photos: {
+          orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+          select: { id: true, url: true, thumbUrl: true },
+        },
+      },
     }),
     listTags(),
   ]);
@@ -105,6 +113,8 @@ export default async function EditPostPage({
           </form>
         </div>
       </header>
+
+      <PostPhotos postId={post.id} photos={post.photos} />
 
       {/* Chủ đề tách khỏi form bài viết: tạo/xóa chủ đề là hành động riêng,
           không nên vô tình lưu cả bài khi chỉ muốn thêm một chủ đề. */}
