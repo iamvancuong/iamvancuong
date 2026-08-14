@@ -159,21 +159,52 @@ export function JapaneseToday({
               / {fmtH(pace.totalMin)}
             </span>
             <span className="text-ink-3">· {pace.percent}%</span>
-            {pace.state === "running" && (
-              <span
-                className={
-                  pace.aheadMin >= 0 ? "text-ink-2" : "font-medium text-accent"
-                }
-              >
-                ·{" "}
-                {pace.aheadMin >= 0
+            {/* Nợ/vượt hiện ở MỌI trạng thái, không chỉ lúc đợt đang chạy.
+                Trước đây nó bị `state === "running"` che, nên trước ngày bắt
+                đầu và sau ngày đích thì cả khối chỉ còn "0h / 875h · 0%" —
+                không kiểm chứng được con số nào. Chưa tới ngày bắt đầu thì nợ
+                luôn bằng 0 (goalPace kẹp mốc về ngày đầu), nên câu hiện ra là
+                "đúng nhịp" chứ không phải một con số bịa. */}
+            <span
+              className={
+                pace.aheadMin >= 0 ? "text-ink-2" : "font-medium text-accent"
+              }
+            >
+              ·{" "}
+              {pace.aheadMin === 0
+                ? "đúng nhịp"
+                : pace.aheadMin > 0
                   ? `vượt ${fmtH(pace.aheadMin)}`
-                  : `nợ ${fmtH(-pace.aheadMin)}`}
-              </span>
-            )}
+                  : `nợ ${fmtH(-pace.aheadMin)}${
+                      // Quy nợ sang NGÀY: "nợ 14h" không cho biết chậm nhiều
+                      // hay ít, "≈ 2 ngày" thì biết ngay phải bù mấy hôm.
+                      pace.perDayMin > 0
+                        ? ` ≈ ${Math.round((-pace.aheadMin / pace.perDayMin) * 10) / 10} ngày`
+                        : ""
+                    }`}
+            </span>
           </div>
 
-          {pace.state === "running" && pace.pomoPerDayLeft != null && (
+          {/* Hôm nay đã đủ chưa — câu hỏi được hỏi nhiều nhất trong ngày, và
+              trước đây phải tự trừ nhẩm từ hàng ô pomodoro. */}
+          {targetPomo > 0 && (
+            <p className="mt-1.5 text-[13px] tabular-nums text-ink-2">
+              Hôm nay {pomo}/{targetPomo} hiệp ·{" "}
+              {pomo >= targetPomo ? (
+                <strong className="font-medium text-up">đã đủ</strong>
+              ) : (
+                <>
+                  còn{" "}
+                  <strong className="font-medium text-ink">
+                    {targetPomo - pomo} hiệp
+                  </strong>{" "}
+                  nữa
+                </>
+              )}
+            </p>
+          )}
+
+          {pace.pomoPerDayLeft != null && (
             <p className="mt-1.5 text-[12px] leading-relaxed text-ink-3">
               {pace.pomoPerDayLeft <= 0 ? (
                 "Đã đủ số giờ của cả đợt. Phần học thêm từ giờ là lãi."

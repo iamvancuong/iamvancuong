@@ -99,6 +99,14 @@ export type Pace = {
   percent: number;
   /** Nhịp cần cho những ngày CÒN LẠI để vẫn kịp. null = đợt đã hết. */
   pomoPerDayLeft: number | null;
+  /**
+   * Phút PHẢI HỌC MỖI NGÀY theo kế hoạch ban đầu (trải đều cả đợt).
+   *
+   * Có nó thì đổi được nợ từ GIỜ sang NGÀY: "nợ 14h" không cho biết mình đang
+   * chậm nhiều hay ít, còn "nợ ≈ 2 ngày" thì biết ngay — và biết luôn phải bù
+   * mấy hôm mới về lại đúng nhịp.
+   */
+  perDayMin: number;
   state: "future" | "running" | "ended";
 };
 
@@ -163,6 +171,7 @@ export function goalPace(
       daysLeft > 0
         ? Math.ceil((remainMin / daysLeft / POMO_MIN) * 10) / 10
         : null,
+    perDayMin: perDay,
     state,
   };
 }
