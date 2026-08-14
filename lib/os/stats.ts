@@ -114,6 +114,44 @@ export function streakOf(
   return streak;
 }
 
+/**
+ * Chuỗi DÀI NHẤT từng đạt cho một tiêu chí bất kỳ.
+ *
+ * `longestStreak` bên dưới chỉ tính theo việc nền tảng (`dayLevel >= 1`), nên
+ * không dùng lại được cho "ngày có học tiếng Nhật" hay "ngày có code". Hàm này
+ * nhận thẳng vị từ, cùng chuẩn với `streakOf` — nhờ vậy con số "hiện tại" và
+ * "dài nhất" của cùng một thẻ luôn đo bằng một thước.
+ */
+export function longestStreakOf(
+  logs: DailyLog[],
+  done: (l: DailyLog) => boolean,
+): number {
+  const days = logs
+    .filter(done)
+    .map((l) => isoUTC(l.date))
+    .sort();
+
+  let best = 0;
+  let run = 0;
+  let prev: string | null = null;
+
+  for (const d of days) {
+    if (d === prev) continue; // hai bản ghi cùng ngày không được tính hai lần
+    run = prev && addDaysISO(prev, 1) === d ? run + 1 : 1;
+    if (run > best) best = run;
+    prev = d;
+  }
+  return best;
+}
+
+/** Tổng số NGÀY thỏa tiêu chí — cộng dồn, không cần liên tiếp. */
+export function daysWith(
+  logs: DailyLog[],
+  done: (l: DailyLog) => boolean,
+): number {
+  return new Set(logs.filter(done).map((l) => isoUTC(l.date))).size;
+}
+
 /** Chuỗi dài nhất từng đạt — cùng chuẩn với chuỗi hiện tại (ngày có làm ≥1). */
 export function longestStreak(logs: DailyLog[]): number {
   const days = logs

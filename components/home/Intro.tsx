@@ -358,12 +358,12 @@ export function Intro({
               hét lên ở mỗi ô. */}
           <dl className="mt-10 grid grid-cols-1 divide-y divide-line-soft border-y border-line-soft sm:grid-cols-3 sm:divide-x sm:divide-y-0">
             {home.streaks.items.map((it) => {
-              const n = streaks[it.key];
+              const s = streaks[it.key];
               return (
                 <div key={it.key} className="py-7 sm:px-7 sm:first:pl-0">
                   <dd className="flex items-baseline gap-1.5">
                     <span className="text-[52px] font-semibold leading-none tabular-nums text-ink md:text-[64px]">
-                      {n}
+                      {s.now}
                     </span>
                     <span lang={jl} className="text-[14px] text-ink-3">
                       {home.streaks.unit[lang]}
@@ -377,10 +377,23 @@ export function Intro({
                       size={15}
                       strokeWidth={1.75}
                       aria-hidden
-                      className={n > 0 ? "text-ink-2" : "text-ink-3"}
+                      className={s.now > 0 ? "text-ink-2" : "text-ink-3"}
                     />
                     {it.label[lang]}
                   </dt>
+
+                  {/* Dòng nhỏ: con số lớn đo cái gì, và kỷ lục là bao nhiêu.
+                      Cần thiết vì lập trình đếm CỘNG DỒN còn hai cái kia đếm
+                      CHUỖI — không nói ra thì ba con số cạnh nhau trông như
+                      cùng một đơn vị, và số của lập trình sẽ bị đọc nhầm
+                      thành một chuỗi dài bất thường. */}
+                  <p lang={jl} className="mt-1.5 text-[12px] text-ink-3">
+                    {s.mode === "total"
+                      ? home.streaks.totalNote[lang]
+                      : home.streaks.streakNote[lang]}
+                    {s.best > 0 &&
+                      ` · ${home.streaks.best[lang]} ${s.best} ${home.streaks.unit[lang]}`}
+                  </p>
                 </div>
               );
             })}

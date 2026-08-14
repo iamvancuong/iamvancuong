@@ -67,9 +67,18 @@ export const home = {
   },
 
   streaks: {
-    heading: { vi: "Chuỗi đang duy trì", ja: "継続中の記録" },
+    heading: { vi: "Đang duy trì", ja: "続けていること" },
     caption: { vi: "Cập nhật mỗi ngày trên Life OS.", ja: "Life OSで毎日更新。" },
     unit: { vi: "ngày", ja: "日" },
+    /**
+     * Nhãn cho dòng nhỏ dưới mỗi con số. Lập trình đếm CỘNG DỒN, hai cái kia
+     * đếm CHUỖI — không ghi ra thì ba con số cạnh nhau trông như cùng đơn vị.
+     * Vì thế tiêu đề mục cũng đổi từ "Chuỗi đang duy trì" thành "Đang duy trì":
+     * để nguyên chữ "chuỗi" là nói sai về một trong ba thẻ.
+     */
+    streakNote: { vi: "chuỗi hiện tại", ja: "現在の連続" },
+    totalNote: { vi: "cộng dồn", ja: "累計" },
+    best: { vi: "dài nhất", ja: "最長" },
     heatmapLabel: { vi: "Nhịp mỗi ngày", ja: "毎日のリズム" },
     // key phải khớp với PublicStreaks trong lib/streaks.ts
     items: [

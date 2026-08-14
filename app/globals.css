@@ -37,8 +37,11 @@
      không nhìn ra, nên nó thành một hình chữ nhật góc nhọn — cứng và thô. */
   --radius-xl: 16px;
 
-  /* Container */
-  --container-site: 1120px;
+  /* Container
+     1120 → 1240 (14/08): ở màn 1280px thì bản cũ chừa 80px trống mỗi bên, nên
+     nội dung trông như một cột hẹp đặt giữa một trang rộng. `prose` giữ nguyên
+     720px — đó là bề rộng ĐỌC, nới ra là mắt phải quét ngang xa hơn mỗi dòng. */
+  --container-site: 1240px;
   --container-prose: 720px;
   --container-os: 1280px;
 

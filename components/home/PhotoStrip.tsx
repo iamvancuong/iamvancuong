@@ -99,12 +99,28 @@ export function PhotoStrip({
                       : "h-[180px] md:h-[240px]"
                   }`}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element -- ảnh đi
-                      qua /api/uploads (kiểm quyền từng tấm), next/image không qua đó */}
+                  {/*
+                    Dùng ẢNH ĐẦY ĐỦ (`url`), KHÔNG dùng `thumbUrl`.
+
+                    `thumbUrl` chỉ 480px cạnh dài và nén ở chất lượng 72 — nó
+                    được sinh ra cho lưới ảnh ô nhỏ. Ô ở dải này rộng tới ~435px
+                    và cao 290px, mà màn hình 2× thì cần ~870px THẬT: ảnh 480px
+                    bị phóng gần gấp đôi, nên upload nét tới đâu nhìn cũng vỡ.
+                    Bản đầy đủ là 2000px/chất lượng 82, thừa sức cho cỡ này.
+
+                    Đổi lại mỗi tấm nặng hơn. Chấp nhận được vì `loading="lazy"`
+                    chỉ tải tấm đang lọt vào khung nhìn, và dải này cuộn ngang
+                    nên phần lớn ảnh không bao giờ được yêu cầu.
+
+                    eslint-disable vì `/api/uploads` là route động có kiểm quyền
+                    từng tấm — cùng lý do PhotoGrid và PhotoGallery né next/image.
+                  */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={p.thumbUrl ?? p.url}
+                    src={p.url}
                     alt={p.caption ?? ""}
                     loading="lazy"
+                    decoding="async"
                     className="size-full object-cover"
                   />
 
