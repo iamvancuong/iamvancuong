@@ -491,7 +491,9 @@ function revalidateMemory(areaSlug?: string | null) {
   revalidatePath("/os/journey");
   revalidatePath("/os/log");
   revalidatePath("/journey");
-  revalidatePath("/photos");
+  // Trang chủ có dải ảnh lấy từ ảnh của ký ức đã công khai — sửa ký ức mà
+  // không dựng lại trang chủ thì dải ảnh giữ nguyên bản cũ.
+  revalidatePath("/");
 }
 
 export async function createMemory(areaSlug: string | null, fd: FormData) {

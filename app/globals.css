@@ -33,6 +33,9 @@
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
+  /* Chỉ cho khối ẢNH LỚN (hero). Bo 8px trên một tấm ảnh cao 500px gần như
+     không nhìn ra, nên nó thành một hình chữ nhật góc nhọn — cứng và thô. */
+  --radius-xl: 16px;
 
   /* Container */
   --container-site: 1120px;
@@ -334,6 +337,59 @@ body {
   animation: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* ── HERO ──────────────────────────────────────────────────────
+   Chữ TRỒI LÊN từ một khung cắt, thay vì mờ dần tại chỗ.
+
+   Khác biệt nằm ở chỗ mắt không thấy chữ ở trạng thái dở dang: nó bị khung
+   che hoàn toàn rồi hiện ra nguyên vẹn. Mờ dần thì suốt 0.7s đầu người ta
+   đang đọc một dòng chữ nhờ nhờ — trông như trang tải chưa xong.
+
+   `overflow: hidden` cắt cả phần đuôi chữ (g, y, ợ) nếu khung ôm sát, nên
+   phía gọi phải chừa `pb-[0.14em] -mb-[0.14em]`: nới khung xuống rồi kéo lại
+   bằng margin âm, giữ nguyên khoảng cách với dòng dưới. */
+@keyframes rise {
+  from {
+    transform: translateY(115%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.rise-mask {
+  overflow: hidden;
+}
+
+/* `backwards` chứ KHÔNG phải `both`.
+   `both` giữ luôn khung hình cuối sau khi chạy xong — nghe thì vô hại, nhưng
+   nó khiến trạng thái nhìn thấy được phụ thuộc vào việc animation có chạy hay
+   không. `backwards` chỉ mượn khung đầu TRƯỚC khi chạy, xong thì trả phần tử
+   về đúng trạng thái thường của nó. Nghĩa là nếu animation không chạy vì bất
+   cứ lý do gì, cái nhận được là "hiện ra không hiệu ứng" chứ không phải
+   "biến mất". Với `.animate-reveal-up` bên dưới thì đây là khác biệt giữa
+   thấy ảnh và KHÔNG thấy gì, vì khung đầu của nó là clip-path che kín. */
+.rise-mask > * {
+  display: block;
+  animation: rise 0.95s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+/* Ảnh hero: mở dần từ dưới lên, kèm thu nhẹ về đúng cỡ. Hai thứ cùng lúc cho
+   cảm giác tấm ảnh được KÉO vào chỗ, chứ không phải bật ra. */
+@keyframes reveal-up {
+  from {
+    clip-path: inset(100% 0 0 0);
+    transform: scale(1.06);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+    transform: scale(1);
+  }
+}
+
+.animate-reveal-up {
+  animation: reveal-up 1.15s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
 /* Hiện dần khi cuộn tới (các section phía dưới). */
 .reveal {
   opacity: 0;
@@ -383,6 +439,16 @@ body {
     transition: none;
     opacity: 1;
     transform: none;
+  }
+
+  /* Hero cũng phải nhường: `clip-path` phải trả về `inset(0)` chứ không chỉ
+     tắt animation — bỏ animation mà giữ trạng thái đầu thì ảnh bị cắt mất
+     hoàn toàn và không có gì đưa nó về. */
+  .rise-mask > *,
+  .animate-reveal-up {
+    animation: none;
+    transform: none;
+    clip-path: none;
   }
 }
 

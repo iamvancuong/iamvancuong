@@ -33,16 +33,26 @@ export function BlogListView({
 
   return (
     <>
-      <header className="border-b border-line pb-8">
-        <h1 lang={jl} className="text-[32px] font-semibold tracking-[-0.02em]">
+      {/* Tiêu đề lớn hẳn lên và bỏ đường kẻ dưới: thang chữ tự nó đã phân cấp
+          rồi, thêm một đường kẻ nữa chỉ là nói lại cùng một điều bằng mực. */}
+      <header>
+        <h1
+          lang={jl}
+          className="text-[40px] font-semibold leading-[1.05] tracking-[-0.03em] md:text-[52px]"
+        >
           {t.blog.title[lang]}
         </h1>
-        <p lang={jl} className="mt-2 text-[16px] text-ink-2">
+        <p
+          lang={jl}
+          className="mt-3 max-w-[52ch] text-[17px] leading-relaxed text-ink-2 md:text-[18px]"
+        >
           {t.blog.subtitle[lang]}
         </p>
       </header>
 
-      <nav className="mt-6 flex flex-wrap gap-2">
+      {/* Viên bo tròn hẳn: viên bo 6px trông như ô nhập liệu, bo tròn hẳn thì
+          đọc ra ngay là bộ lọc bấm được. */}
+      <nav className="mt-8 flex flex-wrap gap-2">
         {filters.map((f) => {
           const on = f.key === active;
           return (
@@ -50,7 +60,7 @@ export function BlogListView({
               key={f.key}
               href={f.key === "all" ? "/blog" : `/blog?tag=${f.key}`}
               lang={f.lang}
-              className={`rounded-[var(--radius-md)] border px-3 py-1 text-[13px] transition-colors ${
+              className={`rounded-full border px-3.5 py-1.5 text-[13px] transition-colors ${
                 on
                   ? "border-ink bg-ink text-bg"
                   : "border-line text-ink-2 hover:border-ink-3 hover:text-ink"
@@ -72,7 +82,7 @@ export function BlogListView({
         </p>
       )}
 
-      <div className="mt-10">
+      <div className="mt-8">
         {posts.length > 0 ? (
           posts.map((p) => <PostCard key={p.id} post={p} />)
         ) : (

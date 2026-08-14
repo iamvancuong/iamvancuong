@@ -247,12 +247,6 @@
       "namedRegex": "^/os/write(?:/)?$"
     },
     {
-      "page": "/photos",
-      "regex": "^/photos(?:/)?$",
-      "routeKeys": {},
-      "namedRegex": "^/photos(?:/)?$"
-    },
-    {
       "page": "/projects",
       "regex": "^/projects(?:/)?$",
       "routeKeys": {},
