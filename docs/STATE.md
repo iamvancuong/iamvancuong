@@ -136,7 +136,7 @@ Next 16 + Tailwind v4 + design token tập trung · Inter + Noto Sans JP (đẹp
 ### Life OS
 | Trang | Nội dung |
 |---|---|
-| `/os` | **① việc hôm nay (tab Hôm nay/Ngày mai)** · **② pomodoro tiếng Nhật + nhịp đợt + biểu đồ** · 3 việc NOW · cam kết kỳ này · kỳ đã qua chưa chấm · chuỗi ngày + lịch nhiệt · **3 nguyên tắc/ngày** · lĩnh vực đang có việc. ⚠️ **3 việc nền tảng đã GỠ khỏi đây** (12/08) — chúng chỉ tick được cuối ngày, mà đây là màn hình mở lúc sáng dậy |
+| `/os` | **Bốn tab** (14/08, trạng thái ở `?tab=`): **Nên nhớ** (mặc định — «Nỗ lực để làm gì?» cố định trong code + 3 nguyên tắc/ngày) · **Việc** (đường vào nhật ký + việc hôm nay/ngày mai + 3 việc NOW) · **Tiếng Nhật** (pomodoro + nhịp đợt + biểu đồ) · **Nhìn lại** (kỳ chưa chấm · cam kết kỳ này · chuỗi ngày + lịch nhiệt · mục tiêu gần nhất). Badge trên tab chỉ đếm thứ **có hạn** — việc chưa xong, kỳ chưa chấm — vì ẩn một thứ có hạn sau tab là cách chắc nhất để quên nó. ⚠️ **3 việc nền tảng đã GỠ khỏi đây** (12/08) — chỉ tick được cuối ngày, mà đây là màn hình mở lúc sáng dậy. ⚠️ **«Lĩnh vực đang có việc» đã GỠ** (14/08) — bảy đường tắt sang thứ vốn nằm sẵn ở thanh bên |
 | `/os/a/[slug]` | 1 file cho 7 lĩnh vực × 5 tab: Mục tiêu · Nguyên tắc · Đang dùng · **Số đo** · Ký ức. **Tab rỗng bị ẩn**, nằm sau nút `+` kèm một dòng nói nó dùng để làm gì |
 | `/os/calendar` | Lịch tháng **đọc theo tuần**: ô ngày (đậm nhạt theo việc nền tảng) cạnh cam kết của chính tuần đó |
 | `/os/focus` | NOW/NEXT/LATER/NO · **trần NOW = 3 enforce ở SERVER** · sắp xếp lên/xuống |

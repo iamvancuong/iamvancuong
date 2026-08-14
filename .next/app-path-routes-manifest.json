@@ -7,8 +7,8 @@
   "/api/backup/route": "/api/backup",
   "/api/auth/login/route": "/api/auth/login",
   "/api/contact/route": "/api/contact",
-  "/api/uploads/route": "/api/uploads",
   "/api/uploads/[...path]/route": "/api/uploads/[...path]",
+  "/api/uploads/route": "/api/uploads",
   "/feed.xml/route": "/feed.xml",
   "/opengraph-image/route": "/opengraph-image",
   "/robots.txt/route": "/robots.txt",
@@ -30,12 +30,12 @@
   "/os/huong-dan/page": "/os/huong-dan",
   "/os/goals/page": "/os/goals",
   "/os/inbox/page": "/os/inbox",
-  "/os/focus/page": "/os/focus",
   "/os/calendar/page": "/os/calendar",
+  "/os/focus/page": "/os/focus",
   "/os/journey/page": "/os/journey",
   "/os/log/[date]/page": "/os/log/[date]",
   "/os/money/page": "/os/money",
   "/os/log/page": "/os/log",
-  "/os/write/[slug]/page": "/os/write/[slug]",
-  "/os/write/page": "/os/write"
+  "/os/write/page": "/os/write",
+  "/os/write/[slug]/page": "/os/write/[slug]"
 }

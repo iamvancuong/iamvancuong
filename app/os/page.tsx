@@ -26,29 +26,40 @@ import { EmptyNote } from "@/components/os/formBits";
 import { TodayPanel } from "@/components/os/TodayPanel";
 import { DayPlan } from "@/components/os/DayPlan";
 import { JapaneseToday } from "@/components/os/JapaneseToday";
+import { DashTabs, toDashTab } from "@/components/os/DashTabs";
+import { WhyPanel } from "@/components/os/WhyPanel";
 
 /** Bao nhiêu nguyên tắc hiện mỗi ngày. Một câu quá dễ lướt qua, ba câu thì không. */
 const DAILY_PRINCIPLES = 3;
 
 /**
- * Thứ tự trên màn hình, theo đúng thứ tự cần lúc sáng dậy:
- *   1. Tôi sống theo nguyên tắc nào?     ← 3 nguyên tắc, đọc mất ba giây
- *   2. Đường vào nhật ký hôm nay
- *   3. Hôm nay tôi phải làm gì?          ← DayPlan
- *   4. Tiếng Nhật đang nhanh hay chậm?   ← JapaneseToday
- *   5. Tôi đang tập trung vào gì?
- *   6. Tôi có đang đi đúng hướng không?
+ * Trang «Hôm nay» — chia làm BỐN TAB (14/08), không còn là một trang dài.
  *
- * Nguyên tắc lên đầu (12/08) theo yêu cầu của chủ nhân: nằm giữa trang thì
- * lướt qua mất, mà cả mục đó tồn tại chỉ để được ĐỌC.
+ *   Nên nhớ    ← mặc định: nỗ lực để làm gì + 3 nguyên tắc trong ngày
+ *   Việc       ← đường vào nhật ký + việc hôm nay/ngày mai + đang tập trung
+ *   Tiếng Nhật ← pomodoro + nhịp đợt + biểu đồ
+ *   Nhìn lại   ← kỳ chưa chấm · cam kết kỳ này · chuỗi ngày · mục tiêu gần nhất
+ *
+ * Lý do chia + vì sao «Nên nhớ» là tab đầu: xem chú thích trong `DashTabs.tsx`.
+ *
+ * ⚠️ Mục «Lĩnh vực đang có việc» đã GỠ (14/08). Nó chỉ là bảy đường tắt sang
+ * thứ vốn nằm sẵn ở thanh bên, và chiếm chỗ đúng bằng một màn hình điện thoại.
+ *
+ * Mọi truy vấn vẫn chạy cho MỌI tab, không lọc theo tab đang mở: hai badge
+ * (việc chưa xong · kỳ chưa chấm) cần số của tab đang đóng, và đây là app một
+ * người dùng — vài truy vấn thừa rẻ hơn nhiều so với một badge sai.
  */
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: PageProps<"/os">) {
+  const sp = await searchParams;
+  const tab = toDashTab(sp.tab);
+
   const iso = todayISO();
   const tomorrow = addDaysISO(iso, 1);
   const yesterday = addDaysISO(iso, -1);
 
   const [
-    areas,
     nearGoals,
     principles,
     logs,
@@ -58,16 +69,6 @@ export default async function DashboardPage() {
     yesterdayUndone,
     studyGoal,
   ] = await Promise.all([
-      db.area.findMany({
-        where: { active: true },
-        orderBy: { order: "asc" },
-        select: {
-          slug: true,
-          name: true,
-          tagline: true,
-          _count: { select: { goals: true, principles: true, items: true } },
-        },
-      }),
       // Mốc dài hạn — cam kết tuần/tháng có mục riêng bên dưới, không trộn vào
       db.goal.findMany({
         where: {
@@ -183,15 +184,6 @@ export default async function DashboardPage() {
     year: periodStats(logs, "year"),
   };
 
-  // Lĩnh vực đang có việc ở NOW. Chưa đặt việc nào thì hiện cả danh sách —
-  // lúc đó nó là lời mời bắt đầu, không phải 28 ô trống bắt điền cho đủ.
-  const nowSlugs = new Set(
-    nowItems.map((f) => f.area?.slug).filter((s): s is string => !!s),
-  );
-  const focusedAreas = nowSlugs.size
-    ? areas.filter((a) => nowSlugs.has(a.slug))
-    : areas;
-
   // Cam kết: đang trong kỳ, và kỳ đã qua mà chưa chấm.
   // Kỳ đã chấm rồi thì thôi — Dashboard không phải chỗ lưu trữ.
   const withPeriod = periodGoals.filter((g) => g.periodStart);
@@ -221,9 +213,12 @@ export default async function DashboardPage() {
     (_, i) => principles[(dayIndex + i) % principles.length],
   );
 
+  // Badge của tab — chỉ đếm thứ CÓ HẠN, xem chú thích trong `DashTabs.tsx`.
+  const undoneToday = todayTasks.filter((t) => !t.done).length;
+
   return (
-    <div className="max-w-[880px] space-y-12">
-      <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line pb-5">
+    <div className="max-w-[880px]">
+      <header className="flex flex-wrap items-baseline justify-between gap-2 pb-4">
         <h1 className="text-[20px] font-semibold tracking-[-0.01em]">
           Hôm nay
           <span className="ml-2.5 text-[15px] font-normal text-ink-3">
@@ -235,235 +230,217 @@ export default async function DashboardPage() {
         </span>
       </header>
 
-      {/* Nguyên tắc trong ngày — đọc mất ba giây, nhưng là cách duy nhất
-          để những dòng đó không thành chữ chết. */}
-      {dailyPrinciples.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-[12px] font-medium uppercase tracking-[0.08em] text-ink-3">
-            Nên nhớ hôm nay
-          </h2>
-          <ul className="grid gap-px overflow-hidden rounded-[var(--radius-lg)] border border-line bg-line">
-            {dailyPrinciples.map((p) => (
-              <li key={p.id} className="bg-surface p-4">
-                <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-3">
-                  {p.kind === PrincipleKind.DO ? "Nên" : "Không nên"}
-                </div>
-                <p className="mt-1.5 text-[16px] leading-snug">{p.text}</p>
-                {p.why && (
-                  <p className="mt-1.5 text-[13px] leading-relaxed text-ink-2">
-                    {p.why}
-                  </p>
-                )}
-                <Link
-                  href={`/os/a/${p.area.slug}?tab=principles`}
-                  className="mt-2 inline-block text-[12px] text-ink-3 transition-colors hover:text-ink"
-                >
-                  {p.area.name} →
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {/* Cảnh báo tuần + đường sang nhật ký. Ba việc nền tảng đã dọn khỏi
-          Dashboard — xem chú thích đầu TodayPanel.tsx. */}
-      <TodayPanel iso={iso} logs={logs} />
-
-      {/* Việc hôm nay — trên cùng, vì đây là câu duy nhất cần trả lời lúc
-             vừa mở mắt. Viết được từ tối hôm trước qua tab «Ngày mai». */}
-      <DayPlan
-        todayISO={iso}
-        tomorrowISO={tomorrow}
-        todayTasks={todayTasks}
-        tomorrowTasks={tomorrowTasks}
-        yesterdayISO={yesterday}
-        yesterdayUndone={yesterdayUndone}
+      <DashTabs
+        current={tab}
+        badges={{ viec: undoneToday, "nhin-lai": toReview.length }}
       />
 
-      {/* ② Tiếng Nhật — ưu tiên #1 của cả hệ thống, nên nằm ngay dưới. */}
-      <JapaneseToday
-        iso={iso}
-        log={todayLog}
-        logs={logs}
-        areaSlug={studyGoal?.area.slug ?? null}
-        goal={studyGoal}
-        todaySessions={todaySessions}
-        goalSessions={goalSessions}
-        daily={daily}
-        monthly={monthly}
-      />
+      <div className="mt-8 space-y-12">
+        {tab === "nho" && (
+          <>
+            {/* Vì sao phải cố. Cố định trong code — xem WhyPanel.tsx. */}
+            <WhyPanel />
 
-      {nowItems.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-[12px] font-medium uppercase tracking-[0.08em] text-ink-3">
-            Đang tập trung
-          </h2>
-          <ol className="grid gap-px overflow-hidden rounded-[var(--radius-lg)] border border-line bg-line md:grid-cols-3">
-            {nowItems.map((f, i) => (
-              <li key={f.id} className="bg-bg p-4">
-                <div className="text-[12px] text-ink-3">
-                  {String(i + 1).padStart(2, "0")}
-                  {f.area && ` · ${f.area.name}`}
-                </div>
-                <div className="mt-1 text-[15px] font-medium leading-snug">
-                  {f.title}
-                </div>
-              </li>
-            ))}
-          </ol>
-        </section>
-      )}
-
-      {/* Kỳ đã hết mà chưa chấm — để trên cùng vì đây là việc có hạn.
-          Để lâu thì không còn nhớ tuần đó xảy ra chuyện gì nữa. */}
-      {toReview.length > 0 && (
-        <section className="rounded-[var(--radius-lg)] border border-line bg-surface p-5">
-          <h2 className="text-[12px] font-medium uppercase tracking-[0.08em] text-ink-3">
-            Kỳ đã qua — chưa chấm
-          </h2>
-          <p className="mt-1.5 text-[14px] leading-relaxed text-ink-2">
-            Chấm nhanh ở đây, hoặc mở lĩnh vực để viết lại vì sao.
-          </p>
-          <ul className="mt-4 space-y-4">
-            {toReview.map((g) => (
-              <li key={g.id}>
-                <div className="text-[15px] leading-snug">{g.title}</div>
-                <div className="mt-0.5 text-[12px] text-ink-3">
-                  {g.area.name} ·{" "}
-                  {periodLabel(g.horizon, isoUTC(g.periodStart!))} ·{" "}
-                  {periodCountdown(g.horizon, isoUTC(g.periodStart!), iso)}
-                </div>
-                <div className="mt-2">
-                  <OutcomeButtons goal={g} slug={g.area.slug} />
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {livePeriods.length > 0 && (
-        <section>
-          <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className="text-[12px] font-medium uppercase tracking-[0.08em] text-ink-3">
-              Cam kết kỳ này
-            </h2>
-            <Link
-              href="/os/calendar"
-              className="text-[12px] text-ink-3 transition-colors hover:text-ink"
-            >
-              Xem lịch →
-            </Link>
-          </div>
-          <ul className="divide-y divide-line-soft border-y border-line-soft">
-            {livePeriods.map((g) => (
-              <li key={g.id} className="py-3">
-                <div className="flex flex-wrap items-baseline gap-x-2">
-                  <span className="text-[15px] leading-snug">{g.title}</span>
-                  {g.outcome && <OutcomeBadge outcome={g.outcome} />}
-                </div>
-                <div className="mt-0.5 flex flex-wrap items-baseline gap-x-2 text-[12px] text-ink-3">
-                  <span>{g.area.name}</span>
-                  <span>
-                    · {periodLabel(g.horizon, isoUTC(g.periodStart!))}
-                  </span>
-                  <span>
-                    ·{" "}
-                    {periodCountdown(g.horizon, isoUTC(g.periodStart!), iso)}
-                  </span>
-                  {g.metric && (
-                    <span className="tabular-nums">
-                      · {g.metric} {g.current || "—"}
-                      {g.target ? ` / ${g.target}` : ""}
-                    </span>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <Streak logs={logs} stats={streakStats} />
-
-      <section>
-        <h2 className="mb-3 text-[12px] font-medium uppercase tracking-[0.08em] text-ink-3">
-          Mục tiêu gần nhất
-        </h2>
-        {nearGoals.length === 0 ? (
-          <EmptyNote>
-            Chưa có mục tiêu nào. Mở một lĩnh vực bên trái và viết ra thứ bạn
-            muốn đạt.
-          </EmptyNote>
-        ) : (
-          <ul className="divide-y divide-line-soft border-y border-line-soft">
-            {nearGoals.map((g) => (
-              <li key={g.id} className="flex items-baseline gap-3 py-3">
-                <div className="min-w-0 flex-1">
-                  <div className="text-[15px] leading-snug">{g.title}</div>
-                  <div className="mt-0.5 text-[12px] text-ink-3">
-                    {g.area.name} · {horizonText(g)}
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
+            {/* Nguyên tắc trong ngày — đọc mất ba giây, nhưng là cách duy nhất
+                để những dòng đó không thành chữ chết. */}
+            {dailyPrinciples.length > 0 && (
+              <section>
+                <h2 className="mb-3 text-[12px] font-medium uppercase tracking-[0.08em] text-ink-3">
+                  Nguyên tắc hôm nay
+                </h2>
+                <ul className="grid gap-px overflow-hidden rounded-[var(--radius-lg)] border border-line bg-line">
+                  {dailyPrinciples.map((p) => (
+                    <li key={p.id} className="bg-surface p-4">
+                      <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-3">
+                        {p.kind === PrincipleKind.DO ? "Nên" : "Không nên"}
+                      </div>
+                      <p className="mt-1.5 text-[16px] leading-snug">{p.text}</p>
+                      {p.why && (
+                        <p className="mt-1.5 text-[13px] leading-relaxed text-ink-2">
+                          {p.why}
+                        </p>
+                      )}
+                      <Link
+                        href={`/os/a/${p.area.slug}?tab=principles`}
+                        className="mt-2 inline-block text-[12px] text-ink-3 transition-colors hover:text-ink"
+                      >
+                        {p.area.name} →
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+          </>
         )}
-        <Link
-          href="/os/goals"
-          className="mt-3 inline-block text-[14px] text-accent underline decoration-accent/35 underline-offset-[3px] hover:decoration-accent"
-        >
-          Xem tất cả theo mốc tuổi →
-        </Link>
-      </section>
 
-      {/*
-        Chỉ hiện lĩnh vực đang có việc ở NOW — OS-DESIGN §10.3.
+        {tab === "viec" && (
+          <>
+            {/* Cảnh báo tuần + đường sang nhật ký. Ba việc nền tảng đã dọn khỏi
+                Dashboard — xem chú thích đầu TodayPanel.tsx. */}
+            <TodayPanel iso={iso} logs={logs} />
 
-        Bảy lĩnh vực × bốn loại nội dung là 28 ô trống. Bày cả 28 ô ra mỗi lần
-        mở Dashboard sẽ sinh đúng cái phản xạ mà hệ thống này được dựng ra để
-        tránh: đi điền cho đầy. Những lĩnh vực còn lại vẫn nằm nguyên ở thanh
-        bên, im lặng, mở ra lúc nào cũng được.
-      */}
-      {focusedAreas.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-[12px] font-medium uppercase tracking-[0.08em] text-ink-3">
-            Lĩnh vực đang có việc
-          </h2>
-          <ul className="grid gap-px overflow-hidden rounded-[var(--radius-lg)] border border-line bg-line sm:grid-cols-2 lg:grid-cols-3">
-            {focusedAreas.map((a) => {
-              const total =
-                a._count.goals + a._count.principles + a._count.items;
-              return (
-                <li key={a.slug}>
+            {/* Việc hôm nay — câu duy nhất cần trả lời lúc vừa mở mắt.
+                Viết được từ tối hôm trước qua tab «Ngày mai». */}
+            <DayPlan
+              todayISO={iso}
+              tomorrowISO={tomorrow}
+              todayTasks={todayTasks}
+              tomorrowTasks={tomorrowTasks}
+              yesterdayISO={yesterday}
+              yesterdayUndone={yesterdayUndone}
+            />
+
+            {nowItems.length > 0 && (
+              <section>
+                <h2 className="mb-3 text-[12px] font-medium uppercase tracking-[0.08em] text-ink-3">
+                  Đang tập trung
+                </h2>
+                <ol className="grid gap-px overflow-hidden rounded-[var(--radius-lg)] border border-line bg-line md:grid-cols-3">
+                  {nowItems.map((f, i) => (
+                    <li key={f.id} className="bg-bg p-4">
+                      <div className="text-[12px] text-ink-3">
+                        {String(i + 1).padStart(2, "0")}
+                        {f.area && ` · ${f.area.name}`}
+                      </div>
+                      <div className="mt-1 text-[15px] font-medium leading-snug">
+                        {f.title}
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            )}
+          </>
+        )}
+
+        {tab === "tieng-nhat" && (
+          <JapaneseToday
+            iso={iso}
+            log={todayLog}
+            logs={logs}
+            areaSlug={studyGoal?.area.slug ?? null}
+            goal={studyGoal}
+            todaySessions={todaySessions}
+            goalSessions={goalSessions}
+            daily={daily}
+            monthly={monthly}
+          />
+        )}
+
+        {tab === "nhin-lai" && (
+          <>
+            {/* Kỳ đã hết mà chưa chấm — trên cùng vì đây là việc có hạn.
+                Để lâu thì không còn nhớ tuần đó xảy ra chuyện gì nữa. */}
+            {toReview.length > 0 && (
+              <section className="rounded-[var(--radius-lg)] border border-line bg-surface p-5">
+                <h2 className="text-[12px] font-medium uppercase tracking-[0.08em] text-ink-3">
+                  Kỳ đã qua — chưa chấm
+                </h2>
+                <p className="mt-1.5 text-[14px] leading-relaxed text-ink-2">
+                  Chấm nhanh ở đây, hoặc mở lĩnh vực để viết lại vì sao.
+                </p>
+                <ul className="mt-4 space-y-4">
+                  {toReview.map((g) => (
+                    <li key={g.id}>
+                      <div className="text-[15px] leading-snug">{g.title}</div>
+                      <div className="mt-0.5 text-[12px] text-ink-3">
+                        {g.area.name} ·{" "}
+                        {periodLabel(g.horizon, isoUTC(g.periodStart!))} ·{" "}
+                        {periodCountdown(g.horizon, isoUTC(g.periodStart!), iso)}
+                      </div>
+                      <div className="mt-2">
+                        <OutcomeButtons goal={g} slug={g.area.slug} />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            {livePeriods.length > 0 && (
+              <section>
+                <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+                  <h2 className="text-[12px] font-medium uppercase tracking-[0.08em] text-ink-3">
+                    Cam kết kỳ này
+                  </h2>
                   <Link
-                    href={`/os/a/${a.slug}`}
-                    className="block h-full bg-bg p-4 transition-colors hover:bg-surface"
+                    href="/os/calendar"
+                    className="text-[12px] text-ink-3 transition-colors hover:text-ink"
                   >
-                    <div className="text-[15px] font-medium">{a.name}</div>
-                    {a.tagline && (
-                      <p className="mt-1 text-[13px] leading-relaxed text-ink-3">
-                        {a.tagline}
-                      </p>
-                    )}
-                    <div className="mt-2 text-[12px] text-ink-3">
-                      {total === 0
-                        ? "chưa có gì — chưa cần thiết"
-                        : `${total} mục`}
-                    </div>
+                    Xem lịch →
                   </Link>
-                </li>
-              );
-            })}
-          </ul>
-          <p className="mt-3 text-[12px] leading-relaxed text-ink-3">
-            {areas.length - focusedAreas.length > 0
-              ? `${areas.length - focusedAreas.length} lĩnh vực khác đang nằm im ở thanh bên. Trống là bình thường.`
-              : null}
-          </p>
-        </section>
-      )}
+                </div>
+                <ul className="divide-y divide-line-soft border-y border-line-soft">
+                  {livePeriods.map((g) => (
+                    <li key={g.id} className="py-3">
+                      <div className="flex flex-wrap items-baseline gap-x-2">
+                        <span className="text-[15px] leading-snug">
+                          {g.title}
+                        </span>
+                        {g.outcome && <OutcomeBadge outcome={g.outcome} />}
+                      </div>
+                      <div className="mt-0.5 flex flex-wrap items-baseline gap-x-2 text-[12px] text-ink-3">
+                        <span>{g.area.name}</span>
+                        <span>
+                          · {periodLabel(g.horizon, isoUTC(g.periodStart!))}
+                        </span>
+                        <span>
+                          ·{" "}
+                          {periodCountdown(
+                            g.horizon,
+                            isoUTC(g.periodStart!),
+                            iso,
+                          )}
+                        </span>
+                        {g.metric && (
+                          <span className="tabular-nums">
+                            · {g.metric} {g.current || "—"}
+                            {g.target ? ` / ${g.target}` : ""}
+                          </span>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            <Streak logs={logs} stats={streakStats} />
+
+            <section>
+              <h2 className="mb-3 text-[12px] font-medium uppercase tracking-[0.08em] text-ink-3">
+                Mục tiêu gần nhất
+              </h2>
+              {nearGoals.length === 0 ? (
+                <EmptyNote>
+                  Chưa có mục tiêu nào. Mở một lĩnh vực bên trái và viết ra thứ
+                  bạn muốn đạt.
+                </EmptyNote>
+              ) : (
+                <ul className="divide-y divide-line-soft border-y border-line-soft">
+                  {nearGoals.map((g) => (
+                    <li key={g.id} className="flex items-baseline gap-3 py-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[15px] leading-snug">{g.title}</div>
+                        <div className="mt-0.5 text-[12px] text-ink-3">
+                          {g.area.name} · {horizonText(g)}
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <Link
+                href="/os/goals"
+                className="mt-3 inline-block text-[14px] text-accent underline decoration-accent/35 underline-offset-[3px] hover:decoration-accent"
+              >
+                Xem tất cả theo mốc tuổi →
+              </Link>
+            </section>
+          </>
+        )}
+      </div>
     </div>
   );
 }
