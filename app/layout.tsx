@@ -5,6 +5,8 @@ import { inter, notoJP } from "./fonts";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { LangProvider } from "@/components/i18n/LangProvider";
+import { BackgroundMusic } from "@/components/audio/BackgroundMusic";
+import { backgroundTrack, listTracks } from "@/lib/audio";
 import { site } from "@/lib/site";
 import { DEFAULT_LANG, LANG_COOKIE, isLang } from "@/lib/i18n";
 import "./globals.css";
@@ -80,8 +82,12 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col">
         <LangProvider initial={lang}>
           <Header />
-          <main className="flex-1 py-14 md:py-20">{children}</main>
+          <main className="flex-1 py-10 md:py-16">{children}</main>
           <Footer />
+
+          {/* Nhạc nền trang công khai. Tự ẩn trong /os — layout này bọc cả /os,
+              mà /os đã có trình phát riêng. Xem BackgroundMusic.tsx. */}
+          <BackgroundMusic track={backgroundTrack(listTracks())} />
         </LangProvider>
       </body>
     </html>

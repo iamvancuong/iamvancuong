@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Container } from "@/components/layout/Container";
 import { OsNav } from "@/components/os/OsNav";
+import { OsPlayer } from "@/components/audio/OsPlayer";
+import { listTracks } from "@/lib/audio";
 import { db } from "@/lib/db";
 
 /**
@@ -46,6 +48,10 @@ export default async function OsLayout({ children }: LayoutProps<"/os">) {
         <OsNav areas={areas} unread={unread} />
         <div className="min-w-0 flex-1">{children}</div>
       </div>
+
+      {/* Trong LAYOUT chứ không trong trang: chuyển trang trong /os thì nhạc
+          không đứt. Xem chú thích đầu OsPlayer.tsx. */}
+      <OsPlayer tracks={listTracks()} />
     </Container>
   );
 }
