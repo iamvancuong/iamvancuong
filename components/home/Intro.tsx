@@ -12,7 +12,7 @@ import { Frame } from "./Frame";
 import { Journey } from "./Journey";
 import { ContactForm } from "./ContactForm";
 import { BrandIcon, type BrandName } from "./BrandIcon";
-import { PhotoStrip, type StripPhoto } from "./PhotoStrip";
+import { PhotoStrip, type StripItem } from "./PhotoStrip";
 import { Reveal } from "@/components/Reveal";
 
 const ALL_SOCIALS: { name: BrandName; href: string }[] = [
@@ -56,11 +56,13 @@ const BAND = "py-20 md:py-28";
 export function Intro({
   streaks,
   journey,
-  photos,
+  stripJourney,
+  stripBlog,
 }: {
   streaks: PublicStreaks;
   journey: JourneyYear[];
-  photos: StripPhoto[];
+  stripJourney: StripItem[];
+  stripBlog: StripItem[];
 }) {
   const { lang } = useLang();
   const jl = lang === "ja" ? "ja" : undefined;
@@ -243,13 +245,20 @@ export function Intro({
         </div>
       </section>
 
-      {/* ── DẢI ẢNH ──────────────────────────────────────────
-          KHÔNG ép cao full màn như các mục khác: đây là một băng để lướt qua,
-          không phải một chặng dừng. Chưa có ảnh công khai thì tự dùng ảnh mẫu
-          — xem SAMPLES trong PhotoStrip.tsx. */}
-      <section className="py-14 md:py-20">
+      {/* ── HAI DẢI ẢNH ──────────────────────────────────────
+          KHÔNG ép cao full màn như các mục khác: đây là băng để lướt qua,
+          không phải một chặng dừng.
+
+          Hai hàng chứ không phải một hàng trộn: bấm vào ảnh hành trình là sang
+          dòng thời gian, bấm vào ảnh bài viết là sang bài đó — hai đích khác
+          nhau thì phải nhìn ra được TRƯỚC khi bấm, không thì mỗi cú bấm là một
+          lần đoán. */}
+      <section className="space-y-10 py-14 md:py-20">
         <Reveal className="w-full">
-          <PhotoStrip photos={photos} />
+          <PhotoStrip label="Hành trình" items={stripJourney} />
+        </Reveal>
+        <Reveal className="w-full">
+          <PhotoStrip label="Viết" items={stripBlog} />
         </Reveal>
       </section>
 

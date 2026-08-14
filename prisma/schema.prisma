@@ -384,11 +384,23 @@ model Memory {
   visibility Visibility @default(PRIVATE)
   photos     Photo[]
 
+  /// Hiện ảnh bìa của ký ức này trên dải ảnh ở TRANG CHỦ.
+  ///
+  /// Tách khỏi `visibility` vì hai câu hỏi khác nhau: "ai được xem" và "có
+  /// đáng lên trang chủ không". Công khai hết mọi ký ức vẫn hợp lý, nhưng dải
+  /// ảnh trang chủ chỉ chứa được vài tấm — nhồi hết vào thì nó thành một trang
+  /// ảnh thu nhỏ, mất luôn tác dụng chọn lọc.
+  ///
+  /// Ảnh bìa KHÔNG có cột riêng: là tấm đầu tiên theo `Photo.order`, mà thứ tự
+  /// đó đã sắp được bằng hai nút lên/xuống sẵn có.
+  showOnHome Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([date])
   @@index([visibility, date])
+  @@index([showOnHome])
 }
 
 /// Ảnh — database chỉ giữ ĐƯỜNG DẪN. File thật nằm ở object storage.
@@ -603,10 +615,15 @@ model Post {
 
   photos Photo[]
 
+  /// Hiện ảnh bìa của bài này trên dải ảnh ở TRANG CHỦ. Cùng lý do và cùng
+  /// cách lấy ảnh bìa với `Memory.showOnHome`.
+  showOnHome Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([visibility, publishedAt])
+  @@index([showOnHome])
 }
 
 /// Tin nhắn từ form liên hệ ở trang chủ công khai. Chỉ LƯU (chưa có hạ tầng

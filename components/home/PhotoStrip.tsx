@@ -1,97 +1,109 @@
+import Link from "next/link";
+
 /**
- * Dải ảnh ngang ở trang chủ.
+ * Dải ảnh nghiêng ở trang chủ — MỘT hàng, dùng hai lần (hành trình và blog).
  *
- * Đây là thứ trang chủ đang thiếu hẳn: toàn bộ trang là chữ, một tấm chân dung
- * và mấy con số. Người lạ đọc xong vẫn không thấy được cuộc sống ở Nhật trông
- * ra sao — mà đó chính là thứ trang này nói về.
+ * ## Vì sao nghiêng
  *
- * **Cuộn ngang chứ không phải lưới.** Lưới ép mọi tấm phải vừa một khung ô
- * vuông và ăn hết chiều cao màn hình; dải ngang giữ đúng tỉ lệ gốc từng tấm,
- * chiếm một băng cố định, và bản thân việc nó tràn ra khỏi mép phải là lời mời
- * kéo tiếp — không cần nút, không cần chấm tròn chỉ trang.
+ * Một hàng ảnh chữ nhật thẳng hàng đọc ra là "lưới ảnh" — thứ mọi trang đều
+ * có. Cho mỗi tấm lệch vài độ thì nó đọc ra là **ảnh in rải trên bàn**: cùng
+ * chừng ấy tấm ảnh, nhưng thành một cử chỉ thay vì một thành phần giao diện.
  *
- * Ảnh lấy từ `Photo` có `visibility = PUBLIC` — tức là ảnh của những **ký ức**
- * đã tick chia sẻ trong `/os`. Không còn trang quản lý ảnh riêng: ảnh thuộc về
- * ký ức và bài viết, nên chỗ bật/tắt cũng nằm ngay trong ký ức.
+ * Góc nghiêng lấy từ MỘT MẢNG CỐ ĐỊNH theo chỉ số, không phải `Math.random()`.
+ * Random chạy khác nhau ở server và ở trình duyệt → React báo lỗi hydration,
+ * và tệ hơn là ảnh nhảy sang góc khác ngay sau khi trang tải xong.
  *
- * Đây CHỈ là một băng để lướt qua, không phải cửa vào một trang ảnh — nên nó
- * cố ý không có link "xem tất cả".
+ * Rê chuột thì tấm ảnh **thẳng lại** và nhích lên: nó vừa là phản hồi, vừa nói
+ * đúng thứ sắp xảy ra — tấm đang xiêu vẹo trở về ngay ngắn nghĩa là "cái này
+ * bấm được".
+ *
+ * ## Ảnh ở đây từ đâu ra
+ *
+ * Ảnh bìa của những ký ức / bài viết đã tick **«hiện ở trang chủ»** trong
+ * `/os`. Ảnh bìa không có cột riêng trong database: là tấm đầu tiên theo
+ * `Photo.order` — thứ tự vốn đã sắp được bằng hai nút lên/xuống sẵn có.
+ *
+ * Bấm vào ảnh là sang thẳng ký ức / bài viết đó.
  */
 
-export type StripPhoto = {
+export type StripItem = {
   id: string;
+  /** Bấm vào thì đi đâu — `/journey` hoặc `/blog/<slug>`. */
+  href: string;
   url: string;
   thumbUrl: string | null;
+  /** Tiêu đề ký ức / bài viết. Dùng cho `alt` và chú thích khi rê chuột. */
   caption: string | null;
   width: number | null;
   height: number | null;
 };
 
 /**
- * Ảnh mẫu — dùng khi CHƯA có tấm nào được tick công khai.
- *
- * Trang chủ mà thiếu hẳn một mục thì không đánh giá được bố cục, nên chỗ này
- * luôn có ảnh. Sáu file nằm ở `public/images/home/`; **thay ảnh thật chỉ cần
- * ghi đè đúng tên file đó**, không phải sửa code.
- *
- * Ngay khi có ký ức đầu tiên kèm ảnh được tick công khai, ảnh thật thay hết
- * chỗ này — không trộn lẫn, vì trộn thì không nhìn ra tấm nào là mẫu.
- *
- * Kích thước ghi cứng ở đây vì `aspectRatio` phải biết TRƯỚC khi ảnh tải xong;
- * đợi ảnh mới biết tỉ lệ thì cả dải giật một nhịp lúc tải.
+ * Góc nghiêng, lặp lại theo chỉ số. Cố ý KHÔNG đối xứng và không đều: dãy đều
+ * (−3, +3, −3, +3…) lại thành một hoa văn, mà hoa văn thì trông có chủ đích —
+ * đúng thứ cần tránh, vì hiệu ứng này giả vờ là ngẫu nhiên.
  */
-const SAMPLES: StripPhoto[] = [
-  { n: 1, w: 1600, h: 1067 },
-  { n: 2, w: 1067, h: 1600 },
-  { n: 3, w: 1400, h: 1400 },
-  { n: 4, w: 1600, h: 1067 },
-  { n: 5, w: 1280, h: 1600 },
-  { n: 6, w: 1600, h: 1067 },
-].map(({ n, w, h }) => ({
-  id: `sample-${n}`,
-  url: `/images/home/photo-${n}.jpg`,
-  thumbUrl: null,
-  caption: null,
-  width: w,
-  height: h,
-}));
+const TILT = [-3, 2.2, -1.4, 3.1, -2.6, 1.6, -3.4, 2.8];
 
-export function PhotoStrip({ photos }: { photos: StripPhoto[] }) {
-  const list = photos.length > 0 ? photos : SAMPLES;
+export function PhotoStrip({
+  label,
+  items,
+}: {
+  label: string;
+  items: StripItem[];
+}) {
+  if (items.length === 0) return null;
 
   return (
     <div className="w-full">
+      <div className="text-[11px] font-medium uppercase tracking-[0.1em] text-ink-3">
+        {label}
+      </div>
+
       {/* Tràn ra sát mép màn hình rồi tự chừa lề bằng padding: ảnh bị cắt ở
           đúng mép trình duyệt trông như còn tiếp, chứ dừng lại ở lề container
-          thì trông như hết rồi mà xếp lệch. */}
-      <div className="-mx-6 overflow-x-auto pb-2 md:-mx-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <ul className="flex w-max gap-3 px-6 md:gap-4 md:px-8">
-          {list.map((p) => {
+          thì trông như hết rồi mà xếp lệch.
+          `py` chừa chỗ cho góc nghiêng và cho cú nhích lên khi rê chuột —
+          thiếu nó thì đỉnh ảnh bị `overflow` cắt cụt. */}
+      <div className="-mx-6 mt-4 overflow-x-auto px-6 py-4 md:-mx-8 md:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <ul className="flex w-max items-center gap-4 md:gap-5">
+          {items.map((p, i) => {
             // Giữ đúng tỉ lệ gốc trong một băng cao cố định. Thiếu số đo (ảnh
             // cũ) thì rơi về 4:3 — chỉ lệch khung, không vỡ bố cục.
             const ratio = p.width && p.height ? p.width / p.height : 4 / 3;
             return (
-              <li
-                key={p.id}
-                // `aspect-ratio` + chiều cao cố định → chiều rộng tự suy ra, nên
-                // đổi chiều cao ở md không cần tính lại chiều rộng ở JS.
-                className="h-[190px] shrink-0 overflow-hidden rounded-[var(--radius-lg)] border border-line md:h-[260px]"
-                style={{ aspectRatio: String(ratio) }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element -- ảnh đi
-                    qua /api/uploads (kiểm quyền từng tấm), next/image không qua đó */}
-                <img
-                  src={p.thumbUrl ?? p.url}
-                  alt={p.caption ?? ""}
-                  loading="lazy"
-                  className="size-full object-cover transition-transform duration-500 hover:scale-[1.04]"
-                />
+              <li key={p.id} className="shrink-0">
+                <Link
+                  href={p.href}
+                  title={p.caption ?? undefined}
+                  style={{
+                    aspectRatio: String(ratio),
+                    ["--tilt" as string]: `${TILT[i % TILT.length]}deg`,
+                  }}
+                  className="group relative block h-[180px] overflow-hidden rounded-[var(--radius-xl)] border border-line bg-surface shadow-sm transition-[transform,box-shadow] duration-300 ease-out [transform:rotate(var(--tilt))] hover:z-10 hover:shadow-lg hover:[transform:rotate(0deg)_translateY(-6px)] md:h-[240px]"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element -- ảnh đi
+                      qua /api/uploads (kiểm quyền từng tấm), next/image không qua đó */}
+                  <img
+                    src={p.thumbUrl ?? p.url}
+                    alt={p.caption ?? ""}
+                    loading="lazy"
+                    className="size-full object-cover"
+                  />
+
+                  {p.caption && (
+                    // Chú thích chỉ hiện khi rê tới: để sẵn thì mười tấm ảnh
+                    // thành mười dòng chữ, và dải ảnh hết còn là dải ảnh.
+                    <span className="absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-black/75 to-transparent p-3 pt-8 text-[13px] leading-snug text-white opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                      <span className="line-clamp-2">{p.caption}</span>
+                    </span>
+                  )}
+                </Link>
               </li>
             );
           })}
         </ul>
       </div>
-
     </div>
   );
 }

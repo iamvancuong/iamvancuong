@@ -241,6 +241,27 @@ export async function togglePublish(id: string) {
   revalidateAll(post.slug);
 }
 
+/**
+ * Bật/tắt "hiện ảnh bìa ở trang chủ" — song sinh với `toggleMemoryHome`.
+ *
+ * Bật ở đây KHÔNG tự xuất bản bài. Bài còn nháp thì vẫn không lên trang chủ vì
+ * `getHomeStrips()` đòi cả `visibility = PUBLIC` lẫn `publishedAt != null`.
+ */
+export async function togglePostHome(id: string) {
+  await assertOwner();
+
+  const post = await db.post.findUniqueOrThrow({
+    where: { id },
+    select: { slug: true, showOnHome: true },
+  });
+  await db.post.update({
+    where: { id },
+    data: { showOnHome: !post.showOnHome },
+  });
+
+  revalidateAll(post.slug);
+}
+
 export async function deletePost(id: string) {
   await assertOwner();
   const post = await db.post.delete({ where: { id } });

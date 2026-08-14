@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { Eye, EyeOff, Plus, Trash2, X } from "lucide-react";
+import { Eye, EyeOff, Home, Plus, Trash2, X } from "lucide-react";
 import { Visibility } from "@prisma/client";
 import { db } from "@/lib/db";
 import { listTags } from "@/lib/posts";
@@ -11,6 +11,7 @@ import {
   deletePost,
   deleteTag,
   savePost,
+  togglePostHome,
   togglePublish,
 } from "@/lib/os/postActions";
 import { MarkdownEditor } from "@/components/os/MarkdownEditor";
@@ -23,7 +24,12 @@ export default async function EditPostPage({
   const { slug } = await params;
 
   const [post, tags] = await Promise.all([
-    db.post.findUnique({ where: { slug }, include: { tags: true } }),
+    db.post.findUnique({
+      where: { slug },
+      // `photos` để biết bài có ảnh bìa hay chưa — nút «lên trang chủ»
+      // chỉ có nghĩa khi có ít nhất một tấm.
+      include: { tags: true, photos: { select: { id: true } } },
+    }),
     listTags(),
   ]);
   if (!post) notFound();
@@ -63,6 +69,30 @@ export default async function EditPostPage({
               {isPublic ? "Đang công khai" : "Xuất bản"}
             </button>
           </form>
+
+          {/* Chỉ hiện khi bài ĐÃ công khai VÀ có ảnh — hai điều kiện bắt buộc
+              để nó lên được dải ảnh trang chủ. Ảnh bìa là tấm đầu tiên theo
+              thứ tự ảnh của bài. */}
+          {isPublic && post.photos.length > 0 && (
+            <form action={togglePostHome.bind(null, post.id)}>
+              <button
+                type="submit"
+                title={
+                  post.showOnHome
+                    ? "Đang hiện ở trang chủ — bấm để gỡ xuống"
+                    : "Bấm để đưa ảnh bìa lên dải ảnh trang chủ"
+                }
+                className={`flex items-center gap-1.5 rounded-[var(--radius-md)] border px-3 py-1.5 text-[13px] transition-colors ${
+                  post.showOnHome
+                    ? "border-line text-accent hover:border-ink-3"
+                    : "border-line text-ink-3 hover:border-ink-3 hover:text-ink"
+                }`}
+              >
+                <Home size={14} />
+                {post.showOnHome ? "Ở trang chủ" : "Lên trang chủ"}
+              </button>
+            </form>
+          )}
 
           <form action={deletePost.bind(null, post.id)}>
             <button
