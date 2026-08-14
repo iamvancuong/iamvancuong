@@ -400,6 +400,13 @@ async function seedMemories() {
         areaId: m.area ? (byslug.get(m.area) ?? null) : null,
         visibility: vis,
         photos: { create: photos },
+        /**
+         * Lên dải ảnh trang chủ khi ký ức vừa CÔNG KHAI vừa CÓ ảnh — đúng hai
+         * điều kiện `getHomeStrips()` đòi. Ký ức riêng tư hoặc không ảnh mà
+         * bật cờ này thì cờ nằm đó vô nghĩa, và lúc xem dữ liệu sẽ tưởng nó
+         * hỏng trong khi nó đang đúng.
+         */
+        showOnHome: vis === Visibility.PUBLIC && photos.length > 0,
       },
     });
   }
@@ -417,6 +424,7 @@ async function seedPosts() {
   const posts = [
     {
       slug: DEMO_POST_SLUGS[0],
+      cover: ["Tokyo", 215] as [string, number],
       title: "[demo] Tháng đầu tiên ở Tokyo",
       excerpt: "Những thứ không ai nói trước với tôi: tàu, rác, và cảm giác không hiểu gì cả.",
       tags: t("japan-life"),
@@ -454,6 +462,7 @@ Nếu bạn cũng sắp sang: chuẩn bị kỹ đến đâu thì tháng đầu 
     },
     {
       slug: DEMO_POST_SLUGS[1],
+      cover: ["React", 265] as [string, number],
       title: "[demo] Tự học React trong 30 ngày — cái gì có tác dụng",
       excerpt: "Tôi xem hết ba khóa học rồi vẫn không build nổi gì. Đây là chỗ tôi làm sai.",
       tags: t("dev"),
@@ -489,6 +498,7 @@ Sau 30 ngày tôi không giỏi React. Nhưng tôi có một thứ đang chạy 
     },
     {
       slug: DEMO_POST_SLUGS[2],
+      cover: ["¥", 30] as [string, number],
       title: "[demo] Chi phí sống một tháng của du học sinh ở Tokyo",
       excerpt: "Con số thật của tôi, không phải con số trong tờ rơi tư vấn du học.",
       tags: t("japan-life"),
@@ -509,7 +519,23 @@ Baito được khoảng 85.000¥/tháng, nên vẫn phải bù thêm.`,
     },
   ];
 
+  /**
+   * Ảnh bìa của bài — chính là thứ hiện trên dải ảnh "Viết" ở trang chủ.
+   *
+   * Trước đây bài mẫu không có ảnh nào, nên dải ảnh blog luôn trống dù đã có
+   * bài công khai — nhìn ra thì tưởng tính năng hỏng, thực ra là chưa có ảnh
+   * để mà hiện.
+   *
+   * `showOnHome` chỉ bật khi bài vừa CÔNG KHAI vừa có ảnh: đúng hai điều kiện
+   * `getHomeStrips()` đòi. Bài riêng tư vẫn có ảnh bìa nhưng không lên trang
+   * chủ — và đó chính là phép thử đáng giá nhất của bộ dữ liệu mẫu này.
+   */
+  let covers = 0;
   for (const p of posts) {
+    const isPub = p.visibility === Visibility.PUBLIC && p.publishedAt !== null;
+    const photo = await makePhoto(p.cover[0], p.cover[1]);
+    covers++;
+
     await db.post.create({
       data: {
         slug: p.slug,
@@ -521,10 +547,22 @@ Baito được khoảng 85.000¥/tháng, nên vẫn phải bù thêm.`,
         visibility: p.visibility,
         publishedAt: p.publishedAt,
         tags: { connect: p.tags },
+        photos: {
+          create: [
+            {
+              ...photo,
+              visibility: p.visibility, // ảnh theo quyền của bài chứa nó
+              takenAt: p.publishedAt,
+            },
+          ],
+        },
+        showOnHome: isPub,
       },
     });
   }
-  console.log(`  ✓ ${posts.length} bài viết (2 công khai, 1 riêng tư)`);
+  console.log(
+    `  ✓ ${posts.length} bài viết (2 công khai, 1 riêng tư), ${covers} ảnh bìa — 2 tấm lên trang chủ`,
+  );
 }
 
 /* ---------------- chạy ---------------- */
