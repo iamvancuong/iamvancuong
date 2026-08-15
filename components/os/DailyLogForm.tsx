@@ -1,10 +1,12 @@
 "use client";
 
-import { useRef, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { Eye, Pencil } from "lucide-react";
 import type { DailyLog } from "@prisma/client";
 import { saveDailyLog } from "@/lib/os/dayActions";
 import { fmtH } from "@/lib/os/day";
 import { jpTotal } from "@/lib/os/japanese";
+import { renderMarkdown } from "@/lib/markdown";
 
 /**
  * Không có nút Lưu.
@@ -22,6 +24,7 @@ export function DailyLogForm({
 }) {
   const ref = useRef<HTMLFormElement>(null);
   const [saving, startSaving] = useTransition();
+  const [preview, setPreview] = useState(false);
 
   const submit = () => ref.current?.requestSubmit();
 
@@ -122,12 +125,37 @@ export function DailyLogForm({
       </section>
 
       <section>
-        <Label>Nhật ký</Label>
-        <div className="space-y-4">
+        <Label>
+          Nhật ký
+          <button
+            type="button"
+            onClick={() => setPreview((v) => !v)}
+            className={`ml-auto flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-[12px] normal-case tracking-normal transition-colors ${
+              preview
+                ? "bg-surface-2 text-ink"
+                : "text-ink-3 hover:bg-surface hover:text-ink"
+            }`}
+          >
+            {preview ? <Pencil size={13} /> : <Eye size={13} />}
+            {preview ? "Viết tiếp" : "Xem thử"}
+          </button>
+        </Label>
+
+        {/*
+          Ô nhập KHÔNG bị tháo khi xem thử, chỉ bị ẩn bằng CSS.
+
+          Tháo ra thì <textarea> mất khỏi form, nên lần lưu kế tiếp gửi thiếu
+          trường — và vì form này lưu lúc rời ô chứ không có nút Lưu, hậu quả
+          là ba ô chữ bị ghi đè thành rỗng mà không có gì báo. Ẩn bằng `hidden`
+          thì trường vẫn nằm trong form và vẫn được gửi.
+        */}
+        <div className={preview ? "hidden" : "space-y-4"}>
           <Journal name="journalWhat" label="Hôm nay có gì?" defaultValue={log?.journalWhat ?? ""} onBlur={submit} />
           <Journal name="journalLearn" label="Học được gì?" defaultValue={log?.journalLearn ?? ""} onBlur={submit} />
           <Journal name="journalChange" label="Mai đổi gì?" defaultValue={log?.journalChange ?? ""} onBlur={submit} />
         </div>
+
+        {preview && <JournalPreview form={ref.current} />}
 
         <div className="mt-4 rounded-[var(--radius-lg)] border border-line p-2">
           <Check
@@ -143,12 +171,68 @@ export function DailyLogForm({
   );
 }
 
+/**
+ * Xem thử nhật ký ở đúng hình hài một bài blog.
+ *
+ * Dùng CHÍNH `renderMarkdown` mà trang blog thật dùng — remark chạy được cả
+ * trên trình duyệt — nên thứ thấy ở đây bằng đúng thứ sẽ lên trang, không có
+ * chuyện lệch vì hai bộ render. Class `.prose` cũng là class của trang bài.
+ *
+ * Đọc thẳng từ DOM của form chứ không giữ state song song: ba ô là
+ * uncontrolled (`defaultValue`), nên state song song sẽ lệch ngay lần gõ đầu.
+ */
+function JournalPreview({ form }: { form: HTMLFormElement | null }) {
+  const [html, setHtml] = useState("");
+
+  useEffect(() => {
+    if (!form) return;
+    const get = (n: string) =>
+      (form.elements.namedItem(n) as HTMLTextAreaElement | null)?.value ?? "";
+
+    const md = [
+      ["Hôm nay có gì?", get("journalWhat")],
+      ["Học được gì?", get("journalLearn")],
+      ["Mai đổi gì?", get("journalChange")],
+    ]
+      .filter(([, body]) => body.trim())
+      .map(([h, body]) => `## ${h}\n\n${body}`)
+      .join("\n\n");
+
+    if (!md) {
+      setHtml("");
+      return;
+    }
+    let alive = true;
+    renderMarkdown(md).then((out) => {
+      if (alive) setHtml(out);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [form]);
+
+  if (!html) {
+    return (
+      <p className="rounded-[var(--radius-lg)] border border-dashed border-line px-4 py-6 text-center text-[14px] text-ink-3">
+        Chưa viết gì để xem thử.
+      </p>
+    );
+  }
+
+  return (
+    <article
+      className="prose rounded-[var(--radius-lg)] border border-line px-5 py-4"
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
+}
+
 const inputCls =
   "mt-1 w-full rounded-[var(--radius-sm)] border border-line bg-bg px-2.5 py-2 text-[16px] tabular-nums outline-none focus:border-ink-3";
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="mb-3 flex items-center gap-2 text-[12px] font-medium uppercase tracking-[0.08em] text-ink-3">
+    <h2 className="mb-3 flex min-h-[26px] items-center gap-2 text-[12px] font-medium uppercase tracking-[0.08em] text-ink-3">
       {children}
     </h2>
   );
@@ -212,6 +296,17 @@ function Check({
   );
 }
 
+/**
+ * Ô nhật ký — cao gấp ba bản cũ, và tự cao thêm theo nội dung.
+ *
+ * `rows={2}` cũ là hai dòng: viết tới dòng thứ ba là ô bắt đầu cuộn trong
+ * chính nó, che mất phần vừa gõ. Với một ô mà mục đích là *viết dài*, cuộn nội
+ * bộ là thứ khiến người ta viết ngắn lại — chỉ vì không nhìn thấy những gì
+ * mình đã viết.
+ *
+ * Tự cao thêm: đặt `height = auto` rồi gán bằng `scrollHeight`. Phải reset về
+ * `auto` trước, nếu không ô chỉ phình ra được mà không co lại khi xóa bớt chữ.
+ */
 function Journal({
   name,
   label,
@@ -223,15 +318,25 @@ function Journal({
   defaultValue: string;
   onBlur: () => void;
 }) {
+  const grow = (el: HTMLTextAreaElement) => {
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  };
+
   return (
     <label className="block">
       <span className="block text-[13px] text-ink-2">{label}</span>
       <textarea
         name={name}
-        rows={2}
+        rows={6}
         defaultValue={defaultValue}
         onBlur={onBlur}
-        className="mt-1.5 w-full resize-y rounded-[var(--radius-sm)] border border-line bg-bg px-3 py-2 text-[15px] leading-relaxed outline-none focus:border-ink-3"
+        onInput={(e) => grow(e.currentTarget)}
+        // Chiều cao đúng ngay từ lần vẽ đầu, kể cả khi ngày đó đã viết dài sẵn.
+        ref={(el) => {
+          if (el) grow(el);
+        }}
+        className="mt-1.5 w-full resize-y overflow-hidden rounded-[var(--radius-sm)] border border-line bg-bg px-3 py-2.5 text-[15px] leading-relaxed outline-none focus:border-ink-3"
       />
     </label>
   );

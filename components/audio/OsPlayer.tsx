@@ -21,7 +21,16 @@ import type { Track } from "@/lib/audio";
  */
 
 const VOL_KEY = "os-music-volume";
-const DEFAULT_VOL = 0.5;
+/**
+ * 15%, không phải 50%.
+ *
+ * Đây là nhạc NỀN để làm việc, không phải để nghe. Mở lần đầu mà nó bật ở 50%
+ * trên một cái máy đang để loa to thì giật mình — và phản xạ ngay sau cú giật
+ * mình đó là tắt hẳn, không bao giờ mở lại nữa. Muốn to hơn thì kéo thanh
+ * trượt mất một giây và mức đó được nhớ lại; còn cú giật mình thì không lấy
+ * lại được.
+ */
+const DEFAULT_VOL = 0.15;
 
 export function OsPlayer({ tracks }: { tracks: Track[] }) {
   const ref = useRef<HTMLAudioElement>(null);
