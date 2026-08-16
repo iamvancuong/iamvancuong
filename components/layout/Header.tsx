@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { Container } from "./Container";
 import { nav } from "@/lib/site";
@@ -15,38 +16,58 @@ export function Header() {
   const { lang } = useLang();
   const jl = lang === "ja" ? "ja" : undefined;
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+
+  /** Mục đang mở — so theo tiền tố để /blog/<bài> vẫn sáng ở «Viết». */
+  const active = (href: string) =>
+    href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   return (
-    <header className="animate-fade-down sticky top-0 z-40 border-b border-line bg-bg/80 backdrop-blur-md">
+    // KHÔNG còn `border-b`: nav giờ là một viên thuốc nổi, mà một đường kẻ
+    // ngang chạy hết bề ngang phía sau nó thì cắt đôi trang và làm viên thuốc
+    // trông như bị đóng đinh vào thanh, chứ không phải nổi trên nền.
+    <header className="animate-fade-down sticky top-0 z-40 bg-bg/85 backdrop-blur-md">
       <Container>
-        <div className="flex h-16 items-center gap-4">
+        <div className="flex h-[72px] items-center gap-4">
           <Link
             href="/"
             onClick={() => setOpen(false)}
-            className="shrink-0 text-[15px] font-semibold tracking-tight transition-opacity hover:opacity-70"
+            className="shrink-0 text-[17px] font-semibold tracking-[-0.02em] transition-opacity hover:opacity-70"
           >
             iamvancuong
+            {/* Dấu chấm xanh — cùng một dấu kết đặt ở cuối mọi tiêu đề lớn.
+                Lặp lại đúng một ký tự ở nhiều chỗ là cách rẻ nhất để các trang
+                trông như cùng một nhà. */}
+            <span className="text-accent">.</span>
           </Link>
 
           {/* Nav ngang — chỉ từ md trở lên. Màn nhỏ dùng menu hamburger bên dưới. */}
-          <nav className="hidden flex-1 items-center justify-center gap-5 text-[14px] md:flex lg:gap-7">
-            {nav.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                lang={jl}
-                className="nav-link whitespace-nowrap text-ink-2 transition-colors hover:text-ink"
-              >
-                {item.label[lang]}
-              </Link>
-            ))}
+          <nav className="ml-auto hidden items-center rounded-full border border-line bg-surface p-1 text-[13px] md:flex">
+            {nav.map((item) => {
+              const on = active(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  lang={jl}
+                  className={`whitespace-nowrap rounded-full px-3.5 py-1.5 transition-colors ${
+                    on
+                      ? "bg-ink font-medium text-bg"
+                      : "text-ink-2 hover:text-ink"
+                  }`}
+                >
+                  {item.label[lang]}
+                </Link>
+              );
+            })}
           </nav>
 
-          <div className="ml-auto flex shrink-0 items-center gap-2.5 md:ml-0">
+          {/* `ml-auto` chỉ còn tác dụng dưới md — từ md trở lên chính thanh nav
+              đã đẩy sang phải, nên cụm này bám ngay sau nó. */}
+          <div className="ml-auto flex shrink-0 items-center gap-2.5 md:ml-3">
             <div className="hidden md:block">
               <LangToggle size="sm" />
             </div>
-            <span className="hidden h-4 w-px bg-line md:block" aria-hidden />
             <ThemeToggle />
             <OsLink />
 

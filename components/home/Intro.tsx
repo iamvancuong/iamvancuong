@@ -14,6 +14,7 @@ import { ContactForm } from "./ContactForm";
 import { BrandIcon, type BrandName } from "./BrandIcon";
 import { PhotoStrip, type StripItem } from "./PhotoStrip";
 import { Reveal } from "@/components/Reveal";
+import { SectionLabel } from "@/components/layout/SectionLabel";
 
 const ALL_SOCIALS: { name: BrandName; href: string }[] = [
   { name: "github", href: site.social.github },
@@ -83,33 +84,38 @@ export function Intro({
   }, []);
 
   /**
-   * Tiêu đề mục: một nhãn nhỏ chữ hoa ở trên, tiêu đề lớn ở dưới.
+   * Tiêu đề mục: nhãn đánh số ở trên, tiêu đề lớn ở dưới, **kết bằng dấu chấm**.
    *
-   * Nhãn nhỏ làm việc mà một đường kẻ ngang vẫn hay bị bắt làm: báo "sang mục
-   * mới". Khác ở chỗ nó còn NÓI được mục đó là gì, nên vừa phân đoạn vừa mang
-   * thông tin — trong khi đường kẻ chỉ chiếm chỗ.
+   * Dấu chấm là chi tiết nhỏ nhất nhưng làm nhiều nhất: nó biến một tiêu đề
+   * thành một câu đã nói xong. "Ghi chép nhỏ" là một nhãn; "Ghi chép nhỏ." là
+   * một lời tuyên bố. Cùng ký tự đó lặp lại ở logo và ở mọi mục — đó là thứ
+   * khiến các trang trông như cùng một nhà mà không cần thêm màu hay khung.
    */
   const Heading = ({
+    index,
     label,
+    en,
     children,
   }: {
+    index?: number;
     label?: string;
+    en?: string;
     children: ReactNode;
   }) => (
     <>
-      {label && (
-        <div
-          lang={jl}
-          className="mb-3 text-[12px] font-medium uppercase tracking-[0.14em] text-ink-3"
-        >
-          {label}
+      {index != null && label && (
+        <div className="mb-5">
+          <SectionLabel index={index} en={en}>
+            {label}
+          </SectionLabel>
         </div>
       )}
       <h2
         lang={jl}
-        className="text-[32px] font-semibold leading-[1.08] tracking-[-0.025em] text-ink md:text-[44px]"
+        className="text-[34px] font-semibold leading-[1.06] tracking-[-0.03em] text-ink md:text-[46px]"
       >
         {children}
+        <span className="text-accent">.</span>
       </h2>
     </>
   );
@@ -161,9 +167,12 @@ export function Intro({
           <div className="order-2 md:order-1">
             {/* `rise-mask`: chữ trồi lên từ khung cắt. `pb/-mb` chừa chỗ cho
                 đuôi chữ (g, y, ợ) khỏi bị cắt — xem chú thích ở globals.css. */}
+            {/* `.tag` — cùng kiểu nhãn với `01 / VỀ TÔI` ở các mục dưới, nên
+                lời chào đọc ra là một nhãn hệ thống chứ không phải một câu bỏ
+                lửng. Xem globals.css. */}
             <p
               lang={jl}
-              className="rise-mask -mb-[0.14em] pb-[0.14em] text-[12px] uppercase tracking-[0.16em] text-ink-3"
+              className="tag rise-mask -mb-[0.14em] pb-[0.14em]"
             >
               <span style={{ animationDelay: "60ms" }}>
                 {home.hero.greeting[lang]}
@@ -172,10 +181,11 @@ export function Intro({
 
             <h1
               lang={jl}
-              className="rise-mask -mb-[0.14em] mt-3 pb-[0.14em] text-[clamp(2.5rem,6.5vw,4.5rem)] font-semibold leading-[1.02] tracking-[-0.03em] text-ink"
+              className="rise-mask -mb-[0.14em] mt-4 pb-[0.14em] text-[clamp(2.5rem,6.5vw,4.5rem)] font-semibold leading-[1.02] tracking-[-0.03em] text-ink"
             >
               <span style={{ animationDelay: "160ms" }}>
                 {home.hero.name[lang]}
+                <span className="text-accent">.</span>
               </span>
             </h1>
 
@@ -233,14 +243,27 @@ export function Intro({
             `ml-auto` đẩy ảnh sát mép phải để hai cột không hở một khoảng lạ
             ở giữa.
           */}
-          <div className="order-1 md:order-2">
+          <div className="relative order-1 mx-auto w-full max-w-[180px] md:order-2 md:ml-auto md:mr-0 md:max-w-[380px]">
             <Frame
               src={home.images.hero.src}
               alt={home.images.hero.alt}
               priority
               sizes="(min-width: 768px) 40vw, 180px"
-              className="animate-reveal-up mx-auto aspect-square w-full max-w-[180px] rounded-full border border-line md:mx-0 md:ml-auto md:aspect-[3/4] md:max-w-[380px] md:rounded-[var(--radius-xl)]"
+              className="animate-reveal-up aspect-square w-full rounded-full border border-line md:aspect-[3/4] md:rounded-[var(--radius-xl)]"
             />
+
+            {/* Huy hiệu trạng thái — CHỈ từ md trở lên. Trên điện thoại ảnh là
+                hình tròn 180px, dán một nhãn chữ nhật lên góc nó thì nhãn to
+                gần bằng ảnh và cắt mất mặt người.
+                Chấm xanh có `animate-pulse`: đó là thứ khiến nó đọc ra là một
+                trạng thái đang sống, chứ không phải một nhãn dán tĩnh. */}
+            <div className="absolute -bottom-3 -left-3 hidden rounded-[var(--radius-lg)] border border-line bg-surface px-3 py-2 shadow-sm md:block">
+              <div className="tag flex items-center gap-1.5 text-ink-2">
+                <span className="size-1.5 animate-pulse rounded-full bg-up" />
+                Available
+              </div>
+              <div className="tag mt-0.5">Tokyo · JP</div>
+            </div>
           </div>
         </div>
       </section>
@@ -281,7 +304,9 @@ export function Intro({
         <Reveal className="w-full">
           <div className="grid gap-10 md:grid-cols-[2fr_3fr] md:gap-16">
             <div className="md:sticky md:top-24 md:self-start">
-              <Heading>{home.about.heading[lang]}</Heading>
+              <Heading index={1} label="Về tôi" en="About">
+                {home.about.heading[lang]}
+              </Heading>
               <p
                 lang={jl}
                 className="mt-4 max-w-[24ch] text-[19px] font-medium leading-snug text-ink-2 md:text-[21px]"
@@ -346,7 +371,9 @@ export function Intro({
       <section className={BAND}>
         <Reveal stagger className="w-full">
           <div>
-            <Heading>{home.streaks.heading[lang]}</Heading>
+            <Heading index={2} label="Đang duy trì" en="Life OS">
+              {home.streaks.heading[lang]}
+            </Heading>
             <p lang={jl} className="mt-3 text-[15px] text-ink-3">
               {home.streaks.caption[lang]}
             </p>
@@ -425,7 +452,9 @@ export function Intro({
       {/* ── CHẶNG ĐƯỜNG Ở NHẬT ───────────────────────────────── */}
       <section className={BAND}>
         <Reveal className="w-full">
-          <Heading>{home.journey.heading[lang]}</Heading>
+          <Heading index={3} label="Chặng đường ở Nhật" en="Journey">
+            {home.journey.heading[lang]}
+          </Heading>
           <p lang={jl} className="mt-3 text-[15px] text-ink-3">
             {home.journey.caption[lang]}
           </p>
@@ -448,7 +477,9 @@ export function Intro({
           riêng trang chủ bị đẩy xa footer hơn các trang còn lại. */}
       <section className="pt-16 md:pt-24">
         <Reveal stagger className="w-full">
-          <Heading>{home.contact.heading[lang]}</Heading>
+          <Heading index={4} label="Kết nối" en="Contact">
+            {home.contact.heading[lang]}
+          </Heading>
           <p lang={jl} className="mt-4 max-w-[52ch] text-[17px] leading-relaxed text-ink-2">
             {home.contact.line[lang]}
           </p>

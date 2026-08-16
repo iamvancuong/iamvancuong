@@ -7,19 +7,22 @@
    ============================================================ */
 
 @theme {
-  /* Background */
-  --color-bg: #ffffff;
-  --color-surface: #fafafa;
-  --color-surface-2: #f5f5f5;
+  /* Background — nền KEM, không phải trắng.
+     Trắng tinh là mặc định của mọi trang; kem ấm (#f4f1ea) đọc ra là "có ai đó
+     đã chọn màu này". Thẻ nội dung để trắng gần như tuyệt đối trên nền kem —
+     chính độ chênh đó làm thẻ nổi lên mà không cần shadow. */
+  --color-bg: #f4f1ea;
+  --color-surface: #fffefb;
+  --color-surface-2: #eae5db;
 
   /* Text */
-  --color-ink: #171717;
-  --color-ink-2: #737373;
-  --color-ink-3: #a3a3a3;
+  --color-ink: #14120e;
+  --color-ink-2: #6b665c;
+  --color-ink-3: #a09a8d;
 
   /* Border */
-  --color-line: #e5e5e5;
-  --color-line-soft: #f0f0f0;
+  --color-line: #e0dacd;
+  --color-line-soft: #ebe6db;
 
   /* Accent — tối đa 1 chỗ trên mỗi màn hình */
   --color-accent: #2563eb;
@@ -48,6 +51,24 @@
   /* Font — biến được gán trong app/fonts.ts */
   --font-sans: var(--font-inter), var(--font-jp), system-ui, sans-serif;
   --font-jp-first: var(--font-jp), var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+/* ============================================================
+   NHÃN KỸ THUẬT — `01 / VỀ TÔI`, `// TECH_STACK`, `SYSTEM STATUS`
+
+   Gom thành MỘT class vì ba thuộc tính này luôn đi cùng nhau: mono + chữ hoa +
+   giãn chữ. Thiếu một cái là nhãn tụt về "chữ nhỏ màu nhạt" bình thường, và cả
+   chất bảng-điều-khiển của giao diện biến mất. Rải ba class Tailwind ở ~40 chỗ
+   thì chắc chắn sẽ có chỗ quên.
+   ============================================================ */
+.tag {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--color-ink-3);
 }
 
 /* ============================================================
@@ -91,16 +112,18 @@
   :root:not([data-theme="light"]) {
     color-scheme: dark;
 
-    --color-bg: #0f0f0f;
-    --color-surface: #171717;
-    --color-surface-2: #1f1f1f;
+    /* Bản tối cũng ẤM lên theo bản sáng: nền kem mà lật sang xám xanh trung
+       tính thì hai chế độ trông như hai trang khác nhau. */
+    --color-bg: #14120e;
+    --color-surface: #1c1a15;
+    --color-surface-2: #24211b;
 
-    --color-ink: #ededed;
-    --color-ink-2: #a3a3a3;
-    --color-ink-3: #737373;
+    --color-ink: #f0ece3;
+    --color-ink-2: #a8a294;
+    --color-ink-3: #78736a;
 
-    --color-line: #2a2a2a;
-    --color-line-soft: #1f1f1f;
+    --color-line: #2e2a23;
+    --color-line-soft: #221f1a;
 
     /* Xanh sáng hơn bản sáng: #2563eb trên nền tối tụt xuống dưới ngưỡng đọc được */
     --color-accent: #60a5fa;
@@ -117,16 +140,16 @@
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --color-bg: #0f0f0f;
-  --color-surface: #171717;
-  --color-surface-2: #1f1f1f;
+  --color-bg: #14120e;
+  --color-surface: #1c1a15;
+  --color-surface-2: #24211b;
 
-  --color-ink: #ededed;
-  --color-ink-2: #a3a3a3;
-  --color-ink-3: #737373;
+  --color-ink: #f0ece3;
+  --color-ink-2: #a8a294;
+  --color-ink-3: #78736a;
 
-  --color-line: #2a2a2a;
-  --color-line-soft: #1f1f1f;
+  --color-line: #2e2a23;
+  --color-line-soft: #221f1a;
 
   --color-accent: #60a5fa;
 

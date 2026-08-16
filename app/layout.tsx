@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import { cookies } from "next/headers";
-import { inter, notoJP } from "./fonts";
+import { inter, mono, notoJP } from "./fonts";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { LangProvider } from "@/components/i18n/LangProvider";
@@ -64,7 +64,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="vi"
-      className={`${inter.variable} ${notoJP.variable} h-full antialiased`}
+      className={`${inter.variable} ${notoJP.variable} ${mono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>
