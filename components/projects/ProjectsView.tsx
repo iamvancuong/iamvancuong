@@ -5,6 +5,7 @@ import { t } from "@/lib/i18n";
 import { Badge } from "@/components/ui/Badge";
 import type { Project } from "@/lib/projects";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { CvCard } from "./CvCard";
 
 /**
  * Trang Dự án — song ngữ. Nội dung project (tên/mô tả/vấn đề/đã làm) lấy bản
@@ -32,7 +33,14 @@ export function ProjectsView({ projects }: { projects: Project[] }) {
         cần khi lướt; cột phải giữ phần CHI TIẾT (vấn đề, đã làm) — thứ chỉ
         đọc khi đã quan tâm. Chia theo mức độ quan tâm, không chia theo độ dài.
       */}
-      <div className="mt-12 space-y-5">
+      {/* Danh thiếp + dòng thời gian nghề nghiệp đặt TRƯỚC danh sách dự án:
+          người tuyển dụng xem "làm được gì" rồi mới hỏi "người này là ai", và
+          hai câu đó nên cách nhau một cú cuộn chứ không phải một tab. */}
+      <div className="mt-12">
+        <CvCard lang={lang} />
+      </div>
+
+      <div className="mt-5 space-y-5">
         {projects.map((p) => {
           const name = lang === "ja" ? p.nameJa ?? p.name : p.name;
           const summary = lang === "ja" ? p.summaryJa : p.summary;

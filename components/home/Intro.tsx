@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Flame } from "lucide-react";
 import { home } from "@/lib/home";
 import { useLang } from "@/components/i18n/LangProvider";
+import { t } from "@/lib/i18n";
 import { site } from "@/lib/site";
 import type { PublicStreaks } from "@/lib/streaks";
 import type { JourneyYear } from "@/lib/journey";
@@ -13,6 +14,8 @@ import { Journey } from "./Journey";
 import { ContactForm } from "./ContactForm";
 import { BrandIcon, type BrandName } from "./BrandIcon";
 import { PhotoStrip, type StripItem } from "./PhotoStrip";
+import { PostCard } from "@/components/blog/PostCard";
+import type { PostWithTags } from "@/lib/posts-format";
 import { Reveal } from "@/components/Reveal";
 import { SectionLabel } from "@/components/layout/SectionLabel";
 
@@ -70,11 +73,13 @@ export function Intro({
   journey,
   stripJourney,
   stripBlog,
+  posts,
 }: {
   streaks: PublicStreaks;
   journey: JourneyYear[];
   stripJourney: StripItem[];
   stripBlog: StripItem[];
+  posts: PostWithTags[];
 }) {
   const { lang } = useLang();
   const jl = lang === "ja" ? "ja" : undefined;
@@ -485,10 +490,40 @@ export function Intro({
         </Reveal>
       </section>
 
+      {/* ── VIẾT ─────────────────────────────────────────────
+          Trang chủ trước đây KHÔNG hề nhắc tới blog — thứ tốn công nhất và
+          đáng đọc nhất lại chỉ vào được qua thanh nav. Ba bài mới nhất đặt
+          ngay đây là đường ngắn nhất từ "ai đó vừa tới" sang "ai đó đang đọc".
+          Dùng lại đúng PostCard của /blog: hai nơi hiện một bài thì phải hiện
+          giống hệt nhau, nếu không mỗi lần sửa thẻ là phải sửa hai chỗ. */}
+      {posts.length > 0 && (
+        <section className={BAND}>
+          <Reveal className="w-full">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <Heading index={3} label="Viết" en="Writing">
+                {t.blog.title[lang]}
+              </Heading>
+              <Link
+                href="/blog"
+                className="tag rounded-full border border-line px-3.5 py-2 transition-colors hover:border-ink-3 hover:text-ink"
+              >
+                Xem tất cả →
+              </Link>
+            </div>
+
+            <div className="mt-10 space-y-4">
+              {posts.map((p) => (
+                <PostCard key={p.id} post={p} />
+              ))}
+            </div>
+          </Reveal>
+        </section>
+      )}
+
       {/* ── CHẶNG ĐƯỜNG Ở NHẬT ───────────────────────────────── */}
       <section className={BAND}>
         <Reveal className="w-full">
-          <Heading index={3} label="Chặng đường ở Nhật" en="Journey">
+          <Heading index={4} label="Chặng đường ở Nhật" en="Journey">
             {home.journey.heading[lang]}
           </Heading>
           <p lang={jl} className="mt-3 text-[15px] text-ink-3">
@@ -513,7 +548,7 @@ export function Intro({
           riêng trang chủ bị đẩy xa footer hơn các trang còn lại. */}
       <section className="band band-white pt-16 md:pt-24 pb-20 md:pb-28">
         <Reveal stagger className="w-full">
-          <Heading index={4} label="Kết nối" en="Contact">
+          <Heading index={5} label="Kết nối" en="Contact">
             {home.contact.heading[lang]}
           </Heading>
           <p lang={jl} className="mt-4 max-w-[52ch] text-[17px] leading-relaxed text-ink-2">

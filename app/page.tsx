@@ -5,6 +5,7 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { getPublicStreaks } from "@/lib/streaks";
 import { getPublicJourney } from "@/lib/journey";
 import { getHomeStrips } from "@/lib/strips";
+import { listPosts } from "@/lib/posts";
 import { site } from "@/lib/site";
 import { personLd, websiteLd } from "@/lib/seo";
 
@@ -21,10 +22,11 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [streaks, journey, strips] = await Promise.all([
+  const [streaks, journey, strips, posts] = await Promise.all([
     getPublicStreaks(),
     getPublicJourney(),
     getHomeStrips(),
+    listPosts(),
   ]);
 
   return (
@@ -37,6 +39,9 @@ export default async function HomePage() {
         // Ảnh giả trên trang thật thì người xem không có cách nào biết là giả.
         stripJourney={strips.journey}
         stripBlog={strips.blog}
+        // Ba bài mới nhất. `listPosts` đã lọc bài riêng tư với khách và tự
+        // kèm ảnh bìa, nên chỗ này không phải biết gì về quyền xem.
+        posts={posts.slice(0, 3)}
       />
     </Container>
   );
