@@ -396,7 +396,11 @@ export function Intro({
               là con số rút ra từ bức tranh đó. Đọc tranh rồi mới đọc số.
               Component riêng vì nó có TRẠNG THÁI (đang xem năm nào). */}
           <div className="mt-10">
-            <Heatmap cells={heatCells} label={home.streaks.heatmapLabel[lang]} />
+            <Heatmap
+              cells={heatCells}
+              label={home.streaks.heatmapLabel[lang]}
+              currentYear={streaks.currentYear}
+            />
           </div>
 
           {/*

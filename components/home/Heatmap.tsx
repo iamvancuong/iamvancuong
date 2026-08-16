@@ -46,20 +46,34 @@ const MONTHS = ["T1","T2","T3","T4","T5","T6","T7","T8","T9","T10","T11","T12"];
 /** Thứ trong tuần theo quy ước THỨ HAI = 0. `getUTCDay()` trả Chủ nhật = 0. */
 const dow = (d: Date) => (d.getUTCDay() + 6) % 7;
 
-export function Heatmap({ cells, label }: { cells: HeatCell[]; label: string }) {
+export function Heatmap({
+  cells,
+  label,
+  currentYear,
+}: {
+  cells: HeatCell[];
+  label: string;
+  /** Năm hiện tại, tính ở server theo JST — xem PublicStreaks.currentYear. */
+  currentYear: number;
+}) {
   const byIso = useMemo(() => new Map(cells.map((c) => [c.iso, c])), [cells]);
 
   /**
-   * Chỉ những năm THẬT SỰ có dữ liệu mới thành nút.
+   * Năm có dữ liệu, CỘNG với năm hiện tại — luôn luôn.
    *
-   * Bày ra một nút năm rồi bấm vào thấy lưới trắng trơn là hứa suông. Chưa có
-   * ngày nào thì rơi về năm hiện tại, để lưới vẫn hiện đúng hình hài.
+   * Nếu chỉ suy từ dữ liệu thì sáng 01/01 năm mới, khi chưa ghi ngày nào, nút
+   * của năm mới KHÔNG có mặt: người xem đứng trước một cái lịch của năm cũ mà
+   * không có đường sang năm đang sống. Nó tự sửa sau ngày ghi đầu tiên, nên
+   * đây đúng là loại lỗi không ai kịp báo — nhưng nó có thật, mỗi năm một lần.
+   *
+   * Chiều ngược lại tự đúng: năm cũ vẫn nằm trong `cells` nên nút của nó không
+   * bao giờ mất (`getPublicStreaks` đã bỏ trần 420 ngày vì đúng lý do này).
    */
   const years = useMemo(() => {
     const set = new Set(cells.map((c) => Number(c.iso.slice(0, 4))));
-    if (set.size === 0) set.add(new Date().getUTCFullYear());
+    set.add(currentYear);
     return [...set].sort((a, b) => b - a);
-  }, [cells]);
+  }, [cells, currentYear]);
 
   const [year, setYear] = useState(years[0]);
   const y = years.includes(year) ? year : years[0];

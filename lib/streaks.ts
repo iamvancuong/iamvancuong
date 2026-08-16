@@ -35,6 +35,15 @@ export type PublicStreaks = {
    * mất những năm mà người xem có quyền bấm sang.
    */
   heatmap: HeatCell[];
+  /**
+   * Năm hiện tại, tính ở SERVER theo JST.
+   *
+   * Bắt buộc phải truyền xuống chứ không để giao diện gọi `new Date()`: nút
+   * chọn năm phải có mặt ngay từ 01/01 dù chưa ghi ngày nào của năm mới, mà
+   * suy năm ở client thì server và trình duyệt ra hai kết quả khác nhau vào
+   * đúng đêm giao thừa — React báo lệch hydration, và chỉ đêm đó.
+   */
+  currentYear: number;
 };
 
 /**
@@ -52,10 +61,20 @@ export type PublicStreaks = {
  * khi lỡ một hôm, nên nó nói được điều mà con số hiện tại không nói.
  */
 export async function getPublicStreaks(): Promise<PublicStreaks> {
-  const logs = await db.dailyLog.findMany({
-    orderBy: { date: "desc" },
-    take: 420,
-  });
+  /**
+   * KHÔNG cắt `take: 420` nữa.
+   *
+   * Hai thứ hỏng vì cái trần đó, và cả hai đều hỏng IM LẶNG:
+   *
+   * 1. Lịch hoạt động chỉ giữ được ~14 tháng, nên sau chừng ấy thời gian nút
+   *    năm cũ **tự biến mất** — bấm xem lại năm ngoái thì không còn nút để bấm.
+   * 2. "Lập trình" đếm CỘNG DỒN, mà cộng dồn trên một cửa sổ 420 ngày thì con
+   *    số ngừng lớn và bắt đầu tụt — trong khi nó phải chỉ có tăng.
+   *
+   * Đây là nhật ký một người: mỗi năm nhiều nhất 366 dòng, mười năm là 3.660
+   * dòng. Đọc hết rẻ hơn nhiều so với một con số sai mà không ai nhận ra.
+   */
+  const logs = await db.dailyLog.findMany({ orderBy: { date: "desc" } });
 
   const journaled = (l: (typeof logs)[number]) =>
     !!(
@@ -96,5 +115,6 @@ export async function getPublicStreaks(): Promise<PublicStreaks> {
         isToday: isoUTC(l.date) === todayISO(),
       }))
       .sort((a, b) => a.iso.localeCompare(b.iso)),
+    currentYear: Number(todayISO().slice(0, 4)),
   };
 }
