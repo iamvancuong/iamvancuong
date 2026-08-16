@@ -2,7 +2,7 @@
 
 import { useEffect, type ReactNode } from "react";
 import Link from "next/link";
-import { Flame } from "lucide-react";
+import { ArrowDown, Flame } from "lucide-react";
 import { home } from "@/lib/home";
 import { useLang } from "@/components/i18n/LangProvider";
 import { t } from "@/lib/i18n";
@@ -50,7 +50,8 @@ const MORE = [
  * chuyển sang `BAND`: cao theo nội dung, chữ căn TRÁI. Căn trái còn đọc nhanh
  * hơn hẳn ở đoạn văn dài — mắt luôn biết dòng sau bắt đầu ở đâu.
  */
-const HERO = "flex min-h-[calc(100svh-4rem)] items-center py-16";
+const HERO =
+  "relative flex min-h-[calc(100svh-4rem)] flex-col justify-center py-16";
 /**
  * Hai loại dải nền, XEN KẼ từ trên xuống: kem → trắng → kem → trắng.
  *
@@ -199,7 +200,15 @@ export function Intro({
             >
               <span style={{ animationDelay: "160ms" }}>
                 {home.hero.name[lang]}
-                <span className="text-accent">.</span>
+                {/* CHẤM TRÒN, không phải ký tự dấu chấm.
+                    Dấu chấm của font co theo font và ở cỡ 72px thì nó nhỏ xíu,
+                    lệch xuống dưới đường chân chữ — trông như bụi bám chứ không
+                    như một chi tiết có chủ ý. Một hình tròn vẽ tay giữ đúng tỉ
+                    lệ ở mọi cỡ chữ vì nó tính bằng `em`. */}
+                <span
+                  aria-hidden
+                  className="ml-[0.06em] inline-block size-[0.16em] rounded-full bg-accent align-baseline"
+                />
               </span>
             </h1>
 
@@ -211,31 +220,37 @@ export function Intro({
               {home.hero.tagline[lang]}
             </p>
 
-            <div
-              className="animate-fade-up mt-8"
-              style={{ animationDelay: "520ms" }}
-            >
-              {socialRow}
-            </div>
+            {/* HAI VIÊN THUỐC, không phải hai link chữ.
 
+                Link gạch chân nằm lẫn trong một khối chữ thì nó là "chỗ bấm
+                được", còn viên thuốc đặc là "việc nên làm tiếp theo". Hero cần
+                loại thứ hai: khách vừa tới, chưa biết đi đâu, và trang phải
+                trả lời hộ. Viên đặc = đường chính, viên viền = đường phụ. */}
             <div
-              className="animate-fade-up mt-9 flex flex-wrap items-center gap-x-6 gap-y-2 text-[14px]"
-              style={{ animationDelay: "600ms" }}
+              className="animate-fade-up mt-8 flex flex-wrap items-center gap-3"
+              style={{ animationDelay: "520ms" }}
             >
               <a
                 href="#about"
                 lang={jl}
-                className="font-medium text-accent underline decoration-accent/35 decoration-1 underline-offset-[4px] transition-colors hover:decoration-accent"
+                className="tag inline-flex items-center gap-2 rounded-full bg-ink px-5 py-3 font-medium text-bg transition-opacity hover:opacity-90"
               >
                 {home.hero.ctaAbout[lang]}
               </a>
               <Link
                 href="/journey"
                 lang={jl}
-                className="text-ink-2 transition-colors hover:text-ink"
+                className="tag inline-flex items-center gap-2 rounded-full border border-line bg-surface px-5 py-3 text-ink-2 transition-colors hover:border-ink-3 hover:text-ink"
               >
                 {home.hero.ctaJourney[lang]}
               </Link>
+            </div>
+
+            <div
+              className="animate-fade-up mt-8"
+              style={{ animationDelay: "620ms" }}
+            >
+              {socialRow}
             </div>
           </div>
 
@@ -280,6 +295,34 @@ export function Intro({
             </div>
           </div>
         </div>
+
+        {/*
+          CHỈ DẪN CUỘN — chỉ hiện từ md trở lên.
+
+          Hero cao trọn một màn hình nên không có mép nội dung nào thò ra dưới
+          đáy để nói "còn nữa". Không có tín hiệu đó thì một phần khách đọc
+          xong hero là đóng tab, tưởng trang chỉ có bấy nhiêu.
+
+          Trên điện thoại thì bỏ: màn hẹp đã xếp dọc nên phần dưới luôn thò
+          lên, tín hiệu đã có sẵn — thêm mũi tên chỉ là chiếm chỗ.
+
+          `animate-bounce` của Tailwind tự tắt theo `prefers-reduced-motion`
+          nhờ khối media query trong globals.css? KHÔNG — nó không tự tắt, nên
+          phải khai `motion-reduce:animate-none` bằng tay.
+        */}
+        <a
+          href="#about"
+          aria-label="Cuộn xuống"
+          className="animate-fade-up absolute inset-x-0 bottom-6 mx-auto hidden w-fit flex-col items-center gap-1.5 text-ink-3 transition-colors hover:text-ink md:flex"
+          style={{ animationDelay: "800ms" }}
+        >
+          <span className="tag">Scroll</span>
+          <ArrowDown
+            size={14}
+            strokeWidth={1.75}
+            className="animate-bounce motion-reduce:animate-none"
+          />
+        </a>
       </section>
 
       {/* ── HAI DẢI ẢNH ──────────────────────────────────────

@@ -62,13 +62,28 @@
    chất bảng-điều-khiển của giao diện biến mất. Rải ba class Tailwind ở ~40 chỗ
    thì chắc chắn sẽ có chỗ quên.
    ============================================================ */
-.tag {
-  font-family: var(--font-mono);
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  font-size: 11px;
-  line-height: 1.4;
-  color: var(--color-ink-3);
+/* ⚠️ PHẢI nằm trong `@layer components`, không được để CSS trần.
+
+   CSS không thuộc layer nào luôn THẮNG mọi CSS trong layer — kể cả khi bộ chọn
+   yếu hơn. Tailwind v4 đặt utility trong `@layer utilities`, nên `.tag` viết
+   trần sẽ đè `text-bg`, `text-accent`, `text-down`… của chính những phần tử
+   dùng nó.
+
+   Đã hỏng 12 chỗ vì đúng chuyện này: nút "Về tôi" nền đen mà chữ xám
+   (`text-bg` bị đè), nhãn `01` mất màu nhấn, nhãn "riêng tư" mất màu đỏ. Không
+   có lỗi nào báo — chỉ là màu sai, và sai giống nhau nên trông như cố ý.
+
+   Đặt vào `components` thì thứ tự layer của Tailwind là
+   `theme → base → components → utilities`, nên utility lại thắng như mong đợi. */
+@layer components {
+  .tag {
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--color-ink-3);
+  }
 }
 
 /* ============================================================
