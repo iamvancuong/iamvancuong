@@ -23,7 +23,7 @@ export type Track = {
   file: string;
   /** Đường dẫn phát được từ trình duyệt: `/audio/audio1.mp3` */
   src: string;
-  /** Tên hiện trên nút — bỏ đuôi, gạch/gạch dưới thành khoảng trắng. */
+  /** Tên hiện trên nút — lấy từ `TITLES`, không có thì suy từ tên file. */
   name: string;
 };
 
@@ -34,6 +34,21 @@ export type Track = {
  * mới có đúng một bài thì ngoài trang vẫn có nhạc, không im lặng khó hiểu.
  */
 const PUBLIC_TRACK = "audio1.mp3";
+
+/**
+ * Tên hiện trên nút, theo tên file.
+ *
+ * Đặt ở đây chứ KHÔNG đổi tên file thật, vì hai lý do. Tên file đang được
+ * `PUBLIC_TRACK` ở trên trỏ tới, đổi file là phải nhớ đổi cả chỗ đó. Và hai
+ * file này nặng ~72MB nằm trong git — đổi tên là git ghi lại chúng như file
+ * mới, repo phình thêm chừng ấy lần nữa cho một việc chỉ là hiển thị.
+ *
+ * File không có trong bảng này thì vẫn hiện bằng tên file, không vỡ gì.
+ */
+const TITLES: Record<string, string> = {
+  "audio1.mp3": "Ngồi vào bàn đã",
+  "audio2.mp3": "Đừng đứng dậy",
+};
 
 export function listTracks(): Track[] {
   let files: string[];
@@ -52,7 +67,7 @@ export function listTracks(): Track[] {
     .map((file) => ({
       file,
       src: `/audio/${encodeURIComponent(file)}`,
-      name: file.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " "),
+      name: TITLES[file] ?? file.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " "),
     }));
 }
 
