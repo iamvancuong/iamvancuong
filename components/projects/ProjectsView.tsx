@@ -4,6 +4,7 @@ import { useLang } from "@/components/i18n/LangProvider";
 import { t } from "@/lib/i18n";
 import { Badge } from "@/components/ui/Badge";
 import type { Project } from "@/lib/projects";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 /**
  * Trang Dự án — song ngữ. Nội dung project (tên/mô tả/vấn đề/đã làm) lấy bản
@@ -15,14 +16,9 @@ export function ProjectsView({ projects }: { projects: Project[] }) {
 
   return (
     <>
-      <header className="border-b border-line pb-8">
-        <h1 lang={jl} className="text-[32px] font-semibold tracking-[-0.02em]">
-          {t.projects.title[lang]}
-        </h1>
-        <p lang={jl} className="mt-2 text-[16px] text-ink-2">
-          {t.projects.subtitle[lang]}
-        </p>
-      </header>
+      <PageHeader index={4} label="Dự án" en="Projects" lang={jl} title={t.projects.title[lang]}>
+        {t.projects.subtitle[lang]}
+      </PageHeader>
 
       <div className="mt-10 space-y-12">
         {projects.map((p) => {

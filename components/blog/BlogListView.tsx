@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { Tag } from "@prisma/client";
 import { useLang } from "@/components/i18n/LangProvider";
 import { t } from "@/lib/i18n";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { PostCard } from "./PostCard";
 import type { PostWithTags } from "@/lib/posts-format";
 
@@ -33,22 +34,15 @@ export function BlogListView({
 
   return (
     <>
-      {/* Tiêu đề lớn hẳn lên và bỏ đường kẻ dưới: thang chữ tự nó đã phân cấp
-          rồi, thêm một đường kẻ nữa chỉ là nói lại cùng một điều bằng mực. */}
-      <header>
-        <h1
-          lang={jl}
-          className="text-[40px] font-semibold leading-[1.05] tracking-[-0.03em] md:text-[52px]"
-        >
-          {t.blog.title[lang]}
-        </h1>
-        <p
-          lang={jl}
-          className="mt-3 max-w-[52ch] text-[17px] leading-relaxed text-ink-2 md:text-[18px]"
-        >
-          {t.blog.subtitle[lang]}
-        </p>
-      </header>
+      <PageHeader
+        index={1}
+        label="Viết"
+        en="Writing"
+        lang={jl}
+        title={t.blog.title[lang]}
+      >
+        {t.blog.subtitle[lang]}
+      </PageHeader>
 
       {/* Viên bo tròn hẳn: viên bo 6px trông như ô nhập liệu, bo tròn hẳn thì
           đọc ra ngay là bộ lọc bấm được. */}

@@ -6,6 +6,7 @@ import { t } from "@/lib/i18n";
 import { site } from "@/lib/site";
 import { PhotoGrid } from "@/components/PhotoGrid";
 import type { LightboxPhoto } from "@/components/Lightbox";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 export type JourneyMemory = {
   id: string;
@@ -31,14 +32,9 @@ export function PublicJourneyView({ years }: { years: JourneyYearGroup[] }) {
 
   return (
     <>
-      <header className="border-b border-line pb-8">
-        <h1 lang={jl} className="text-[32px] font-semibold tracking-[-0.02em]">
-          {t.journey.title[lang]}
-        </h1>
-        <p lang={jl} className="mt-2 text-[16px] leading-relaxed text-ink-2">
-          {t.journey.subtitle[lang].replace("{hometown}", site.hometown)}
-        </p>
-      </header>
+      <PageHeader index={3} label="Hành trình" en="Journey" lang={jl} title={t.journey.title[lang]}>
+        {t.journey.subtitle[lang].replace("{hometown}", site.hometown)}
+      </PageHeader>
 
       {empty ? (
         <p className="mt-10 text-[15px] text-ink-2">

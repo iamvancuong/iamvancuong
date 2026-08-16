@@ -3,6 +3,7 @@
 import { useLang } from "@/components/i18n/LangProvider";
 import { t } from "@/lib/i18n";
 import type { Focus } from "@/lib/now";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 export type NowData = { updated: string; focus: Focus[]; bodyHtml: string };
 
@@ -17,14 +18,9 @@ export function NowView({ vi, ja }: { vi: NowData; ja: NowData }) {
 
   return (
     <>
-      <header className="border-b border-line pb-8">
-        <h1 lang={jl} className="text-[32px] font-semibold tracking-[-0.02em]">
-          {t.now.title[lang]}
-        </h1>
-        <p className="mt-2 text-[14px] text-ink-3">
-          <span lang={jl}>{t.now.updated[lang]}</span>: {d.updated}
-        </p>
-      </header>
+      <PageHeader index={2} label="Dạo này" en="Now" lang={jl} title={t.now.title[lang]}>
+        <span lang={jl}>{t.now.updated[lang]}</span>: {d.updated}
+      </PageHeader>
 
       <ol className="mt-10 space-y-8">
         {d.focus.map((f, i) => (
