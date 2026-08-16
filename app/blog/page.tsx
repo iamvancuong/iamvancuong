@@ -28,8 +28,13 @@ export default async function BlogPage({ searchParams }: PageProps<"/blog">) {
     (p) => p.visibility !== Visibility.PUBLIC || !p.publishedAt,
   ).length;
 
+  // Khung RỘNG như /journey và /projects. Trước đây trang này dùng khung đọc
+  // 720px nên lề trái của tiêu đề lệch hẳn so với các trang kia — cùng một
+  // thanh nav mà nội dung bên dưới bắt đầu ở hai vị trí khác nhau, và mắt bắt
+  // được ngay khi chuyển tab dù không chỉ ra được là lệch chỗ nào.
+  // Trang BÀI VIẾT (/blog/[slug]) vẫn giữ 720px: đó là bề rộng ĐỌC.
   return (
-    <Container width="prose">
+    <Container>
       <BlogListView
         posts={posts}
         tags={tags}

@@ -32,19 +32,37 @@ export function listTags() {
 export async function listPosts(): Promise<PostWithTags[]> {
   const owner = await isOwner();
 
-  return db.post.findMany({
+  const rows = await db.post.findMany({
     where: owner
       ? undefined
       : { visibility: Visibility.PUBLIC, publishedAt: { not: null } },
-    include: { tags: true },
+    include: {
+      tags: true,
+      photos: {
+        orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+        take: 1,
+        select: { url: true, thumbUrl: true },
+      },
+    },
     orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
   });
+
+  // `photos[0]` → `cover`: phía giao diện chỉ cần MỘT tấm, và đặt tên đúng
+  // vai trò của nó thì chỗ dùng không phải biết là nó từ một mảng mà ra.
+  return rows.map(({ photos, ...p }) => ({ ...p, cover: photos[0] ?? null }));
 }
 
 export async function getPost(slug: string): Promise<PostWithTags | null> {
   const post = await db.post.findUnique({
     where: { slug },
-    include: { tags: true },
+    include: {
+      tags: true,
+      photos: {
+        orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+        take: 1,
+        select: { url: true, thumbUrl: true },
+      },
+    },
   });
   if (!post) return null;
 
@@ -53,5 +71,6 @@ export async function getPost(slug: string): Promise<PostWithTags | null> {
     post.visibility === Visibility.PUBLIC && post.publishedAt !== null;
   if (!visible && !(await isOwner())) return null;
 
-  return post;
+  const { photos, ...rest } = post;
+  return { ...rest, cover: photos[0] ?? null };
 }

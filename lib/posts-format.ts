@@ -7,7 +7,17 @@ import type { Post, Tag } from "@prisma/client";
  */
 
 export type Lang = "vi" | "ja";
-export type PostWithTags = Post & { tags: Tag[] };
+/**
+ * Bài kèm chủ đề và ẢNH BÌA.
+ *
+ * `cover` là tấm đầu tiên theo `Photo.order` — cùng tấm mà dải ảnh trang chủ
+ * dùng. Nhờ vậy ảnh bìa ở danh sách bài, ở trang chủ, và ở /os luôn là MỘT
+ * tấm; đổi thứ tự ảnh trong bài là cả ba nơi đổi theo.
+ */
+export type PostWithTags = Post & {
+  tags: Tag[];
+  cover?: { url: string; thumbUrl: string | null } | null;
+};
 
 export function hasJa(p: Pick<Post, "bodyJa">): boolean {
   return !!p.bodyJa?.trim();

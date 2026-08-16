@@ -17,8 +17,10 @@ async function load(lang: "vi" | "ja"): Promise<NowData> {
 export default async function NowPage() {
   const [vi, ja] = await Promise.all([load("vi"), load("ja")]);
 
+  // Khung RỘNG, không phải khung đọc 720px: trang này là lưới 3 thẻ, không phải
+  // một bài để đọc từ đầu tới cuối.
   return (
-    <Container width="prose">
+    <Container>
       <NowView vi={vi} ja={ja} />
     </Container>
   );

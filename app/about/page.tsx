@@ -22,7 +22,7 @@ export default async function AboutPage() {
   ]);
 
   return (
-    <Container width="prose">
+    <Container>
       <AboutView vi={vi} ja={ja} />
     </Container>
   );

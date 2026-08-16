@@ -45,12 +45,29 @@ export function PublicJourneyView({ years }: { years: JourneyYearGroup[] }) {
           <span lang={jl}>{t.journey.emptyTail[lang]}</span>
         </p>
       ) : (
-        <div className="mt-12 space-y-14">
+        <div className="mt-12 space-y-5">
           {years.map(({ year, memories }) => (
-            <section key={year}>
-              <h2 className="mb-6 text-[20px] font-semibold tabular-nums tracking-[-0.01em]">
-                {year}
-              </h2>
+            /*
+              MỖI NĂM LÀ MỘT THẺ, và số năm là thứ to nhất trong thẻ đó.
+
+              Bản cũ để năm ở cỡ 20px — nhỏ hơn cả tiêu đề của ký ức bên dưới,
+              nên khi cuộn qua nhiều năm thì không có mốc nào để mắt bám vào và
+              cả trang thành một dòng chảy không phân đoạn. Số năm cỡ 56px màu
+              nâu nhạt làm đúng việc của một mốc: đủ to để nhận ra khi lướt
+              nhanh, đủ nhạt để không giành chỗ với nội dung.
+            */
+            <section
+              key={year}
+              className="rounded-[var(--radius-xl)] border border-line bg-surface p-6 md:p-8"
+            >
+              <div className="mb-8 flex flex-wrap items-baseline gap-x-5 gap-y-2 border-b border-line-soft pb-5">
+                <h2 className="text-[48px] font-semibold leading-none tabular-nums tracking-[-0.04em] text-ink-3/45 md:text-[56px]">
+                  {year}
+                </h2>
+                <span className="tag">
+                  {memories.length} {t.journey.title[lang].toLowerCase()}
+                </span>
+              </div>
 
               <ul className="space-y-10 border-l border-line pl-6">
                 {memories.map((m) => (

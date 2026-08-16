@@ -39,11 +39,37 @@ export function PostCard({ post }: { post: PostWithTags }) {
   ];
 
   return (
-    <article className="group border-b border-line-soft last:border-0">
+    /*
+      THẺ có ảnh bìa bên trái, nội dung bên phải.
+
+      Danh sách bài trước đây chỉ có chữ: dòng nào cũng tiêu đề + mô tả + ngày,
+      nên mười bài trông như mười đoạn văn và không có gì để mắt phân biệt bài
+      này với bài kia khi lướt. Ảnh bìa làm đúng việc đó — nó là thứ duy nhất
+      KHÁC NHAU giữa các dòng mà không cần đọc.
+
+      Bài chưa có ảnh vẫn giữ nguyên bố cục cũ (chỉ chữ), không chèn khung xám
+      giả làm chỗ ảnh: một ô trống có viền còn khó chịu hơn là không có ô nào.
+    */
+    <article className="group">
       <Link
         href={href}
-        className="-mx-4 block rounded-[var(--radius-lg)] px-4 py-6 transition-colors hover:bg-surface"
+        className="flex flex-col gap-5 overflow-hidden rounded-[var(--radius-xl)] border border-line bg-surface p-4 transition-colors hover:border-ink-3 md:flex-row md:p-5"
       >
+        {post.cover && (
+          <div className="shrink-0 overflow-hidden rounded-[var(--radius-lg)] md:w-[260px]">
+            {/* eslint-disable-next-line @next/next/no-img-element -- ảnh đi qua
+                /api/uploads (kiểm quyền từng tấm), next/image không qua đó */}
+            <img
+              src={post.cover.url}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="h-[180px] w-full object-cover transition-transform duration-500 group-hover:scale-[1.03] md:h-full"
+            />
+          </div>
+        )}
+
+        <div className="min-w-0 flex-1 md:py-1">
         <div className="flex items-baseline gap-4">
           <h3
             lang={ja ? "ja" : undefined}
@@ -117,6 +143,7 @@ export function PostCard({ post }: { post: PostWithTags }) {
             )}
           </div>
         )}
+        </div>
       </Link>
     </article>
   );

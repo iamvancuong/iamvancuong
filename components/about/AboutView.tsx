@@ -16,9 +16,12 @@ export function AboutView({ vi, ja }: { vi: string; ja: string }) {
   return (
     <>
       <PageHeader index={5} label="Giới thiệu" en="About" lang={jl} title={t.about.title[lang]} />
+      {/* Khung trang RỘNG để đầu trang thẳng hàng với /blog, /journey, /projects
+          — nhưng phần ĐỌC vẫn kẹp ở 720px. Nới bề rộng đọc ra 1240px thì mắt
+          phải quét ngang xa hơn mỗi dòng, đọc mệt hơn chứ không đẹp hơn. */}
       <div
         lang={jl}
-        className="prose mt-10"
+        className="prose mt-10 max-w-[var(--container-prose)]"
         dangerouslySetInnerHTML={{ __html: html }}
       />
     </>

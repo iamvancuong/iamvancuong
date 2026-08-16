@@ -64,8 +64,10 @@ export default async function PublicJourneyPage() {
     .sort((a, b) => b[0] - a[0])
     .map(([year, memories]) => ({ year, memories }));
 
+  // Khung RỘNG, không phải khung đọc 720px: trang này là lưới ô tháng, không phải
+  // một bài để đọc từ đầu tới cuối.
   return (
-    <Container width="prose">
+    <Container>
       <PublicJourneyView years={years} />
     </Container>
   );
