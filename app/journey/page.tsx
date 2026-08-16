@@ -7,6 +7,8 @@ import {
   PublicJourneyView,
   type JourneyYearGroup,
 } from "@/components/journey/PublicJourneyView";
+import { mergeTimeline } from "@/lib/timeline";
+import { todayISO } from "@/lib/os/day";
 
 export const metadata: Metadata = {
   title: "Hành trình",
@@ -66,9 +68,26 @@ export default async function PublicJourneyPage() {
 
   // Khung RỘNG, không phải khung đọc 720px: trang này là lưới ô tháng, không phải
   // một bài để đọc từ đầu tới cuối.
+  /**
+   * Khung năm dựng sẵn — trang có hình hài ngay cả khi chưa có ký ức nào.
+   *
+   * `todayISO()` (JST cố định) chứ không phải `new Date()` của trình duyệt:
+   * năm/tháng "hiện tại" phải giống nhau ở server và ở client, nếu không React
+   * báo lệch hydration vào đúng đêm giao thừa — và chỉ đêm đó.
+   */
+  const iso = todayISO();
+  const rows = mergeTimeline(
+    memories.map((m) => ({
+      year: m.date.getUTCFullYear(),
+      month: m.date.getUTCMonth() + 1,
+    })),
+    Number(iso.slice(0, 4)),
+    Number(iso.slice(5, 7)),
+  );
+
   return (
     <Container>
-      <PublicJourneyView years={years} />
+      <PublicJourneyView years={years} rows={rows} />
     </Container>
   );
 }

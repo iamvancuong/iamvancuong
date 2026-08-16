@@ -61,6 +61,7 @@ import {
   recentMonths,
 } from "../lib/os/money";
 import { slugify } from "../lib/posts-format";
+import { mergeTimeline, TIMELINE } from "../lib/timeline";
 
 let ran = 0;
 let failed = 0;
@@ -450,3 +451,58 @@ if (failed > 0) process.exit(1);
 // Dùng để TypeScript không kêu import thừa khi tạm bỏ bớt phép kiểm.
 void GoalStatus;
 void group;
+
+
+describe("timeline.ts — khung năm dựng sẵn của Hành trình");
+
+{
+  // Không có ký ức nào: khung vẫn phải hiện đủ năm. Đây là cả mục đích của
+  // khung — trang có hình hài trước khi có nội dung.
+  const trong = mergeTimeline([], 2026, 8);
+  eq("chưa viết gì vẫn hiện đủ năm", trong.length, TIMELINE.length);
+  eq("năm nào cũng 0 ký ức", trong.every((r) => r.memoryCount === 0), true);
+
+  const y2023 = trong.find((r) => r.year === 2023)!;
+  eq("2023 bắt đầu từ tháng 8", y2023.months[0].month, 8);
+  eq("2023 có 5 tháng (8→12)", y2023.months.length, 5);
+
+  const y2024 = trong.find((r) => r.year === 2024)!;
+  eq("năm đã qua có đủ 12 tháng", y2024.months.length, 12);
+
+  // Năm HIỆN TẠI chỉ hiện tới tháng này. Bày sẵn cả 12 ô là bày ra bốn tháng
+  // chưa xảy ra, và chúng trông giống hệt tháng đã qua mà chưa viết.
+  const y2026 = trong.find((r) => r.year === 2026)!;
+  eq("năm hiện tại dừng ở tháng này", y2026.months.length, 8);
+  eq("tháng cuối là tháng hiện tại", y2026.months.at(-1)!.month, 8);
+}
+
+{
+  // Ký ức bind vào đúng ô theo NĂM và THÁNG của nó, không cần khai báo gì.
+  const co = mergeTimeline(
+    [
+      { year: 2026, month: 3 },
+      { year: 2026, month: 3 },
+      { year: 2024, month: 11 },
+    ],
+    2026,
+    8,
+  );
+  const m3 = co.find((r) => r.year === 2026)!.months.find((m) => m.month === 3)!;
+  eq("hai ký ức cùng tháng gộp lại", m3.count, 2);
+  eq("tổng ký ức của năm", co.find((r) => r.year === 2026)!.memoryCount, 2);
+  eq(
+    "tháng không có ký ức thì đếm 0",
+    co.find((r) => r.year === 2026)!.months.find((m) => m.month === 5)!.count,
+    0,
+  );
+  eq("năm khác vẫn đếm riêng", co.find((r) => r.year === 2024)!.memoryCount, 1);
+}
+
+{
+  // Năm NGOÀI khung (ký ức tuổi thơ ở Việt Nam) vẫn phải hiện — khung là mức
+  // sàn, không phải bộ lọc. Mất ký ức vì nó rơi ngoài khung là hỏng im lặng.
+  const cu = mergeTimeline([{ year: 2009, month: 6 }], 2026, 8);
+  eq("năm ngoài khung vẫn hiện", cu.some((r) => r.year === 2009), true);
+  eq("và xếp lên đầu theo thời gian", cu[0].year, 2009);
+  eq("năm ngoài khung không có tiêu đề", cu[0].title, null);
+}
