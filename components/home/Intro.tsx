@@ -52,7 +52,18 @@ const FILL: Record<0 | 1 | 2 | 3, string> = {
  * hơn hẳn ở đoạn văn dài — mắt luôn biết dòng sau bắt đầu ở đâu.
  */
 const HERO = "flex min-h-[calc(100svh-4rem)] items-center py-16";
-const BAND = "py-20 md:py-28";
+/**
+ * Hai loại dải nền, XEN KẼ từ trên xuống: kem → trắng → kem → trắng.
+ *
+ * Nền một màu suốt cả trang thì dù mỗi mục có tiêu đề riêng, mắt vẫn trôi tuột
+ * từ đầu tới cuối và không biết mình vừa qua mấy mục. Đổi nền là cách phân
+ * đoạn duy nhất không tốn thêm chữ, thêm đường kẻ, hay thêm khoảng trắng.
+ *
+ * `.band` + `.band-white` tràn hết bề ngang màn hình dù nằm trong container —
+ * xem globals.css để biết vì sao không dùng `100vw`.
+ */
+const BAND = "band py-20 md:py-28";
+const BAND_WHITE = "band band-white py-20 md:py-28";
 
 export function Intro({
   streaks,
@@ -281,7 +292,7 @@ export function Intro({
       <section
         className={
           stripJourney.length + stripBlog.length > 0
-            ? "space-y-10 py-14 md:py-20"
+            ? "band band-white space-y-10 py-14 md:py-20"
             : ""
         }
       >
@@ -368,7 +379,7 @@ export function Intro({
       </section>
 
       {/* ── CHUỖI + Ô NHIỆT ──────────────────────────────────── */}
-      <section className={BAND}>
+      <section className={BAND_WHITE}>
         <Reveal stagger className="w-full">
           <div>
             <Heading index={2} label="Đang duy trì" en="Life OS">
@@ -379,48 +390,73 @@ export function Intro({
             </p>
           </div>
 
-          {/* Con số phóng lên 64px và bỏ hết khung: ba con số lớn tự nó đã là
-              ba khối rõ ràng, thêm viền chỉ là vẽ lại ranh giới mà mắt đã thấy
-              sẵn. Ngọn lửa lùi về làm dấu nhỏ cạnh nhãn, không còn đứng giữa
-              hét lên ở mỗi ô. */}
-          <dl className="mt-10 grid grid-cols-1 divide-y divide-line-soft border-y border-line-soft sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+          {/*
+            BA THẺ TRẮNG, không phải ba cột chia bằng đường kẻ.
+
+            Bản trước bỏ hết khung với lý do "ba con số lớn tự nó đã là ba
+            khối". Đúng về mặt lý thuyết, sai khi đặt lên nền KEM: chữ nổi trên
+            kem thì mọi thứ cùng một mặt phẳng, và ba con số trôi thành một dãy
+            chứ không thành ba đơn vị. Có thẻ trắng thì mỗi con số có một cái
+            hộp của riêng nó — đó là lý do thiết kế tham chiếu dùng thẻ.
+
+            Vạch tiến độ dưới mỗi số: con số trần không nói được "nhiều hay ít".
+            Vạch lấy mốc so là KỶ LỤC của chính chỉ số đó, nên nó trả lời đúng
+            câu "mình đang gần mức tốt nhất từng đạt tới đâu".
+          */}
+          <dl className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
             {home.streaks.items.map((it) => {
               const s = streaks[it.key];
+              // Kẹp 4–100%: 0% là một vạch vô hình, trông như hỏng chứ không
+              // như "chưa có gì".
+              const pct =
+                s.best > 0 ? Math.max(4, Math.min(100, (s.now / s.best) * 100)) : 0;
               return (
-                <div key={it.key} className="py-7 sm:px-7 sm:first:pl-0">
-                  <dd className="flex items-baseline gap-1.5">
-                    <span className="text-[52px] font-semibold leading-none tabular-nums text-ink md:text-[64px]">
+                <div
+                  key={it.key}
+                  className="rounded-[var(--radius-xl)] border border-line bg-surface p-5"
+                >
+                  <div className="flex items-start justify-between">
+                    <span lang={jl} className="tag">
+                      {it.label[lang]}
+                    </span>
+                    {/* Chấm trạng thái: xanh khi đang có nhịp, xám khi đứng —
+                        thay cho ngọn lửa cũ vốn to và hét lên ở cả ba ô. */}
+                    <span
+                      className={`mt-0.5 size-1.5 shrink-0 rounded-full ${
+                        s.now > 0 ? "bg-accent" : "bg-ink-3/40"
+                      }`}
+                      aria-hidden
+                    />
+                  </div>
+
+                  <dd className="mt-6 flex items-baseline gap-1.5">
+                    <span className="text-[52px] font-semibold leading-none tabular-nums text-ink">
                       {s.now}
                     </span>
-                    <span lang={jl} className="text-[14px] text-ink-3">
+                    <span lang={jl} className="tag">
                       {home.streaks.unit[lang]}
                     </span>
                   </dd>
-                  <dt
-                    lang={jl}
-                    className="mt-3 flex items-center gap-1.5 text-[15px] font-medium text-ink"
-                  >
-                    <Flame
-                      size={15}
-                      strokeWidth={1.75}
-                      aria-hidden
-                      className={s.now > 0 ? "text-ink-2" : "text-ink-3"}
+
+                  <div className="mt-5 h-px w-full bg-line">
+                    <div
+                      className={`h-px ${s.now > 0 ? "bg-accent" : "bg-transparent"}`}
+                      style={{ width: `${pct}%` }}
                     />
-                    {it.label[lang]}
-                  </dt>
+                  </div>
 
                   {/* Dòng nhỏ: con số lớn đo cái gì, và kỷ lục là bao nhiêu.
                       Cần thiết vì lập trình đếm CỘNG DỒN còn hai cái kia đếm
                       CHUỖI — không nói ra thì ba con số cạnh nhau trông như
                       cùng một đơn vị, và số của lập trình sẽ bị đọc nhầm
                       thành một chuỗi dài bất thường. */}
-                  <p lang={jl} className="mt-1.5 text-[12px] text-ink-3">
+                  <dt lang={jl} className="mt-3 text-[12px] text-ink-3">
                     {s.mode === "total"
                       ? home.streaks.totalNote[lang]
                       : home.streaks.streakNote[lang]}
                     {s.best > 0 &&
                       ` · ${home.streaks.best[lang]} ${s.best} ${home.streaks.unit[lang]}`}
-                  </p>
+                  </dt>
                 </div>
               );
             })}
@@ -475,7 +511,7 @@ export function Intro({
           Chỉ có `pt`, KHÔNG có `pb`: khoảng cách xuống footer để `main` và
           `footer` tự lo, giống mọi trang khác. Thêm `pb` ở đây là mục cuối của
           riêng trang chủ bị đẩy xa footer hơn các trang còn lại. */}
-      <section className="pt-16 md:pt-24">
+      <section className="band band-white pt-16 md:pt-24 pb-20 md:pb-28">
         <Reveal stagger className="w-full">
           <Heading index={4} label="Kết nối" en="Contact">
             {home.contact.heading[lang]}

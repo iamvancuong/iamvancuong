@@ -72,6 +72,29 @@
 }
 
 /* ============================================================
+   DẢI NỀN XEN KẼ — trắng / kem / trắng / kem…
+
+   Nền một màu suốt cả trang thì dù mỗi mục có tiêu đề riêng, mắt vẫn trôi
+   tuột từ đầu tới cuối và không biết mình vừa qua mấy mục. Đổi nền là cách
+   phân đoạn duy nhất KHÔNG tốn thêm chữ, thêm đường kẻ, hay thêm khoảng trắng.
+
+   `box-shadow` trải 100vmax mỗi bên rồi `clip-path` cắt phần thừa theo chiều
+   dọc: nền tràn hết bề ngang màn hình trong khi phần tử vẫn nằm yên trong
+   container. Cách này KHÔNG dùng `width: 100vw` — `100vw` tính cả thanh cuộn
+   nên sinh ra tràn ngang trên Windows, và bug đó chỉ lộ ra ở máy có thanh
+   cuộn chiếm chỗ.
+   ============================================================ */
+.band {
+  position: relative;
+  clip-path: inset(0 -100vmax);
+}
+
+.band-white {
+  background: var(--color-surface);
+  box-shadow: 0 0 0 100vmax var(--color-surface);
+}
+
+/* ============================================================
    DARK MODE — theo hệ điều hành, hoặc ép bằng nút ở Header
    ============================================================
 

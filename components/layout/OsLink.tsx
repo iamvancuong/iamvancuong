@@ -46,7 +46,8 @@ export function OsLink() {
     <Link
       href="/os"
       title={signedIn ? t.os.enter[lang] : t.os.private[lang]}
-      className={`flex items-center gap-1.5 rounded-[var(--radius-md)] border px-2.5 py-1 text-[13px] transition-colors ${
+      // Bo tròn hẳn — cùng hệ hình khối với viên thuốc nav (xem ThemeToggle).
+      className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] transition-colors ${
         signedIn
           ? "border-line bg-surface text-ink hover:border-ink-3"
           : "border-transparent text-ink-3 hover:text-ink"

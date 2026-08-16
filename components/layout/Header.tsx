@@ -77,7 +77,7 @@ export function Header() {
               onClick={() => setOpen((v) => !v)}
               aria-expanded={open}
               aria-label={t.menu[lang]}
-              className="flex items-center rounded-[var(--radius-md)] p-1.5 text-ink-2 transition-colors hover:bg-surface hover:text-ink md:hidden"
+              className="flex items-center rounded-full border border-line bg-surface p-2 text-ink-2 transition-colors hover:text-ink md:hidden"
             >
               {open ? <X size={18} strokeWidth={1.75} /> : <Menu size={18} strokeWidth={1.75} />}
             </button>

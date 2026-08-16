@@ -96,7 +96,9 @@ export function ThemeToggle() {
       onClick={() => apply(NEXT[theme])}
       title={`${label} — ${t.theme.hint[lang]}`}
       aria-label={`${label} · ${nextLabel}`}
-      className="flex items-center rounded-[var(--radius-md)] p-1.5 text-ink-3 transition-colors hover:bg-surface hover:text-ink"
+      // Bo TRÒN HẲN để cùng ngôn ngữ với viên thuốc nav ở Header. Bo 6px cạnh
+      // một viên bo tròn đọc ra là hai hệ thống hình khối đặt cạnh nhau.
+      className="flex items-center rounded-full p-2 text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
     >
       <Icon size={15} strokeWidth={1.75} />
     </button>
