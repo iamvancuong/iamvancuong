@@ -14,6 +14,8 @@ import { Journey } from "./Journey";
 import { ContactForm } from "./ContactForm";
 import { BrandIcon, type BrandName } from "./BrandIcon";
 import { PhotoStrip, type StripItem } from "./PhotoStrip";
+import { Heatmap } from "./Heatmap";
+import type { TimelineRow } from "@/lib/timeline";
 import { PostCard } from "@/components/blog/PostCard";
 import type { PostWithTags } from "@/lib/posts-format";
 import { Reveal } from "@/components/Reveal";
@@ -34,13 +36,6 @@ const MORE = [
   { href: "/journey", label: "Hành trình" },
   { href: "/projects", label: "Dự án" },
 ];
-
-const FILL: Record<0 | 1 | 2 | 3, string> = {
-  0: "bg-surface-2",
-  1: "bg-ink/20",
-  2: "bg-ink/55",
-  3: "bg-ink",
-};
 
 /**
  * HAI loại mục, và đây là thay đổi chính của lần làm lại giao diện.
@@ -74,24 +69,26 @@ export function Intro({
   stripJourney,
   stripBlog,
   posts,
+  rows,
 }: {
   streaks: PublicStreaks;
   journey: JourneyYear[];
   stripJourney: StripItem[];
   stripBlog: StripItem[];
   posts: PostWithTags[];
+  rows: TimelineRow[];
 }) {
   const { lang } = useLang();
   const jl = lang === "ja" ? "ja" : undefined;
 
-  // Ô nhiệt: bỏ các ô TRỐNG ở đầu (trước ngày hoạt động đầu tiên) để dải bắt
-  // đầu từ bên trái — web vừa chạy thì nhỏ, lớn dần theo ngày, không phơi cả
-  // chục tuần quá khứ trống. Chưa có hoạt động nào thì hiện tuần gần nhất.
-  const heatCells = (() => {
-    const h = streaks.heatmap;
-    const first = h.findIndex((c) => c.level > 0);
-    return first === -1 ? h.slice(-7) : h.slice(first);
-  })();
+  /**
+   * Giữ NGUYÊN cả 119 ngày, không cắt bỏ những ngày trống ở đầu nữa.
+   *
+   * Bản trước cắt vì lưới chỉ hiện được một dải; giờ Heatmap có nút lùi/tiến
+   * nên ngày trống ở đầu không còn chiếm chỗ của ngày có dữ liệu — nó nằm ở
+   * kỳ trước, và đi tới đó là chuyện của người xem.
+   */
+  const heatCells = streaks.heatmap;
 
   useEffect(() => {
     const el = document.documentElement;
@@ -395,6 +392,13 @@ export function Intro({
             </p>
           </div>
 
+          {/* Lịch hoạt động lên TRƯỚC ba thẻ: nó là bức tranh cả năm, ba thẻ
+              là con số rút ra từ bức tranh đó. Đọc tranh rồi mới đọc số.
+              Component riêng vì nó có TRẠNG THÁI (đang xem năm nào). */}
+          <div className="mt-10">
+            <Heatmap cells={heatCells} label={home.streaks.heatmapLabel[lang]} />
+          </div>
+
           {/*
             BA THẺ TRẮNG, không phải ba cột chia bằng đường kẻ.
 
@@ -408,7 +412,7 @@ export function Intro({
             Vạch lấy mốc so là KỶ LỤC của chính chỉ số đó, nên nó trả lời đúng
             câu "mình đang gần mức tốt nhất từng đạt tới đâu".
           */}
-          <dl className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
             {home.streaks.items.map((it) => {
               const s = streaks[it.key];
               // Kẹp 4–100%: 0% là một vạch vô hình, trông như hỏng chứ không
@@ -428,7 +432,7 @@ export function Intro({
                         thay cho ngọn lửa cũ vốn to và hét lên ở cả ba ô. */}
                     <span
                       className={`mt-0.5 size-1.5 shrink-0 rounded-full ${
-                        s.now > 0 ? "bg-accent" : "bg-ink-3/40"
+                        s.now > 0 ? "bg-up" : "bg-ink-3/40"
                       }`}
                       aria-hidden
                     />
@@ -445,7 +449,7 @@ export function Intro({
 
                   <div className="mt-5 h-px w-full bg-line">
                     <div
-                      className={`h-px ${s.now > 0 ? "bg-accent" : "bg-transparent"}`}
+                      className={`h-px ${s.now > 0 ? "bg-up" : "bg-transparent"}`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>
@@ -467,26 +471,6 @@ export function Intro({
             })}
           </dl>
 
-          {/* Ô nhiệt — cũng bỏ khung, chỉ còn nhãn và dải ô. */}
-          <div className="mt-10">
-            <div
-              lang={jl}
-              className="text-[11px] font-medium uppercase tracking-[0.1em] text-ink-3"
-            >
-              {home.streaks.heatmapLabel[lang]}
-            </div>
-            <div className="mt-4 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              <div className="grid w-max grid-flow-col grid-rows-7 gap-1">
-                {heatCells.map((c) => (
-                  <span
-                    key={c.iso}
-                    title={c.iso}
-                    className={`size-3 rounded-[3px] ${FILL[c.level]} ${c.isToday ? "ring-1 ring-accent" : ""}`}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
         </Reveal>
       </section>
 
@@ -530,13 +514,66 @@ export function Intro({
             {home.journey.caption[lang]}
           </p>
         </Reveal>
-        <div className="mt-12 w-full">
-          <Journey years={journey} lang={lang} />
+        {/*
+          NẰM NGANG, không phải cuộn dọc.
+
+          Bản trước là accordion dọc: mở một năm thì các năm khác bị đẩy xuống
+          khỏi màn hình, nên không bao giờ thấy được TOÀN BỘ hành trình cùng
+          lúc — mà "chặng đường" là thứ chỉ có nghĩa khi nhìn được cả chặng.
+
+          Dải ngang giữ mọi năm trong một băng: liếc một cái thấy hết, và việc
+          nó tràn khỏi mép phải chính là lời mời kéo tiếp.
+        */}
+        <div className="-mx-6 mt-10 overflow-x-auto px-6 pb-2 md:-mx-8 md:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <ul className="flex w-max gap-4">
+            {rows.map((r) => (
+              <li
+                key={r.year}
+                className="flex w-[260px] shrink-0 flex-col rounded-[var(--radius-xl)] border border-line bg-surface p-5"
+              >
+                <div className="flex items-baseline justify-between">
+                  <span className="text-[44px] font-semibold leading-none tabular-nums tracking-[-0.04em] text-ink-3/40">
+                    {r.year}
+                  </span>
+                  <span className="tag">
+                    {r.memoryCount > 0 ? `${r.memoryCount} ký ức` : "chưa viết"}
+                  </span>
+                </div>
+
+                {r.title && (
+                  <div className="mt-4 text-[16px] font-semibold leading-snug tracking-[-0.01em]">
+                    {r.title}
+                  </div>
+                )}
+                {r.note && (
+                  <p className="mt-1.5 text-[13px] leading-relaxed text-ink-3">
+                    {r.note}
+                  </p>
+                )}
+
+                {/* Ô tháng nhỏ hơn bản ở /journey: ở đây chúng là bản đồ thu
+                    nhỏ, không phải thứ để đọc từng ô. */}
+                <ul className="mt-auto flex flex-wrap gap-1 pt-5">
+                  {r.months.map((m) => (
+                    <li
+                      key={m.month}
+                      title={`Tháng ${m.month} · ${m.count > 0 ? `${m.count} ký ức` : "chưa viết"}`}
+                      className={`size-5 rounded-[4px] ${m.count > 0 ? "bg-up" : "bg-surface-2"}`}
+                    />
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
         </div>
+
         {journey.length > 0 && (
-          <div className="mt-10">
-            <Link href="/journey" lang={jl} className="text-[14px] text-ink-2 underline underline-offset-4 transition-colors hover:text-ink">
-              {home.journey.viewAll[lang]}
+          <div className="mt-8">
+            <Link
+              href="/journey"
+              className="tag rounded-full border border-line px-3.5 py-2 transition-colors hover:border-ink-3 hover:text-ink"
+            >
+              {home.journey.viewAll[lang]} →
             </Link>
           </div>
         )}

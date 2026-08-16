@@ -56,6 +56,8 @@ export const t = {
   },
   blog: {
     title: { vi: "Viết", ja: "ブログ" },
+    /** Lời mời bấm ở cuối mỗi thẻ bài. */
+    read: { vi: "Đọc bài", ja: "読む" },
     subtitle: {
       vi: "Tiếng Nhật, lập trình, và cuộc sống ở đây.",
       ja: "日本語、プログラミング、そしてここでの暮らし。",

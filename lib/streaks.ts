@@ -1,11 +1,12 @@
 import { db } from "@/lib/db";
 import { jpTotal } from "@/lib/os/japanese";
 import {
+  dayLevel,
   daysWith,
   longestStreakOf,
-  recentLevels,
   streakOf,
 } from "@/lib/os/stats";
+import { isoUTC, todayISO } from "@/lib/os/day";
 
 export type HeatCell = { iso: string; level: 0 | 1 | 2 | 3; isToday: boolean };
 
@@ -26,7 +27,13 @@ export type PublicStreaks = {
   journal: Stat;
   japanese: Stat;
   it: Stat;
-  /** Ô nhiệt như /os: 0–3 việc nền tảng mỗi ngày, ~17 tuần gần nhất. */
+  /**
+   * Mức 0–3 việc nền tảng của MỌI ngày có nhật ký — không cắt theo cửa sổ.
+   *
+   * Trước đây chỉ trả 119 ngày gần nhất vì lưới chỉ hiện được một dải. Giờ
+   * lịch nhiệt xem theo TỪNG NĂM và có nút chọn năm, nên cắt sẵn ở đây là cắt
+   * mất những năm mà người xem có quyền bấm sang.
+   */
   heatmap: HeatCell[];
 };
 
@@ -80,6 +87,14 @@ export async function getPublicStreaks(): Promise<PublicStreaks> {
       best: longestStreakOf(logs, coded),
       mode: "total",
     },
-    heatmap: recentLevels(logs, 119),
+    // Mọi ngày có bản ghi, xếp cũ → mới. Giao diện tự dựng lưới cho năm nó
+    // đang xem; ngày không có bản ghi thì đơn giản là không có mặt ở đây.
+    heatmap: logs
+      .map((l) => ({
+        iso: isoUTC(l.date),
+        level: dayLevel(l),
+        isToday: isoUTC(l.date) === todayISO(),
+      }))
+      .sort((a, b) => a.iso.localeCompare(b.iso)),
   };
 }

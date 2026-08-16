@@ -28,13 +28,13 @@
   "/os/data/page": "/os/data",
   "/os/goals/page": "/os/goals",
   "/os/huong-dan/page": "/os/huong-dan",
-  "/os/inbox/page": "/os/inbox",
-  "/os/calendar/page": "/os/calendar",
   "/os/focus/page": "/os/focus",
-  "/os/log/[date]/page": "/os/log/[date]",
+  "/os/calendar/page": "/os/calendar",
+  "/os/inbox/page": "/os/inbox",
   "/os/journey/page": "/os/journey",
+  "/os/log/[date]/page": "/os/log/[date]",
   "/os/money/page": "/os/money",
   "/os/log/page": "/os/log",
-  "/os/write/page": "/os/write",
-  "/os/write/[slug]/page": "/os/write/[slug]"
+  "/os/write/[slug]/page": "/os/write/[slug]",
+  "/os/write/page": "/os/write"
 }

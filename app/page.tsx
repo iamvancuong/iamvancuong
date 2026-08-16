@@ -6,6 +6,8 @@ import { getPublicStreaks } from "@/lib/streaks";
 import { getPublicJourney } from "@/lib/journey";
 import { getHomeStrips } from "@/lib/strips";
 import { listPosts } from "@/lib/posts";
+import { mergeTimeline } from "@/lib/timeline";
+import { todayISO } from "@/lib/os/day";
 import { site } from "@/lib/site";
 import { personLd, websiteLd } from "@/lib/seo";
 
@@ -29,6 +31,19 @@ export default async function HomePage() {
     listPosts(),
   ]);
 
+  // Khung năm dùng CHUNG với /journey — cùng một nguồn, nên hai trang không
+  // bao giờ nói hai điều khác nhau về cùng một năm.
+  const iso = todayISO();
+  const rows = mergeTimeline(
+    journey.flatMap((y) =>
+      y.months.flatMap((m) =>
+        m.memories.map(() => ({ year: y.year, month: m.month })),
+      ),
+    ),
+    Number(iso.slice(0, 4)),
+    Number(iso.slice(5, 7)),
+  );
+
   return (
     <Container>
       <JsonLd data={[personLd(), websiteLd()]} />
@@ -42,6 +57,7 @@ export default async function HomePage() {
         // Ba bài mới nhất. `listPosts` đã lọc bài riêng tư với khách và tự
         // kèm ảnh bìa, nên chỗ này không phải biết gì về quyền xem.
         posts={posts.slice(0, 3)}
+        rows={rows}
       />
     </Container>
   );

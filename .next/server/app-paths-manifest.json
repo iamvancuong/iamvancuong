@@ -28,13 +28,13 @@
   "/os/data/page": "app/os/data/page.js",
   "/os/goals/page": "app/os/goals/page.js",
   "/os/huong-dan/page": "app/os/huong-dan/page.js",
-  "/os/inbox/page": "app/os/inbox/page.js",
-  "/os/calendar/page": "app/os/calendar/page.js",
   "/os/focus/page": "app/os/focus/page.js",
-  "/os/log/[date]/page": "app/os/log/[date]/page.js",
+  "/os/calendar/page": "app/os/calendar/page.js",
+  "/os/inbox/page": "app/os/inbox/page.js",
   "/os/journey/page": "app/os/journey/page.js",
+  "/os/log/[date]/page": "app/os/log/[date]/page.js",
   "/os/money/page": "app/os/money/page.js",
   "/os/log/page": "app/os/log/page.js",
-  "/os/write/page": "app/os/write/page.js",
-  "/os/write/[slug]/page": "app/os/write/[slug]/page.js"
+  "/os/write/[slug]/page": "app/os/write/[slug]/page.js",
+  "/os/write/page": "app/os/write/page.js"
 }
