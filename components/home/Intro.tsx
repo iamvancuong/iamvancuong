@@ -20,6 +20,7 @@ import { PostCard } from "@/components/blog/PostCard";
 import type { PostWithTags } from "@/lib/posts-format";
 import { Reveal } from "@/components/Reveal";
 import { SectionLabel } from "@/components/layout/SectionLabel";
+import { quoted } from "./quoted";
 
 const ALL_SOCIALS: { name: BrandName; href: string }[] = [
   { name: "github", href: site.social.github },
@@ -306,76 +307,92 @@ export function Intro({
         </Reveal>
       </section>
 
-      {/* ── VỀ TÔI + KỸ NĂNG ─────────────────────────────────── */}
-      {/* Hai cột LỆCH (2fr / 3fr) chứ không phải chia đôi: chia đôi thì hai bên
-          nặng ngang nhau và mắt không biết đọc bên nào trước. Cột trái chỉ giữ
-          tiêu đề và dính lại khi cuộn, nên lúc đọc đoạn dài vẫn luôn thấy mình
-          đang ở mục nào. */}
-      <section id="about" className={`${BAND} scroll-mt-20`}>
-        {/* `stagger` so le theo CON TRỰC TIẾP, mà ở đây chỉ còn đúng một lưới
-            — nên dùng Reveal thường, không thì delay rơi vào hư không. */}
-        <Reveal className="w-full">
-          <div className="grid gap-10 md:grid-cols-[2fr_3fr] md:gap-16">
-            <div className="md:sticky md:top-24 md:self-start">
-              <Heading index={1} label="Về tôi" en="About">
-                {home.about.heading[lang]}
-              </Heading>
-              <p
-                lang={jl}
-                className="mt-4 max-w-[24ch] text-[19px] font-medium leading-snug text-ink-2 md:text-[21px]"
-              >
-                {home.about.slogan[lang]}
-              </p>
-            </div>
+      {/* ── VỀ TÔI ───────────────────────────────────────────
+          Nội dung bên trái, THẺ THÔNG SỐ bên phải (1.6fr / 1fr).
 
+          Bản trước để tiêu đề bên trái và dồn tất cả — đoạn văn, dữ kiện, kỹ
+          năng — vào cột phải. Cột phải thành một cột dài lẫn lộn ba loại nội
+          dung khác hẳn nhau: thứ để ĐỌC, thứ để TRA, và thứ để LIẾC. Ba loại
+          đó cần ba cách trình bày, không phải ba khối xếp chồng.
+
+          Giờ tách theo đúng loại: bên trái chỉ còn thứ để đọc; bên phải là một
+          thẻ tra cứu — dữ kiện dạng bảng nhãn/giá trị, rồi stack dạng viên. */}
+      <section id="about" className={`${BAND} scroll-mt-20`}>
+        <Reveal className="w-full">
+          <SectionLabel index={1} en="About">
+            Về tôi
+          </SectionLabel>
+
+          <div className="mt-8 grid gap-10 md:grid-cols-[1.6fr_1fr] md:gap-14">
+            {/* ── Cột đọc ── */}
             <div>
+              {/*
+                KHẨU HIỆU lên làm tiêu đề, thay cho chữ "Về tôi".
+
+                "Về tôi" là một cái nhãn — nó đã nằm ở dòng đánh số phía trên
+                rồi, in lại lần nữa ở cỡ 46px là tốn một dòng lớn nhất trang để
+                nói một điều người đọc vừa đọc xong. Khẩu hiệu thì nói được một
+                điều mới, và nói bằng giọng của chủ nhân.
+              */}
+              <h2
+                lang={jl}
+                className="text-balance text-[34px] font-semibold leading-[1.12] tracking-[-0.03em] text-ink md:text-[46px]"
+              >
+                {quoted(home.about.slogan[lang])}
+              </h2>
+
               <div
                 lang={jl}
-                className="max-w-[62ch] space-y-5 text-[17px] leading-relaxed text-ink-2 md:text-[18px]"
+                className="mt-8 max-w-[62ch] space-y-5 text-[17px] leading-relaxed text-ink-2"
               >
                 {home.about.paragraphs[lang].map((p, i) => (
                   <p key={i}>{p}</p>
                 ))}
               </div>
+            </div>
 
-              {/* Ba dữ kiện: bỏ khung viền bo 24px, chỉ còn đường kẻ mảnh ngăn
-                  giữa. Khung viền quanh ba ô chữ ngắn làm chúng trông như nút
-                  bấm được — mà chúng không bấm được. */}
-              <dl className="mt-10 grid grid-cols-1 divide-y divide-line-soft border-y border-line-soft sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-                {home.facts.map((f) => (
-                  <div key={f.label.vi} className="py-4 sm:px-5 sm:first:pl-0">
-                    <dt
-                      lang={jl}
-                      className="text-[11px] font-medium uppercase tracking-[0.1em] text-ink-3"
-                    >
-                      {f.label[lang]}
+            {/* ── Thẻ thông số ── */}
+            <aside className="h-fit rounded-[var(--radius-xl)] border border-line bg-surface p-6 md:sticky md:top-24">
+              <div className="tag">// identity_specs</div>
+
+              {/* Bảng nhãn TRÁI, giá trị PHẢI, kẻ ngăn từng dòng. Cùng một cặp
+                  chữ đó xếp chồng dọc thì đọc ra là danh sách; xếp hai đầu một
+                  dòng thì đọc ra là THÔNG SỐ — mắt biết ngay bên nào là tên,
+                  bên nào là giá trị mà không cần nghĩ. */}
+              <dl className="mt-4 divide-y divide-line-soft">
+                {[
+                  ...home.facts.map((f) => [f.label[lang], f.value[lang]] as const),
+                  // Múi giờ: không có trong `home.facts` vì nó không phải một
+                  // "dữ kiện đời" — nhưng với người tuyển dụng ở xa thì đây là
+                  // dòng đáng giá nhất trong cả thẻ.
+                  ["Timezone", "Asia/Tokyo"] as const,
+                ].map(([k, v]) => (
+                  <div
+                    key={k}
+                    className="flex items-baseline justify-between gap-4 py-3"
+                  >
+                    <dt lang={jl} className="tag shrink-0">
+                      {k}
                     </dt>
-                    <dd lang={jl} className="mt-1.5 text-[15px] text-ink">
-                      {f.value[lang]}
+                    <dd lang={jl} className="tag text-right text-ink">
+                      {v}
                     </dd>
                   </div>
                 ))}
               </dl>
 
-              <div className="mt-10">
-                <div
-                  lang={jl}
-                  className="text-[11px] font-medium uppercase tracking-[0.1em] text-ink-3"
-                >
-                  {home.skills.heading[lang]}
-                </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {home.skills.items.map((s) => (
-                    <span
-                      key={s}
-                      className="rounded-full border border-line px-3.5 py-1.5 text-[13px] text-ink-2 transition-colors hover:border-ink-3 hover:text-ink"
-                    >
-                      {s}
-                    </span>
-                  ))}
-                </div>
+              <div className="tag mt-7">// tech_stack</div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {home.skills.items.map((sk) => (
+                  <span
+                    key={sk}
+                    className="tag rounded-full border border-line px-2.5 py-1.5 normal-case tracking-normal text-ink-2 transition-colors hover:border-ink-3 hover:text-ink"
+                  >
+                    {sk}
+                  </span>
+                ))}
               </div>
-            </div>
+            </aside>
           </div>
         </Reveal>
       </section>
