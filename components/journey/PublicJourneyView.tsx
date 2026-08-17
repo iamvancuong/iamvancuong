@@ -71,7 +71,7 @@ export function PublicJourneyView({
    * NĂM MỚI NHẤT LÊN ĐẦU — 2026 trên cùng, 2023 dưới cùng.
    *
    * `mergeTimeline()` trả về theo thứ tự thời gian THUẬN và cố ý giữ nguyên
-   * như vậy: dải ngang «Chặng đường ở Nhật» ở trang chủ cuộn từ trái sang phải,
+   * như vậy: dải ngang «Chặng đường» ở trang chủ cuộn từ trái sang phải,
    * ở đó cũ-trước-mới-sau mới là chiều đọc đúng. Đảo ở đây, trong tầng hiển
    * thị, chứ không đảo trong hàm thuần — nó có phép kiểm bám vào thứ tự đó.
    *

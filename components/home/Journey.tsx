@@ -8,7 +8,7 @@ import { PhotoGrid } from "@/components/PhotoGrid";
 import { Reveal } from "@/components/Reveal";
 
 /**
- * "Chặng đường ở Nhật" — dòng thời gian kiểu editorial, hai tầng MỞ RA ĐƯỢC:
+ * «Chặng đường» — dòng thời gian kiểu editorial, hai tầng MỞ RA ĐƯỢC:
  *   NĂM → THÁNG → ký ức + ảnh.
  * Dữ liệu đọc THẬT từ Life OS (`lib/journey.ts`), không fix cứng: ký ức tick
  * "công khai" trong /os tự gom theo năm → tháng và hiện ở đây.

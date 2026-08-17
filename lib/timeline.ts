@@ -1,5 +1,5 @@
 /**
- * KHUNG NĂM của "Chặng đường ở Nhật" — dựng sẵn, ký ức tự bind vào.
+ * KHUNG NĂM của «Chặng đường» — dựng sẵn, ký ức tự bind vào.
  *
  * ## Vì sao cần khung dựng sẵn
  *
@@ -30,31 +30,67 @@ export type TimelineYear = {
   title: string;
   /** Một dòng kể thêm. */
   note: string;
-  /** Tháng đầu có mặt ở Nhật trong năm đó. Mặc định 1. */
+  /**
+   * Tháng mà câu chuyện của năm đó bắt đầu. Mặc định 1.
+   *
+   * Trước đây trường này có nghĩa hẹp hơn: "tháng đầu có mặt ở Nhật". Khung
+   * hồi đó chỉ kể từ lúc sang Nhật nên hai nghĩa trùng nhau — giờ khung kể cả
+   * những năm còn ở Việt Nam, nên nó mang nghĩa chung.
+   *
+   * Chỉ đặt khi nửa đầu năm thật sự không thuộc về câu chuyện. Đặt bừa là tự
+   * giấu mất mấy ô tháng mà lẽ ra người xem được nhìn thấy chỗ trống để viết.
+   */
   from?: number;
 };
 
+/**
+ * ⚠️ Đây là DÒNG ĐỜI THẬT, không phải chữ mẫu. Sửa thì phải đúng.
+ *
+ * Bản trước ghi 2023 là "đặt chân đến Nhật" với `from: 8` — sai. Năm 2023 chỉ
+ * là một chuyến đi chơi; việc sang Nhật để ở là năm 2026. Sai một mốc như vậy
+ * thì mọi thứ dựng trên nó cũng sai theo, mà nó lại là loại sai không ai kiểm
+ * hộ được: chỉ chủ nhân biết.
+ *
+ * Mốc năm ở đây khớp với `lib/cv.ts` và `lib/projects.ts` — cùng một cuộc đời
+ * thì hai chỗ không được kể hai kiểu:
+ *   2021  vào Mỏ – Địa chất (10/2021)
+ *   2022  thực tập BA ở JVB (06/2022)
+ *   2023  vào Heligate (10/2023)
+ *   2025  sang Adamo (05/2025)
+ *   2026  hết đại học (01/2026) · rời Adamo (02/2026)
+ */
 export const TIMELINE: TimelineYear[] = [
   {
+    year: 2021,
+    title: "Hết cấp ba",
+    note: "Khép lại mười hai năm ở Quảng Trị. Đỗ Mỏ – Địa chất, và biết mình sắp phải đi xa.",
+    // Câu chuyện của năm này bắt đầu ở kỳ thi cuối cấp, không phải tháng Giêng.
+    from: 6,
+  },
+  {
+    year: 2022,
+    title: "Lên Hà Nội",
+    note: "Năm nhất. Giữa năm xin được chỗ thực tập đầu tiên — phân tích nghiệp vụ, chưa phải code.",
+  },
+  {
     year: 2023,
-    title: "Bắt đầu — đặt chân đến Nhật",
-    note: "Những tháng đầu: trường tiếng, phòng trọ, lần đầu baito.",
-    from: 8,
+    title: "Lần đầu thấy Nhật",
+    note: "Một chuyến đi chơi, chưa nghĩ có ngày quay lại để ở. Cuối năm nhận việc fullstack đầu tiên.",
   },
   {
     year: 2024,
-    title: "Quen nhịp — học & làm",
-    note: "Cân bằng hơn giữa lớp và ca làm. Bắt đầu code nghiêm túc lại.",
+    title: "Vừa học vừa làm",
+    note: "Sáng giảng đường, tối Laravel và Angular. Năm đầu tiên viết code cho hệ thống có người dùng thật.",
   },
   {
     year: 2025,
-    title: "Khá lên một chút",
-    note: "Tiếng Nhật lên, project cá nhân nhiều hơn, bắt đầu viết nhật ký.",
+    title: "Quen nhịp hai đầu",
+    note: "Sang Adamo làm dev chính hệ thống HRM cho hơn 150 người, trong lúc vẫn còn là sinh viên.",
   },
   {
     year: 2026,
-    title: "Hiện tại",
-    note: "Chiến dịch 120 ngày N5→N3. Đang duy trì Life OS mỗi ngày.",
+    title: "Nghỉ việc, sang Nhật",
+    note: "Đóng lại ba năm đi làm ở Việt Nam để bắt đầu lại từ đầu — bằng tiếng Nhật.",
   },
 ];
 
@@ -109,9 +145,9 @@ export function mergeTimeline(
        * Tháng bắt đầu = SỚM HƠN giữa mốc khai trong khung và tháng có ký ức
        * sớm nhất của năm đó.
        *
-       * Khung khai 2023 bắt đầu từ tháng 8 (tháng đặt chân đến Nhật). Nhưng
-       * một ký ức đề ngày 2023-03 vẫn là ký ức thật — nó chỉ xảy ra trước khi
-       * sang Nhật. Lấy cứng `from` của khung thì tháng đó không có ô để rơi
+       * Khung khai 2021 bắt đầu từ tháng 6 (kỳ thi cuối cấp). Nhưng một ký ức
+       * đề ngày 2021-02 vẫn là ký ức thật — nó chỉ xảy ra trước cái mốc mình
+       * tự chọn. Lấy cứng `from` của khung thì tháng đó không có ô để rơi
        * vào, nên ký ức **biến mất khỏi trang mà không báo gì**, và
        * `memoryCount` cũng đếm thiếu vì nó cộng từ chính mảng tháng này.
        *

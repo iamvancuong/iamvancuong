@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { HeatCell } from "@/lib/streaks";
+import { INTENSITY_MAX, type Intensity } from "@/lib/os/stats";
 
 /**
  * Lịch hoạt động CẢ NĂM — 53 cột × 7 hàng, có nút chọn năm.
@@ -29,13 +30,30 @@ import type { HeatCell } from "@/lib/streaks";
  * qua mạng để nói "không có gì".
  */
 
-/** Bốn sắc độ xanh lá. Ô trống dùng nền chìm, không phải xanh nhạt nhất —
- *  nếu không thì "chưa ghi" và "có ghi một chút" trông gần như nhau. */
-const FILL: Record<0 | 1 | 2 | 3, string> = {
+/**
+ * BẢY bậc: ô trống + sáu sắc độ.
+ *
+ * Bản trước chỉ có bốn bậc vì thang cũ đếm đúng ba cái tick — hết ba việc là
+ * hết màu. Từ khi độ đậm gộp thêm số hiệp pomodoro (`dayIntensity`), thang
+ * chạy 0–6, và có sáu bậc thì mắt mới đọc ra được cái mà ba bậc giấu mất: một
+ * ngày đủ ba việc **và** học tám hiệp khác hẳn một ngày đủ ba việc rồi thôi.
+ *
+ * Bước nhảy dày dần về cuối (18 → 32 → 46 → 62 → 80 → 100) chứ không chia đều.
+ * Chia đều thì hai bậc nhạt nhất gần như trùng nhau trên nền trắng, còn hai
+ * bậc đậm nhất thì cách nhau quá xa — mắt phân biệt sắc độ nhạt kém hơn hẳn
+ * so với sắc độ đậm.
+ *
+ * Ô TRỐNG dùng nền chìm chứ không phải xanh nhạt nhất: nếu không thì "chưa
+ * ghi" và "có ghi một chút" trông gần như nhau, mà đó là hai chuyện khác hẳn.
+ */
+const FILL: Record<Intensity, string> = {
   0: "bg-surface-2",
-  1: "bg-up/25",
-  2: "bg-up/55",
-  3: "bg-up",
+  1: "bg-up/[0.18]",
+  2: "bg-up/[0.32]",
+  3: "bg-up/[0.46]",
+  4: "bg-up/[0.62]",
+  5: "bg-up/[0.80]",
+  6: "bg-up",
 };
 
 /** Tuần bắt đầu THỨ HAI — thống nhất với period.ts và lịch nhiệt trong /os. */
@@ -85,7 +103,7 @@ export function Heatmap({
     const start = new Date(jan1);
     start.setUTCDate(start.getUTCDate() - dow(jan1));
 
-    const cols: ({ iso: string; level: 0 | 1 | 2 | 3; isToday: boolean; inYear: boolean } | null)[][] = [];
+    const cols: (({ iso: string; inYear: boolean } & Omit<HeatCell, "iso">) | null)[][] = [];
     const monthAt = new Map<number, string>();
     let done = 0;
     let total = 0;
@@ -105,6 +123,8 @@ export function Heatmap({
           week.push({
             iso,
             level: hit?.level ?? 0,
+            pomo: hit?.pomo ?? 0,
+            keys: hit?.keys ?? 0,
             isToday: hit?.isToday ?? false,
             inYear: true,
           });
@@ -178,7 +198,10 @@ export function Heatmap({
                   c ? (
                     <span
                       key={c.iso}
-                      title={`${c.iso} · ${c.level}/3 việc nền tảng`}
+                      /* Nói ô này đậm VÌ CÁI GÌ. Một con số "5/6" không cho
+                         biết hôm đó ngủ sớm hay học nhiều, mà đó mới là thứ
+                         người xem muốn biết khi rê vào một ô đậm. */
+                      title={`${c.iso} · ${c.keys}/3 việc nền tảng · ${c.pomo} hiệp tiếng Nhật`}
                       className={`size-[13px] rounded-[3px] ${FILL[c.level]} ${
                         c.isToday ? "ring-1 ring-ink" : ""
                       }`}
@@ -196,9 +219,9 @@ export function Heatmap({
       {/* Chú giải: không có nó thì bốn sắc độ chỉ là bốn sắc độ. */}
       <div className="mt-4 flex items-center justify-end gap-1.5">
         <span className="tag">ít</span>
-        {([0, 1, 2, 3] as const).map((l) => (
-          <span key={l} className={`size-[13px] rounded-[3px] ${FILL[l]}`} />
-        ))}
+        {(Array.from({ length: INTENSITY_MAX + 1 }, (_, i) => i) as Intensity[]).map(
+          (l) => <span key={l} className={`size-[13px] rounded-[3px] ${FILL[l]}`} />,
+        )}
         <span className="tag">nhiều</span>
       </div>
     </div>

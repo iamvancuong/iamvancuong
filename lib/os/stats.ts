@@ -178,6 +178,51 @@ export function dayLevel(log: DailyLog | undefined): 0 | 1 | 2 | 3 {
   return n as 0 | 1 | 2 | 3;
 }
 
+export type Intensity = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+/** Mức cao nhất — giao diện dùng để dựng đủ số ô chú giải. */
+export const INTENSITY_MAX = 6;
+
+/**
+ * Mốc số hiệp pomodoro. Nhịp của đợt JLPT là **7 hiệp/ngày** (xem STATE.md
+ * §5), nên thang này lấy chính nhịp đó làm chuẩn: học lai rai thì 1 điểm, học
+ * nửa buổi thì 2, gần đủ chỉ tiêu thì 3.
+ */
+const POMO_STEPS = [1, 3, 6] as const;
+
+/**
+ * Độ đậm 0–6 cho lịch hoạt động CÔNG KHAI — gộp hai thứ đo hai chuyện khác nhau.
+ *
+ *     ba việc nền tảng   0–3   ngủ trước 00:00 · tiếng Nhật ≥60' · ăn đủ ba bữa
+ *     số hiệp pomodoro   0–3   0 hiệp · 1–2 · 3–5 · ≥6
+ *
+ * ## Vì sao KHÔNG dùng lại `dayLevel`
+ *
+ * `dayLevel` chỉ đếm ba cái tick, nên mọi ngày đủ ba việc đều đậm như nhau —
+ * một ngày học **một** hiệp và một ngày học **tám** hiệp ra cùng một ô. Trong
+ * khi cả đợt JLPT được đo bằng đúng con số hiệp đó, thì lịch trên trang chủ lại
+ * là thứ duy nhất không nhìn thấy nó.
+ *
+ * `dayLevel` vẫn giữ nguyên và vẫn là thước của chuỗi ngày: chuỗi hỏi «hôm đó
+ * có xuất hiện không», còn thang này hỏi «hôm đó làm được bao nhiêu». Hai câu
+ * khác nhau thì không nên ép chung một hàm — và đổi `dayLevel` thì kéo theo cả
+ * `/os/calendar`, `/os/log`, `keystoneStreak` và `longestStreak`.
+ *
+ * ## Tiếng Nhật được tính HAI lần, và đó là chủ ý
+ *
+ * Đủ 60 phút thì việc nền tảng «Tiếng Nhật» tự bật, mà 2 hiệp đã là 100 phút —
+ * nên một ngày học nhiều vừa được điểm ở cột nền tảng vừa được ở cột pomodoro.
+ * Ghi ra đây để lần sau không ai tưởng đó là lỗi: tiếng Nhật là ưu tiên số một
+ * của cả hệ thống (STATE.md §10), nên nó nặng hơn là đúng.
+ */
+export function dayIntensity(log: DailyLog | undefined): Intensity {
+  if (!log) return 0;
+
+  const keys = [log.kSleep, log.kJapanese, log.kEat].filter(Boolean).length;
+  const pomo = POMO_STEPS.filter((step) => log.jpPomo >= step).length;
+
+  return (keys + pomo) as Intensity;
+}
+
 /** Mức của N ngày gần nhất, cũ → mới. */
 export function recentLevels(
   logs: DailyLog[],

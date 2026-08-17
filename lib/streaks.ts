@@ -1,14 +1,31 @@
 import { db } from "@/lib/db";
 import { jpTotal } from "@/lib/os/japanese";
 import {
-  dayLevel,
+  dayIntensity,
   daysWith,
   longestStreakOf,
   streakOf,
+  type Intensity,
 } from "@/lib/os/stats";
 import { isoUTC, todayISO } from "@/lib/os/day";
 
-export type HeatCell = { iso: string; level: 0 | 1 | 2 | 3; isToday: boolean };
+/**
+ * Một ô trong lịch hoạt động công khai.
+ *
+ * `level` là độ đậm 0–6 gộp từ ba việc nền tảng + số hiệp pomodoro (xem
+ * `dayIntensity`). `pomo` và `keys` đi kèm KHÔNG phải để vẽ, mà để chú thích
+ * khi rê chuột nói được ô này đậm vì cái gì — một con số 5/6 không cho biết
+ * hôm đó ngủ sớm hay học nhiều.
+ */
+export type HeatCell = {
+  iso: string;
+  level: Intensity;
+  /** Số hiệp pomodoro đã xong trong ngày. */
+  pomo: number;
+  /** Số việc nền tảng đã tick, 0–3. */
+  keys: number;
+  isToday: boolean;
+};
 
 /**
  * Một ô số ở trang chủ.
@@ -28,7 +45,7 @@ export type PublicStreaks = {
   japanese: Stat;
   it: Stat;
   /**
-   * Mức 0–3 việc nền tảng của MỌI ngày có nhật ký — không cắt theo cửa sổ.
+   * Độ đậm 0–6 của MỌI ngày có nhật ký — không cắt theo cửa sổ.
    *
    * Trước đây chỉ trả 119 ngày gần nhất vì lưới chỉ hiện được một dải. Giờ
    * lịch nhiệt xem theo TỪNG NĂM và có nút chọn năm, nên cắt sẵn ở đây là cắt
@@ -47,7 +64,7 @@ export type PublicStreaks = {
 };
 
 /**
- * Dữ liệu để hiện CÔNG KHAI ở trang chủ — chỉ CON SỐ + mức 0–3 mỗi ngày,
+ * Dữ liệu để hiện CÔNG KHAI ở trang chủ — chỉ CON SỐ + độ đậm mỗi ngày,
  * không lộ nội dung nhật ký riêng tư.
  *
  * **Lập trình đếm CỘNG DỒN, hai cái kia đếm CHUỖI.** Cố ý khác nhau, vì bản
@@ -111,7 +128,9 @@ export async function getPublicStreaks(): Promise<PublicStreaks> {
     heatmap: logs
       .map((l) => ({
         iso: isoUTC(l.date),
-        level: dayLevel(l),
+        level: dayIntensity(l),
+        pomo: l.jpPomo,
+        keys: [l.kSleep, l.kJapanese, l.kEat].filter(Boolean).length,
         isToday: isoUTC(l.date) === todayISO(),
       }))
       .sort((a, b) => a.iso.localeCompare(b.iso)),

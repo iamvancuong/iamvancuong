@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import type { LightboxPhoto } from "@/components/Lightbox";
 
 /**
- * Dữ liệu "Chặng đường ở Nhật" cho TRANG CHỦ — đọc thẳng từ Life OS, KHÔNG fix cứng.
+ * Dữ liệu «Chặng đường» cho TRANG CHỦ — đọc thẳng từ Life OS, KHÔNG fix cứng.
  *
  * Cùng kho ký ức với /os/journey và /journey, chỉ khác cách gom: theo NĂM → THÁNG
  * để trang chủ mở ra được từng tầng. Chỉ lấy ký ức + ảnh đã tick "cho người khác xem".

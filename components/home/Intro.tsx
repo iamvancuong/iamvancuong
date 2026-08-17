@@ -573,10 +573,10 @@ export function Intro({
         </section>
       )}
 
-      {/* ── CHẶNG ĐƯỜNG Ở NHẬT ───────────────────────────────── */}
+      {/* ── CHẶNG ĐƯỜNG ───────────────────────────────────────── */}
       <section className={BAND}>
         <Reveal className="w-full">
-          <Heading index={4} label="Chặng đường ở Nhật" en="Journey">
+          <Heading index={4} label="Chặng đường" en="Journey">
             {home.journey.heading[lang]}
           </Heading>
           <p lang={jl} className="mt-3 text-[15px] text-ink-3">

@@ -89,10 +89,24 @@ export const home = {
   },
 
   journey: {
-    heading: { vi: "Chặng đường ở Nhật", ja: "日本での歩み" },
+    /**
+     * «Chặng đường», KHÔNG còn «Chặng đường ở Nhật».
+     *
+     * Khung năm giờ bắt đầu từ 2021 — hết cấp ba, lên Hà Nội, đi làm — tức là
+     * ba năm đầu tiên chưa hề có Nhật trong đó. Giữ chữ "ở Nhật" là đặt một
+     * cái nhãn sai lên chính nội dung bên dưới nó.
+     */
+    heading: { vi: "Chặng đường", ja: "これまでの歩み" },
     // Dữ liệu timeline KHÔNG nằm ở đây — đọc thật từ Life OS (lib/journey.ts).
     // Ký ức tick "công khai" trong /os sẽ tự gom theo năm → tháng và hiện ra.
-    caption: { vi: "Bấm từng năm, rồi từng tháng để xem.", ja: "年ごと・月ごとにタップして見る。" },
+    //
+    // ⚠️ Câu này tả DẢI NGANG ở trang chủ, không tả trang /journey. Bản trước
+    // ghi "Bấm từng năm, rồi từng tháng để xem" — đó là cách dùng của trang
+    // /journey; ở trang chủ các ô tháng chỉ là bản đồ thu nhỏ, bấm không ra gì.
+    caption: {
+      vi: "Từ Quảng Trị tới Nhật. Kéo ngang để xem cả chặng.",
+      ja: "クアンチから日本まで。横にスクロールして全体を見る。",
+    },
     empty: {
       vi: "Chưa có ký ức nào được công khai. Chúng sẽ hiện ở đây khi mình tick chia sẻ trong Life OS.",
       ja: "まだ公開された記録はありません。Life OSで共有をオンにすると、ここに表示されます。",

@@ -33,6 +33,8 @@ import {
 import {
   buildingTooMuch,
   dayLevel,
+  dayIntensity,
+  INTENSITY_MAX,
   keystoneStreak,
   longestStreak,
   periodStats,
@@ -152,6 +154,25 @@ const full = (iso: string, o: Record<string, unknown> = {}) =>
 eq("ngày trống là mức 0", dayLevel(undefined), 0);
 eq("đủ ba việc là mức 3", dayLevel(full("2026-08-06")), 3);
 eq("hai trong ba là mức 2", dayLevel(log("2026-08-06", { kSleep: true, kEat: true })), 2);
+
+/* dayIntensity — độ đậm 0–6 của lịch CÔNG KHAI: ba việc nền tảng + số hiệp.
+   Điểm đáng kiểm nhất: nó phải PHÂN BIỆT được hai ngày mà `dayLevel` gộp làm
+   một — cùng đủ ba việc nhưng một ngày học 1 hiệp, một ngày học 8 hiệp. */
+eq("ngày trống là 0", dayIntensity(undefined), 0);
+eq("không tick gì, không học gì", dayIntensity(log("2026-08-06")), 0);
+eq("đủ ba việc, chưa học hiệp nào", dayIntensity(full("2026-08-06")), 3);
+eq("chỉ học, không tick gì — 1 hiệp", dayIntensity(log("2026-08-06", { jpPomo: 1 })), 1);
+eq("chỉ học, không tick gì — 3 hiệp", dayIntensity(log("2026-08-06", { jpPomo: 3 })), 2);
+eq("chỉ học, không tick gì — 6 hiệp", dayIntensity(log("2026-08-06", { jpPomo: 6 })), 3);
+eq("ngày trọn vẹn: đủ ba việc + 7 hiệp", dayIntensity(full("2026-08-06", { jpPomo: 7 })), 6);
+eq(
+  "cùng đủ ba việc nhưng học ÍT hơn thì nhạt hơn",
+  dayIntensity(full("2026-08-06", { jpPomo: 1 })) <
+    dayIntensity(full("2026-08-06", { jpPomo: 8 })),
+  true,
+);
+// Trần phải chặn ở 6: học 100 hiệp cũng không đẩy ô ra ngoài thang màu.
+eq("không vượt trần dù học rất nhiều", dayIntensity(full("2026-08-06", { jpPomo: 100 })), INTENSITY_MAX);
 
 // keystoneStreak đo TỪ HÔM NAY, nên dựng ngày tương đối theo hôm nay — không
 // hardcode (hardcode sẽ hỏng khi thời gian trôi qua mốc đó).
@@ -462,9 +483,10 @@ describe("timeline.ts — khung năm dựng sẵn của Hành trình");
   eq("chưa viết gì vẫn hiện đủ năm", trong.length, TIMELINE.length);
   eq("năm nào cũng 0 ký ức", trong.every((r) => r.memoryCount === 0), true);
 
-  const y2023 = trong.find((r) => r.year === 2023)!;
-  eq("2023 bắt đầu từ tháng 8", y2023.months[0].month, 8);
-  eq("2023 có 5 tháng (8→12)", y2023.months.length, 5);
+  // Năm khai `from` chỉ hiện từ tháng đó — 2021 bắt đầu ở kỳ thi cuối cấp.
+  const y2021 = trong.find((r) => r.year === 2021)!;
+  eq("2021 bắt đầu từ tháng 6", y2021.months[0].month, 6);
+  eq("2021 có 7 tháng (6→12)", y2021.months.length, 7);
 
   const y2024 = trong.find((r) => r.year === 2024)!;
   eq("năm đã qua có đủ 12 tháng", y2024.months.length, 12);
@@ -508,21 +530,21 @@ describe("timeline.ts — khung năm dựng sẵn của Hành trình");
 }
 
 {
-  // Ký ức SỚM HƠN mốc khai trong khung. 2023 khai `from: 8` (tháng sang Nhật),
-  // nhưng một ký ức đề 2023-03 vẫn là ký ức thật — nó xảy ra trước khi đi.
+  // Ký ức SỚM HƠN mốc khai trong khung. 2021 khai `from: 6` (kỳ thi cuối cấp),
+  // nhưng một ký ức đề 2021-02 vẫn là ký ức thật — nó xảy ra trước mốc đó.
   // Lấy cứng `from` thì tháng đó không có ô để rơi vào và ký ức biến mất mà
   // không báo gì: đúng kiểu hỏng tệ nhất, vì trang vẫn hiện bình thường.
-  const som = mergeTimeline([{ year: 2023, month: 3 }], 2026, 8);
-  const y = som.find((r) => r.year === 2023)!;
-  eq("khung lùi xuống tới tháng có ký ức", y.months[0].month, 3);
+  const som = mergeTimeline([{ year: 2021, month: 2 }], 2026, 8);
+  const y = som.find((r) => r.year === 2021)!;
+  eq("khung lùi xuống tới tháng có ký ức", y.months[0].month, 2);
   eq("và ký ức đó được đếm", y.memoryCount, 1);
-  eq("tháng khai trong khung vẫn còn", y.months.some((m) => m.month === 8), true);
+  eq("tháng khai trong khung vẫn còn", y.months.some((m) => m.month === 6), true);
 
   // Không có ký ức sớm thì khung giữ nguyên mốc đã khai.
-  const thuong = mergeTimeline([{ year: 2023, month: 10 }], 2026, 8);
+  const thuong = mergeTimeline([{ year: 2021, month: 10 }], 2026, 8);
   eq(
     "không có ký ức sớm thì giữ nguyên mốc khung",
-    thuong.find((r) => r.year === 2023)!.months[0].month,
-    8,
+    thuong.find((r) => r.year === 2021)!.months[0].month,
+    6,
   );
 }
