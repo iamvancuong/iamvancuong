@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { Eye, EyeOff, Home, Plus, Trash2, X } from "lucide-react";
+import { Eye, EyeOff, Plus, Trash2, X } from "lucide-react";
 import { Visibility } from "@prisma/client";
 import { db } from "@/lib/db";
 import { listTags } from "@/lib/posts";
@@ -11,11 +11,11 @@ import {
   deletePost,
   deleteTag,
   savePost,
-  togglePostHome,
   togglePublish,
 } from "@/lib/os/postActions";
 import { MarkdownEditor } from "@/components/os/MarkdownEditor";
 import { PostPhotos } from "@/components/os/PostPhotos";
+import { TranslateButton } from "@/components/os/TranslateButton";
 
 export const metadata: Metadata = { title: "Soạn bài" };
 
@@ -77,30 +77,6 @@ export default async function EditPostPage({
               {isPublic ? "Đang công khai" : "Xuất bản"}
             </button>
           </form>
-
-          {/* Chỉ hiện khi bài ĐÃ công khai VÀ có ảnh — hai điều kiện bắt buộc
-              để nó lên được dải ảnh trang chủ. Ảnh bìa là tấm đầu tiên theo
-              thứ tự ảnh của bài. */}
-          {isPublic && post.photos.length > 0 && (
-            <form action={togglePostHome.bind(null, post.id)}>
-              <button
-                type="submit"
-                title={
-                  post.showOnHome
-                    ? "Đang hiện ở trang chủ — bấm để gỡ xuống"
-                    : "Bấm để đưa ảnh bìa lên dải ảnh trang chủ"
-                }
-                className={`flex items-center gap-1.5 rounded-[var(--radius-md)] border px-3 py-1.5 text-[13px] transition-colors ${
-                  post.showOnHome
-                    ? "border-line text-accent hover:border-ink-3"
-                    : "border-line text-ink-3 hover:border-ink-3 hover:text-ink"
-                }`}
-              >
-                <Home size={14} />
-                {post.showOnHome ? "Ở trang chủ" : "Lên trang chủ"}
-              </button>
-            </form>
-          )}
 
           <form action={deletePost.bind(null, post.id)}>
             <button
@@ -258,12 +234,23 @@ export default async function EditPostPage({
         </div>
 
         <div className="rounded-[var(--radius-lg)] border border-line p-3">
-          <div className="text-[12px] font-medium uppercase tracking-[0.08em] text-ink-3">
-            Bản tiếng Nhật — tùy chọn
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="text-[12px] font-medium uppercase tracking-[0.08em] text-ink-3">
+              Bản tiếng Nhật — tùy chọn
+            </div>
+            {/* Nút nằm ở ĐÂY, không nằm cạnh nút Lưu dưới đáy: nó chỉ tác động
+                tới đúng hai ô ngay bên dưới, và đặt cạnh Lưu thì hai hành động
+                rất khác nhau (lưu chữ mình gõ / gọi AI ghi đè) trông như cùng
+                một loại. */}
+            <TranslateButton postId={post.id} hasJa={!!post.bodyJa?.trim()} />
           </div>
-          <p className="mt-1.5 text-[13px] leading-relaxed text-ink-3">
-            Không phải bản dịch. Viết lại ngắn hơn (300–500 chữ) bằng đúng trình
-            độ hiện tại. Để trống thì nút 日本語 không hiện và trang{" "}
+
+          <p className="mt-2 text-[13px] leading-relaxed text-ink-3">
+            Bấm nút để AI dịch từ bản tiếng Việt và lưu thẳng vào hai ô dưới —
+            <strong className="font-medium text-ink-2"> đó là bản nháp, sửa được</strong>{" "}
+            y như chữ tự gõ. Cũng có thể bỏ qua nút và tự viết lại ngắn hơn
+            (300–500 chữ) bằng đúng trình độ hiện tại. Để trống thì nút 日本語
+            không hiện và trang{" "}
             <code className="text-ink-2">/blog/{post.slug}/ja</code> không tồn tại.
           </p>
 

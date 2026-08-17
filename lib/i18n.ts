@@ -33,9 +33,6 @@ export const t = {
     title: { vi: "Dạo này", ja: "いま" },
     updated: { vi: "Cập nhật lần cuối", ja: "最終更新" },
   },
-  about: {
-    title: { vi: "Giới thiệu", ja: "自己紹介" },
-  },
   projects: {
     title: { vi: "Dự án", ja: "プロジェクト" },
     subtitle: {
@@ -58,6 +55,8 @@ export const t = {
     title: { vi: "Viết", ja: "ブログ" },
     /** Lời mời bấm ở cuối mỗi thẻ bài. */
     read: { vi: "Đọc bài", ja: "読む" },
+    /** Nhãn dán trên ảnh bìa của thẻ nổi bật ở trang chủ. */
+    latest: { vi: "Mới nhất", ja: "最新" },
     subtitle: {
       vi: "Tiếng Nhật, lập trình, và cuộc sống ở đây.",
       ja: "日本語、プログラミング、そしてここでの暮らし。",
@@ -116,20 +115,22 @@ export const t = {
   },
   menu: { vi: "Menu", ja: "メニュー" },
 
+  /**
+   * Nhãn của CV. Sau khi gộp ba trang thì phần lớn nhóm này KHÔNG còn hiện
+   * trên web nữa — nó là nhãn in trong file PDF (`lib/cv-pdf.ts`).
+   *
+   * Đã gỡ `subtitle` · `download` · `phone`: chúng thuộc về trang /cv cũ, mà
+   * trang đó giờ chỉ là một chuyển hướng. Chuỗi song ngữ không ai đọc là thứ
+   * đắt nhất trong một từ điển — nó vẫn đòi được rà lại mỗi lần soát tiếng Nhật.
+   */
   cv: {
     title: { vi: "Hồ sơ / CV", ja: "履歴書・職務経歴書" },
-    subtitle: {
-      vi: "Hồ sơ ứng tuyển của mình. Bấm nút để tải bản PDF.",
-      ja: "応募用の職務経歴書です。ボタンからPDFを保存できます。",
-    },
-    download: { vi: "Tải PDF", ja: "PDFを保存" },
     summary: { vi: "Tóm tắt", ja: "職務要約" },
     experience: { vi: "Kinh nghiệm làm việc", ja: "職務経歴" },
     skills: { vi: "Kỹ năng", ja: "スキル" },
     education: { vi: "Học vấn", ja: "学歴" },
     languages: { vi: "Ngôn ngữ", ja: "語学" },
     birth: { vi: "Ngày sinh", ja: "生年月日" },
-    phone: { vi: "Điện thoại", ja: "電話" },
     email: { vi: "Email", ja: "メール" },
     address: { vi: "Địa chỉ", ja: "住所" },
     nationality: { vi: "Quốc tịch", ja: "国籍" },

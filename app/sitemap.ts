@@ -24,7 +24,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     where: { visibility: Visibility.PUBLIC, publishedAt: { not: null } },
   });
 
-  const staticPages = ["", "/now", "/blog", "/journey", "/projects", "/cv", "/about"].map(
+  // `/cv` và `/about` KHÔNG còn ở đây: chúng đã gộp vào `/projects` và giờ chỉ
+  // là chuyển hướng 308. Khai một địa chỉ chuyển hướng trong sitemap là tự bảo
+  // công cụ tìm kiếm đi vào một cánh cửa đã đóng.
+  const staticPages = ["", "/now", "/blog", "/journey", "/projects"].map(
     (p) => ({
       url: `${site.url}${p}`,
       lastModified: new Date(),

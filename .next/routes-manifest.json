@@ -12,6 +12,18 @@
       "priority": true,
       "statusCode": 308,
       "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    },
+    {
+      "source": "/cv",
+      "destination": "/projects",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/cv(?:/)?$"
+    },
+    {
+      "source": "/about",
+      "destination": "/projects",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/about(?:/)?$"
     }
   ],
   "headers": [],
@@ -22,6 +34,14 @@
     "fallback": []
   },
   "dynamicRoutes": [
+    {
+      "page": "/api/cv/[lang]",
+      "regex": "^/api/cv/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPlang": "nxtPlang"
+      },
+      "namedRegex": "^/api/cv/(?<nxtPlang>[^/]+?)(?:/)?$"
+    },
     {
       "page": "/api/uploads/[...path]",
       "regex": "^/api/uploads/(.+?)(?:/)?$",
@@ -91,12 +111,6 @@
       "namedRegex": "^/_not\\-found(?:/)?$"
     },
     {
-      "page": "/about",
-      "regex": "^/about(?:/)?$",
-      "routeKeys": {},
-      "namedRegex": "^/about(?:/)?$"
-    },
-    {
       "page": "/api/auth/login",
       "regex": "^/api/auth/login(?:/)?$",
       "routeKeys": {},
@@ -137,12 +151,6 @@
       "regex": "^/blog(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/blog(?:/)?$"
-    },
-    {
-      "page": "/cv",
-      "regex": "^/cv(?:/)?$",
-      "routeKeys": {},
-      "namedRegex": "^/cv(?:/)?$"
     },
     {
       "page": "/feed.xml",

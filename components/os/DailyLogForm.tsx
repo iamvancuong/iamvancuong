@@ -133,7 +133,7 @@ export function DailyLogForm({
             className={`ml-auto flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-[12px] normal-case tracking-normal transition-colors ${
               preview
                 ? "bg-surface-2 text-ink"
-                : "text-ink-3 hover:bg-surface hover:text-ink"
+                : "text-ink-3 hover:bg-surface-2 hover:text-ink"
             }`}
           >
             {preview ? <Pencil size={13} /> : <Eye size={13} />}
@@ -280,7 +280,7 @@ function Check({
   onToggle: () => void;
 }) {
   return (
-    <label className="flex cursor-pointer items-center gap-3 rounded-[var(--radius-md)] px-2 py-2.5 transition-colors hover:bg-surface">
+    <label className="flex cursor-pointer items-center gap-3 rounded-[var(--radius-md)] px-2 py-2.5 transition-colors hover:bg-surface-2">
       <input
         type="checkbox"
         name={name}

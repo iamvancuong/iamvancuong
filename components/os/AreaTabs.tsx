@@ -130,7 +130,7 @@ export function AreaTabs({
                 key={t.key}
                 href={href(t.key)}
                 scroll={false}
-                className="block rounded-[var(--radius-md)] px-3 py-2 transition-colors hover:bg-surface"
+                className="block rounded-[var(--radius-md)] px-3 py-2 transition-colors hover:bg-surface-2"
               >
                 <span className="block text-[14px] font-medium">{t.label}</span>
                 <span className="mt-0.5 block text-[12px] leading-relaxed text-ink-3">

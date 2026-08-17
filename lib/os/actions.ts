@@ -657,33 +657,6 @@ export async function toggleMemoryVisibility(id: string, areaSlug?: string) {
   revalidateMemory(areaSlug);
 }
 
-/**
- * Bật/tắt "hiện ảnh bìa ở trang chủ".
- *
- * Tách hẳn khỏi `toggleMemoryVisibility` vì đây là hai câu hỏi khác nhau:
- * *ai được xem* và *có đáng lên trang chủ không*. Công khai hết mọi ký ức vẫn
- * hợp lý, nhưng dải ảnh trang chủ chỉ chứa được vài tấm.
- *
- * **Bật ở đây KHÔNG tự công khai ký ức.** Nếu ký ức đang riêng tư thì nó vẫn
- * không lên trang chủ, vì `getHomeStrips()` đòi cả hai điều kiện. Cố ý làm
- * vậy: một cú tick ở cột "trang chủ" mà lẳng lặng đẩy nội dung riêng tư ra
- * internet là kiểu hỏng không sửa lại được.
- */
-export async function toggleMemoryHome(id: string, areaSlug?: string) {
-  await assertOwner();
-
-  const m = await db.memory.findUniqueOrThrow({
-    where: { id },
-    select: { showOnHome: true },
-  });
-  await db.memory.update({
-    where: { id },
-    data: { showOnHome: !m.showOnHome },
-  });
-
-  revalidateMemory(areaSlug);
-}
-
 export async function deleteMemory(id: string, areaSlug?: string) {
   await assertOwner();
 

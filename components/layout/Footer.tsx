@@ -33,35 +33,18 @@ export function Footer() {
     <footer className="band mt-12 border-t border-line py-10">
       <Container>
         {/*
-          Thanh trạng thái — bốn ô nhỏ khép lại trang.
+          ĐÃ GỠ: thanh trạng thái bốn ô — `System status · Timezone · Stack ·
+          Available for work`.
 
-          Nó không mang thông tin ai cần, và đó là chủ ý: đây là chi tiết TRANG
-          TRÍ có kỷ luật. Bốn ô đều là sự thật kiểm chứng được (múi giờ thật,
-          năm build thật), nên nó không phải là chữ giả vờ kỹ thuật — thứ luôn
-          lộ ra ngay khi ai đó đọc kỹ.
+          Chú thích cũ tự bào chữa rằng nó "không mang thông tin ai cần, và đó
+          là chủ ý". Đọc lại thì đó chính là lý do để bỏ, không phải lý do để
+          giữ: bốn ô chiếm hết bề ngang trang, nằm ở cuối MỌI trang, và nói
+          «Operational» về một trang cá nhân không có gì để mà ngừng hoạt động.
+
+          Múi giờ vẫn còn ở thẻ thông số trang chủ, nơi nó trả lời một câu hỏi
+          có thật của người tuyển dụng ở xa; stack vẫn còn ở trang Hồ sơ, nơi
+          nó là hồ sơ năng lực chứ không phải hình trang trí.
         */}
-        <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4">
-          {[
-            ["System status", "Operational", true],
-            ["Timezone", "Asia/Tokyo · JST"],
-            ["Stack", "Next · Prisma · MySQL"],
-            ["Available for work", "true"],
-          ].map(([k, v, live]) => (
-            <div
-              key={k as string}
-              className="rounded-[var(--radius-lg)] border border-line bg-surface px-4 py-3"
-            >
-              <div className="tag">{k as string}</div>
-              <div className="tag mt-1.5 flex items-center gap-1.5 text-ink-2">
-                {live && (
-                  <span className="size-1.5 animate-pulse rounded-full bg-up" />
-                )}
-                {v as string}
-              </div>
-            </div>
-          ))}
-        </div>
-
         <div className="flex flex-col gap-4 text-[13px] text-ink-3 sm:flex-row sm:items-center sm:justify-between">
           <p>
             © {new Date().getFullYear()} {site.fullName}

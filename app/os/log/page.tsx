@@ -197,7 +197,7 @@ function DayCard({
   return (
     <Link
       href={`/os/log/${iso}`}
-      className="flex gap-4 rounded-[var(--radius-lg)] border border-line p-4 transition-colors hover:bg-surface"
+      className="flex gap-4 rounded-[var(--radius-lg)] border border-line p-4 transition-colors hover:bg-surface-2"
     >
       {/* Cột ngày — như tem ngày trên app Journal */}
       <div className="w-11 shrink-0 text-center">

@@ -1,12 +1,11 @@
 import Image from "next/image";
-import { ChevronDown, ChevronUp, Eye, EyeOff, Home, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Eye, EyeOff, X } from "lucide-react";
 import { Visibility, type Memory, type Photo } from "@prisma/client";
 import {
   deleteMemory,
   deletePhoto,
   reorderPhoto,
   setPhotoCaption,
-  toggleMemoryHome,
   toggleMemoryVisibility,
 } from "@/lib/os/actions";
 import { PhotoGrid } from "@/components/PhotoGrid";
@@ -72,42 +71,14 @@ export function MemoryList({
                   }
                   className={`flex items-center gap-1 rounded-[var(--radius-sm)] px-1.5 py-1 text-[11px] ${
                     isPublic
-                      ? "text-up hover:bg-surface"
-                      : "text-ink-3 hover:bg-surface hover:text-ink"
+                      ? "text-up hover:bg-surface-2"
+                      : "text-ink-3 hover:bg-surface-2 hover:text-ink"
                   }`}
                 >
                   {isPublic ? <Eye size={13} /> : <EyeOff size={13} />}
                   {isPublic ? "công khai" : "riêng tư"}
                 </ConfirmButton>
               </form>
-
-              {/* Chỉ hiện khi ký ức ĐÃ công khai VÀ có ảnh — hai điều kiện bắt
-                  buộc để nó lên được dải ảnh trang chủ. Bày nút ở ký ức riêng
-                  tư hoặc không ảnh là mời bấm một cái không có tác dụng gì, và
-                  người bấm sẽ đi tìm xem mình làm sai chỗ nào.
-                  KHÔNG hỏi lại: bật/tắt đều không lộ thêm gì (ký ức đã công
-                  khai rồi) và sửa lại chỉ mất một cú bấm. */}
-              {isPublic && m.photos.length > 0 && (
-                <form action={toggleMemoryHome.bind(null, m.id, areaSlug)}>
-                  <SubmitButton variant="quiet">
-                    <span
-                      title={
-                        m.showOnHome
-                          ? "Đang hiện ở trang chủ — bấm để gỡ xuống"
-                          : "Bấm để đưa ảnh bìa lên dải ảnh trang chủ"
-                      }
-                      className={`flex items-center gap-1 rounded-[var(--radius-sm)] px-1.5 py-1 text-[11px] no-underline ${
-                        m.showOnHome
-                          ? "text-accent hover:bg-surface"
-                          : "text-ink-3 hover:bg-surface hover:text-ink"
-                      }`}
-                    >
-                      <Home size={12} />
-                      {m.showOnHome ? "ở trang chủ" : "lên trang chủ"}
-                    </span>
-                  </SubmitButton>
-                </form>
-              )}
 
               <form action={deleteMemory.bind(null, m.id, areaSlug)}>
                 <ConfirmButton

@@ -328,7 +328,19 @@ self.__SERVER_FILES_MANIFEST={
       "root": "C:\\Cuong\\iamvancuong"
     },
     "distDirRoot": ".next",
-    "supportsImmutableAssets": false
+    "supportsImmutableAssets": false,
+    "_originalRedirects": [
+      {
+        "source": "/cv",
+        "destination": "/projects",
+        "permanent": true
+      },
+      {
+        "source": "/about",
+        "destination": "/projects",
+        "permanent": true
+      }
+    ]
   },
   "appDir": "C:\\Cuong\\iamvancuong",
   "relativeAppDir": "",

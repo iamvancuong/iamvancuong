@@ -1,8 +1,14 @@
 # Hồ sơ / CV — Trương Văn Cường
 
-> File lưu thông tin CV. Trang `/cv` lấy dữ liệu có cấu trúc từ `lib/cv.ts`
-> (thông tin cá nhân, kỹ năng, học vấn) và `lib/projects.ts` (kinh nghiệm).
-> Sửa ở hai file đó để cập nhật trang; file này là bản ghi để dễ đọc/tra cứu.
+> File lưu thông tin CV, để dễ đọc/tra cứu. **Sửa ở đây KHÔNG đổi được gì trên
+> web.** Nguồn thật là `lib/cv.ts` (thông tin cá nhân, kỹ năng, học vấn) và
+> `lib/projects.ts` (kinh nghiệm) — sửa hai file đó thì trang `/projects` và
+> **cả hai file PDF tải về** (`/api/cv/vi`, `/api/cv/ja`) cùng đổi theo.
+>
+> Sửa xong chạy `npm run check:cv` — file PDF dàn trang bằng tọa độ tính tay
+> nên một dòng dài thêm là có thể tràn ra khỏi mép giấy mà không báo gì.
+>
+> Trang `/cv` cũ đã gộp vào `/projects` (chuyển hướng 308).
 
 ## Thông tin cá nhân
 - Họ tên: Trương Văn Cường

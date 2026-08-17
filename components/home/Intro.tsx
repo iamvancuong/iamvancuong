@@ -12,11 +12,12 @@ import type { JourneyYear } from "@/lib/journey";
 import { Frame } from "./Frame";
 import { Journey } from "./Journey";
 import { ContactForm } from "./ContactForm";
-import { BrandIcon, type BrandName } from "./BrandIcon";
-import { PhotoStrip, type StripItem } from "./PhotoStrip";
+// `components/ui/`, không phải `./`: trang Hồ sơ cũng dùng icon GitHub, và
+// lúc đó nó không còn là một mảnh của riêng trang chủ nữa.
+import { BrandIcon, type BrandName } from "@/components/ui/BrandIcon";
 import { Heatmap } from "./Heatmap";
 import type { TimelineRow } from "@/lib/timeline";
-import { PostCard } from "@/components/blog/PostCard";
+import { WritingGrid } from "./WritingGrid";
 import type { PostWithTags } from "@/lib/posts-format";
 import { Reveal } from "@/components/Reveal";
 import { SectionLabel } from "@/components/layout/SectionLabel";
@@ -53,30 +54,36 @@ const MORE = [
 const HERO =
   "relative flex min-h-[calc(100svh-4rem)] flex-col justify-center py-16";
 /**
- * Hai loại dải nền, XEN KẼ từ trên xuống: kem → trắng → kem → trắng.
+ * Phân đoạn giữa các mục — bằng ĐƯỜNG KẺ, không còn bằng màu nền.
  *
- * Nền một màu suốt cả trang thì dù mỗi mục có tiêu đề riêng, mắt vẫn trôi tuột
- * từ đầu tới cuối và không biết mình vừa qua mấy mục. Đổi nền là cách phân
- * đoạn duy nhất không tốn thêm chữ, thêm đường kẻ, hay thêm khoảng trắng.
+ * Bản trước xen kẽ nền kem → trắng → kem → trắng. Nền một màu suốt cả trang thì
+ * dù mỗi mục có tiêu đề riêng, mắt vẫn trôi tuột từ đầu tới cuối và không biết
+ * mình vừa qua mấy mục; đổi nền là cách phân đoạn không tốn thêm chữ.
  *
- * `.band` + `.band-white` tràn hết bề ngang màn hình dù nằm trong container —
- * xem globals.css để biết vì sao không dùng `100vw`.
+ * Từ lúc cả site về nền trắng (xem globals.css) thì cách đó hết dùng được —
+ * hai loại dải bây giờ cùng một màu. Thay bằng một đường kẻ mảnh ở ĐẦU mỗi
+ * mục: nó tốn đúng 1px, vẫn trả lời được câu «mình vừa qua mấy mục», và không
+ * đòi con chữ nào.
+ *
+ * `.band` vẫn giữ: nó lo phần TRÀN HẾT BỀ NGANG màn hình cho đường kẻ, dù mục
+ * nằm trong container hẹp. Xem globals.css để biết vì sao không dùng `100vw`.
+ *
+ * Mục ĐẦU TIÊN sau hero không lấy đường kẻ — hero đã là một mặt phẳng riêng,
+ * thêm một vạch ngay dưới nó thì vạch đó đọc ra là chân của hero.
  */
-const BAND = "band py-20 md:py-28";
-const BAND_WHITE = "band band-white py-20 md:py-28";
+const BAND = "band border-t border-line-soft py-20 md:py-28";
+const BAND_WHITE = BAND;
+/** Mục ngay sau hero — không kẻ. */
+const BAND_FIRST = "band py-20 md:py-28";
 
 export function Intro({
   streaks,
   journey,
-  stripJourney,
-  stripBlog,
   posts,
   rows,
 }: {
   streaks: PublicStreaks;
   journey: JourneyYear[];
-  stripJourney: StripItem[];
-  stripBlog: StripItem[];
   posts: PostWithTags[];
   rows: TimelineRow[];
 }) {
@@ -145,7 +152,16 @@ export function Intro({
           target="_blank"
           rel="noopener noreferrer"
           aria-label={s.name}
-          className="flex size-10 items-center justify-center rounded-full border border-line text-ink-2 transition-colors hover:border-ink hover:bg-ink hover:text-bg"
+          // `bg-surface`, KHÔNG để trong suốt — và KHÔNG phải `bg-white`.
+          //
+          // Ở chế độ SÁNG dòng này giờ không đổi gì: từ lúc cả site về nền
+          // trắng thì `--color-surface` bằng đúng `--color-bg`, nút phân biệt
+          // với nền bằng `border-line`.
+          //
+          // Nó vẫn cần thiết ở chế độ TỐI: ở đó `--color-surface` (#1c1a15)
+          // sáng hơn nền (#14120e), nên nút vẫn nhô lên khỏi trang. Viết
+          // `bg-white` thì chế độ tối ra sáu đốm trắng chói.
+          className="flex size-10 items-center justify-center rounded-full border border-line bg-surface text-ink-2 transition-colors hover:border-ink hover:bg-ink hover:text-bg"
         >
           <BrandIcon name={s.name} size={17} />
         </a>
@@ -291,7 +307,7 @@ export function Intro({
                 <span className="size-1.5 animate-pulse rounded-full bg-up" />
                 Available
               </div>
-              <div className="tag mt-0.5">Tokyo · JP</div>
+              <div className="tag mt-0.5">Nagoya · JP</div>
             </div>
           </div>
         </div>
@@ -325,30 +341,15 @@ export function Intro({
         </a>
       </section>
 
-      {/* ── HAI DẢI ẢNH ──────────────────────────────────────
-          KHÔNG ép cao full màn như các mục khác: đây là băng để lướt qua,
-          không phải một chặng dừng.
+      {/* ── ĐÃ GỠ: HAI DẢI ẢNH «Hành trình» + «Viết» ─────────
+          Chúng nằm ngay dưới hero và mang đúng hai cái tên của mục 03 (Viết)
+          và mục 04 (Chặng đường ở Nhật) ở phía dưới. Người xem gặp chữ «Viết»
+          hai lần trong một lần cuộn, mỗi lần một hình dạng khác — nên không
+          đọc ra là "cùng một thứ", mà đọc ra là "trang này có hai mục viết".
 
-          Hai hàng chứ không phải một hàng trộn: bấm vào ảnh hành trình là sang
-          dòng thời gian, bấm vào ảnh bài viết là sang bài đó — hai đích khác
-          nhau thì phải nhìn ra được TRƯỚC khi bấm, không thì mỗi cú bấm là một
-          lần đoán. */}
-      {/* Cả hai dải rỗng thì bỏ luôn khoảng đệm của mục — nếu không, trang chủ
-          có một khoảng trắng 200px không giải thích được ở giữa. */}
-      <section
-        className={
-          stripJourney.length + stripBlog.length > 0
-            ? "band band-white space-y-10 py-14 md:py-20"
-            : ""
-        }
-      >
-        <Reveal className="w-full">
-          <PhotoStrip label="Hành trình" items={stripJourney} />
-        </Reveal>
-        <Reveal className="w-full">
-          <PhotoStrip label="Viết" items={stripBlog} />
-        </Reveal>
-      </section>
+          Bỏ dải ở TRÊN chứ không bỏ mục ở dưới: dải chỉ có ảnh bìa, còn mục
+          dưới có tiêu đề, ngày, chủ đề và mô tả — cùng một cú bấm nhưng biết
+          trước mình sắp mở cái gì. */}
 
       {/* ── VỀ TÔI ───────────────────────────────────────────
           Nội dung bên trái, THẺ THÔNG SỐ bên phải (1.6fr / 1fr).
@@ -360,7 +361,7 @@ export function Intro({
 
           Giờ tách theo đúng loại: bên trái chỉ còn thứ để đọc; bên phải là một
           thẻ tra cứu — dữ kiện dạng bảng nhãn/giá trị, rồi stack dạng viên. */}
-      <section id="about" className={`${BAND} scroll-mt-20`}>
+      <section id="about" className={`${BAND_FIRST} scroll-mt-20`}>
         <Reveal className="w-full">
           <SectionLabel index={1} en="About">
             Về tôi
@@ -542,15 +543,21 @@ export function Intro({
           Trang chủ trước đây KHÔNG hề nhắc tới blog — thứ tốn công nhất và
           đáng đọc nhất lại chỉ vào được qua thanh nav. Ba bài mới nhất đặt
           ngay đây là đường ngắn nhất từ "ai đó vừa tới" sang "ai đó đang đọc".
-          Dùng lại đúng PostCard của /blog: hai nơi hiện một bài thì phải hiện
-          giống hệt nhau, nếu không mỗi lần sửa thẻ là phải sửa hai chỗ. */}
+
+          Bố cục nằm trong `WritingGrid` (bài nổi bật + hai bài phụ), không còn
+          là ba `PostCard` xếp dọc — lý do đầy đủ ở đầu file đó. */}
       {posts.length > 0 && (
         <section className={BAND}>
           <Reveal className="w-full">
             <div className="flex flex-wrap items-end justify-between gap-4">
-              <Heading index={3} label="Viết" en="Writing">
-                {t.blog.title[lang]}
-              </Heading>
+              <div>
+                <Heading index={3} label="Viết" en="Writing">
+                  {t.blog.title[lang]}
+                </Heading>
+                <p lang={jl} className="mt-3 text-[15px] text-ink-3">
+                  {t.blog.subtitle[lang]}
+                </p>
+              </div>
               <Link
                 href="/blog"
                 className="tag rounded-full border border-line px-3.5 py-2 transition-colors hover:border-ink-3 hover:text-ink"
@@ -559,10 +566,8 @@ export function Intro({
               </Link>
             </div>
 
-            <div className="mt-10 space-y-4">
-              {posts.map((p) => (
-                <PostCard key={p.id} post={p} />
-              ))}
+            <div className="mt-10">
+              <WritingGrid posts={posts} />
             </div>
           </Reveal>
         </section>
@@ -647,7 +652,7 @@ export function Intro({
           Chỉ có `pt`, KHÔNG có `pb`: khoảng cách xuống footer để `main` và
           `footer` tự lo, giống mọi trang khác. Thêm `pb` ở đây là mục cuối của
           riêng trang chủ bị đẩy xa footer hơn các trang còn lại. */}
-      <section className="band band-white pt-16 md:pt-24 pb-20 md:pb-28">
+      <section className="band border-t border-line-soft pt-16 md:pt-24 pb-20 md:pb-28">
         <Reveal stagger className="w-full">
           <Heading index={5} label="Kết nối" en="Contact">
             {home.contact.heading[lang]}

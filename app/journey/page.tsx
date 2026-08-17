@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { site } from "@/lib/site";
 import {
   PublicJourneyView,
-  type JourneyYearGroup,
+  type MemoriesByMonth,
 } from "@/components/journey/PublicJourneyView";
 import { mergeTimeline } from "@/lib/timeline";
 import { todayISO } from "@/lib/os/day";
@@ -38,11 +38,21 @@ export default async function PublicJourneyPage() {
     },
   });
 
-  const byYear = new Map<number, JourneyYearGroup["memories"]>();
+  /**
+   * Gom theo `"<năm>-<tháng>"` chứ không chỉ theo năm.
+   *
+   * Ô tháng trên trang giờ là NÚT BẤM mở ra ký ức của đúng tháng đó, nên khóa
+   * phải khớp tới cấp tháng. Gom sẵn ở server (một vòng lặp) thay vì để client
+   * lọc lại cả mảng mỗi lần bấm.
+   *
+   * `getUTCMonth()` chứ không phải `getMonth()`: ngày lưu ở nửa đêm UTC, mà
+   * JST là UTC+9 — đọc theo giờ máy thì ký ức ngày mùng 1 rơi về tháng trước.
+   * Xem luật #2 trong CLAUDE.md.
+   */
+  const byMonth: MemoriesByMonth = {};
   for (const m of memories) {
-    const y = m.date.getUTCFullYear();
-    if (!byYear.has(y)) byYear.set(y, []);
-    byYear.get(y)!.push({
+    const key = `${m.date.getUTCFullYear()}-${m.date.getUTCMonth() + 1}`;
+    (byMonth[key] ??= []).push({
       id: m.id,
       dateISO: m.date.toISOString(),
       dateLabel: fmt(m.date),
@@ -62,9 +72,12 @@ export default async function PublicJourneyPage() {
     });
   }
 
-  const years: JourneyYearGroup[] = [...byYear.entries()]
-    .sort((a, b) => b[0] - a[0])
-    .map(([year, memories]) => ({ year, memories }));
+  // Trong một tháng thì kể theo thứ tự thời gian THUẬN — truy vấn lấy giảm dần
+  // vì cấp năm cần mới-nhất-trước, nhưng đọc một tháng mà ngày 28 đứng trên
+  // ngày 3 thì câu chuyện chạy ngược.
+  for (const list of Object.values(byMonth)) {
+    list.sort((a, b) => a.dateISO.localeCompare(b.dateISO));
+  }
 
   // Khung RỘNG, không phải khung đọc 720px: trang này là lưới ô tháng, không phải
   // một bài để đọc từ đầu tới cuối.
@@ -87,7 +100,7 @@ export default async function PublicJourneyPage() {
 
   return (
     <Container>
-      <PublicJourneyView years={years} rows={rows} />
+      <PublicJourneyView rows={rows} memoriesByMonth={byMonth} />
     </Container>
   );
 }

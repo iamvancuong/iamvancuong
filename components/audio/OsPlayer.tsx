@@ -126,7 +126,7 @@ export function OsPlayer({ tracks }: { tracks: Track[] }) {
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Đóng"
-                className="rounded-[var(--radius-md)] p-1 text-ink-3 transition-colors hover:bg-surface hover:text-ink"
+                className="rounded-[var(--radius-md)] p-1 text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
               >
                 <X size={15} strokeWidth={1.75} />
               </button>
@@ -143,7 +143,7 @@ export function OsPlayer({ tracks }: { tracks: Track[] }) {
                       className={`flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-left text-[14px] transition-colors ${
                         on
                           ? "bg-surface-2 font-medium text-ink"
-                          : "text-ink-2 hover:bg-surface hover:text-ink"
+                          : "text-ink-2 hover:bg-surface-2 hover:text-ink"
                       }`}
                     >
                       {on && !paused ? (
@@ -175,7 +175,7 @@ export function OsPlayer({ tracks }: { tracks: Track[] }) {
                 disabled={!current}
                 aria-label="Dừng hẳn"
                 title="Dừng hẳn"
-                className="rounded-[var(--radius-md)] p-1.5 text-ink-3 transition-colors hover:bg-surface hover:text-ink disabled:opacity-40 disabled:hover:bg-transparent"
+                className="rounded-[var(--radius-md)] p-1.5 text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-40 disabled:hover:bg-transparent"
               >
                 <Square size={14} strokeWidth={2} />
               </button>

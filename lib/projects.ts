@@ -59,7 +59,7 @@ export const experiences: Experience[] = [
       "採用管理モジュールを開発：ドラッグ&ドロップのパイプライン、自動ステータス、柔軟な権限管理、Redis queueによるリアルタイム追跡。",
       "キャッシュ・Redis・AWS S3＋CloudFront（アップロードとCDNロードバランシング）でシステム性能を最適化。",
       "DevOpsを支援：デプロイ、ドメイン設定、FE（Angular）とBE（Laravel）の独立実行環境を構築。",
-      "社内Redmineモジュールを開発：Timesheet、Workflow Tracker、権限、勤怠打刻——社内150名以上が利用。",
+      "社内Redmineモジュールを開発：Timesheet、Workflow Tracker、権限管理、勤怠打刻。社内150名以上が利用。",
     ],
     stack: ["Laravel", "Redis", "AWS S3", "CloudFront", "MySQL", "GitLab CI/CD"],
   },

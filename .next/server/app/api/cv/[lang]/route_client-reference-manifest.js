@@ -1,0 +1,1 @@
+globalThis.__RSC_MANIFEST=(globalThis.__RSC_MANIFEST||{});globalThis.__RSC_MANIFEST["/api/cv/[lang]/route"]={"moduleLoading":{"prefix":"/_next/"},"ssrModuleMapping":{},"edgeSSRModuleMapping":{},"clientModules":{},"entryCSSFiles":{"C:\\Cuong\\iamvancuong\\app\\api\\cv\\[lang]\\route":[]},"rscModuleMapping":{},"edgeRscModuleMapping":{}};

@@ -506,3 +506,23 @@ describe("timeline.ts — khung năm dựng sẵn của Hành trình");
   eq("và xếp lên đầu theo thời gian", cu[0].year, 2009);
   eq("năm ngoài khung không có tiêu đề", cu[0].title, null);
 }
+
+{
+  // Ký ức SỚM HƠN mốc khai trong khung. 2023 khai `from: 8` (tháng sang Nhật),
+  // nhưng một ký ức đề 2023-03 vẫn là ký ức thật — nó xảy ra trước khi đi.
+  // Lấy cứng `from` thì tháng đó không có ô để rơi vào và ký ức biến mất mà
+  // không báo gì: đúng kiểu hỏng tệ nhất, vì trang vẫn hiện bình thường.
+  const som = mergeTimeline([{ year: 2023, month: 3 }], 2026, 8);
+  const y = som.find((r) => r.year === 2023)!;
+  eq("khung lùi xuống tới tháng có ký ức", y.months[0].month, 3);
+  eq("và ký ức đó được đếm", y.memoryCount, 1);
+  eq("tháng khai trong khung vẫn còn", y.months.some((m) => m.month === 8), true);
+
+  // Không có ký ức sớm thì khung giữ nguyên mốc đã khai.
+  const thuong = mergeTimeline([{ year: 2023, month: 10 }], 2026, 8);
+  eq(
+    "không có ký ức sớm thì giữ nguyên mốc khung",
+    thuong.find((r) => r.year === 2023)!.months[0].month,
+    8,
+  );
+}

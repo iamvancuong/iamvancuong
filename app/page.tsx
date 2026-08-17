@@ -4,7 +4,6 @@ import { Intro } from "@/components/home/Intro";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { getPublicStreaks } from "@/lib/streaks";
 import { getPublicJourney } from "@/lib/journey";
-import { getHomeStrips } from "@/lib/strips";
 import { listPosts } from "@/lib/posts";
 import { mergeTimeline } from "@/lib/timeline";
 import { todayISO } from "@/lib/os/day";
@@ -24,10 +23,9 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [streaks, journey, strips, posts] = await Promise.all([
+  const [streaks, journey, posts] = await Promise.all([
     getPublicStreaks(),
     getPublicJourney(),
-    getHomeStrips(),
     listPosts(),
   ]);
 
@@ -50,10 +48,6 @@ export default async function HomePage() {
       <Intro
         streaks={streaks}
         journey={journey}
-        // Dải nào rỗng thì PhotoStrip tự ẩn cả mục — KHÔNG đổ ảnh mẫu vào.
-        // Ảnh giả trên trang thật thì người xem không có cách nào biết là giả.
-        stripJourney={strips.journey}
-        stripBlog={strips.blog}
         // Ba bài mới nhất. `listPosts` đã lọc bài riêng tư với khách và tự
         // kèm ảnh bìa, nên chỗ này không phải biết gì về quyền xem.
         posts={posts.slice(0, 3)}

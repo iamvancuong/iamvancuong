@@ -9,6 +9,7 @@ import { slugify } from "@/lib/posts";
 import { deleteUpload, saveImage } from "./upload";
 import { dayUTC, fmtDateVN } from "./day";
 import { str, text } from "./formData";
+import { translateToJa, TranslateError } from "./translate";
 
 async function assertOwner() {
   if (!(await isOwner())) throw new Error("Chưa đăng nhập.");
@@ -221,6 +222,64 @@ export async function deleteTag(id: string) {
  * Xuất bản = vừa đặt PUBLIC vừa đóng dấu thời gian.
  * Gỡ xuống thì giữ lại publishedAt để lần sau bật lên không mất ngày gốc.
  */
+/**
+ * Dịch bài sang tiếng Nhật bằng AI rồi LƯU LUÔN vào `titleJa` / `bodyJa`.
+ *
+ * ## Bản dịch là bản NHÁP, không phải kết quả cuối
+ *
+ * Nó ghi thẳng vào hai ô vốn đã sửa được ở ngay bên dưới, chứ không cất vào
+ * một chỗ riêng "của AI". Nghĩa là sau khi dịch xong, chủ nhân sửa nó y như
+ * sửa chữ mình tự viết — không có chế độ nào phải thoát ra, không có nút nào
+ * phải "chấp nhận bản dịch".
+ *
+ * Đó cũng là lý do KHÔNG tự động dịch lúc lưu bài: dịch là một hành động có
+ * chủ ý, tốn tiền thật, và ghi đè công sức sửa tay của lần trước. Bấm nút thì
+ * biết mình vừa làm gì.
+ *
+ * ## Trả về chuỗi lỗi thay vì ném
+ *
+ * Ném lỗi trong server action làm cả trang `/os/write/[slug]` rơi vào
+ * `error.tsx` — mất trắng mọi thứ đang gõ dở trong form. Với một thao tác có
+ * thể hỏng vì lý do bên ngoài (hết hạn mức, mất mạng, khóa sai) thì đó là cái
+ * giá quá đắt. `useActionState` ở phía nút nhận chuỗi này và hiện tại chỗ.
+ */
+export async function translatePost(
+  id: string,
+  _prev: string | null,
+  _fd: FormData,
+): Promise<string | null> {
+  await assertOwner();
+
+  const post = await db.post.findUniqueOrThrow({
+    where: { id },
+    select: { slug: true, title: true, body: true },
+  });
+
+  let out;
+  try {
+    out = await translateToJa(post.title, post.body);
+  } catch (err) {
+    if (err instanceof TranslateError) return err.message;
+    // Lỗi không lường trước: vẫn không được làm sập trang, nhưng phải để lại
+    // dấu vết ở log server — nuốt im lặng thì lần sau không ai lần ra được.
+    console.error("translatePost:", err);
+    return "Dịch hỏng vì một lỗi không lường trước. Xem log server.";
+  }
+
+  await db.post.update({
+    where: { id },
+    // Tiêu đề dịch ra rỗng thì GIỮ tiêu đề Nhật cũ, không xóa trắng: mất một
+    // dòng người ta tự gõ chỉ vì lần dịch này thiếu tiêu đề là quá đắt.
+    data: {
+      bodyJa: out.body,
+      ...(out.title ? { titleJa: out.title } : {}),
+    },
+  });
+
+  revalidateAll(post.slug);
+  return null;
+}
+
 export async function togglePublish(id: string) {
   await assertOwner();
 
@@ -348,27 +407,6 @@ export async function deletePostPhoto(photoId: string) {
   if (photo.thumbUrl) await deleteUpload(photo.thumbUrl);
 
   if (photo.post) revalidateAll(photo.post.slug);
-}
-
-/**
- * Bật/tắt "hiện ảnh bìa ở trang chủ" — song sinh với `toggleMemoryHome`.
- *
- * Bật ở đây KHÔNG tự xuất bản bài. Bài còn nháp thì vẫn không lên trang chủ vì
- * `getHomeStrips()` đòi cả `visibility = PUBLIC` lẫn `publishedAt != null`.
- */
-export async function togglePostHome(id: string) {
-  await assertOwner();
-
-  const post = await db.post.findUniqueOrThrow({
-    where: { id },
-    select: { slug: true, showOnHome: true },
-  });
-  await db.post.update({
-    where: { id },
-    data: { showOnHome: !post.showOnHome },
-  });
-
-  revalidateAll(post.slug);
 }
 
 export async function deletePost(id: string) {

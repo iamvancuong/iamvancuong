@@ -7,13 +7,31 @@
    ============================================================ */
 
 @theme {
-  /* Background — nền KEM, không phải trắng.
-     Trắng tinh là mặc định của mọi trang; kem ấm (#f4f1ea) đọc ra là "có ai đó
-     đã chọn màu này". Thẻ nội dung để trắng gần như tuyệt đối trên nền kem —
-     chính độ chênh đó làm thẻ nổi lên mà không cần shadow. */
-  --color-bg: #f4f1ea;
-  --color-surface: #fffefb;
-  --color-surface-2: #eae5db;
+  /* Background — TRẮNG, cả nền trang lẫn nền thẻ.
+     ═══════════════════════════════════════════════════════════════
+     Trước đây nền trang là kem (#f4f1ea) còn thẻ là trắng (#fffefb), và chính
+     độ chênh đó làm thẻ nổi lên mà không cần đổ bóng.
+
+     Nay quay về đúng ý đồ gốc trong PLAN §4 — «Notion-like: trắng · border
+     mảnh · gần như không shadow». Thẻ phân biệt với nền bằng ĐƯỜNG VIỀN, không
+     bằng màu.
+
+     ⚠️ HAI HỆ QUẢ phải biết trước, vì cả hai đều im lặng:
+
+     1. `bg-surface` giờ KHÔNG còn nhìn thấy được nếu thiếu `border`. Mọi thẻ
+        trong dự án đều đã có `border border-line` — kiểm lại trước khi thêm
+        thẻ mới, vì thiếu viền thì thẻ vẫn "chạy đúng", chỉ là biến mất.
+     2. `.band-white` thành vô hình (cùng màu với nền). Dải kem/trắng xen kẽ ở
+        trang chủ vốn là thứ phân đoạn 5 mục mà không tốn thêm chữ — nay thay
+        bằng một đường kẻ mảnh ở đầu mỗi mục. Xem `Intro.tsx`.
+
+     Chất ẤM của giao diện giờ nằm ở ĐƯỜNG VIỀN (`--color-line` be) và ở màu
+     chữ (`--color-ink` ngả nâu), không nằm ở nền nữa. */
+  --color-bg: #ffffff;
+  --color-surface: #ffffff;
+  /* Nền LÕM — ô tháng, khối mã, thẻ nhấn, mục đang chọn ở thanh bên /os.
+     Đây chính là màu kem cũ: trên nền trắng nó đọc ra là "thụt vào một tầng". */
+  --color-surface-2: #f4f1ea;
 
   /* Text */
   --color-ink: #14120e;
@@ -333,8 +351,13 @@ body {
   padding: 1px 5px;
 }
 
+/* Nền `surface-2`, KHÔNG phải `surface`.
+   `.prose` gần như luôn nằm TRÊN nền trắng — trong thẻ ở /now, trong dải trắng
+   ở trang đọc bài. Khối mã nền `surface` (cũng trắng) trên nền trắng thì chỉ
+   còn cái viền phân biệt, và ở cỡ 14px thì nó đọc ra là đoạn văn thụt lề chứ
+   không ra khối mã. `surface-2` đậm hơn cả kem lẫn trắng nên đúng ở cả hai. */
 .prose pre {
-  background: var(--color-surface);
+  background: var(--color-surface-2);
   border: 1px solid var(--color-line);
   border-radius: var(--radius-lg);
   padding: 16px 20px;
@@ -575,8 +598,15 @@ html.snap {
 }
 
 /* ============================================================
-   IN CV — nút "Tải PDF" gọi window.print(). Chỉ giữ nội dung CV,
-   ẩn header/footer/nút; canh cho vừa trang giấy.
+   IN — chỉ còn phần dùng chung cho MỌI trang.
+
+   Khối `.cv-doc` cũ đã gỡ cùng trang /cv: hồi đó nút "Tải PDF" gọi
+   `window.print()` nên toàn bộ việc dàn trang giấy phải làm bằng CSS. Giờ file
+   PDF do server dựng (`lib/cv-pdf.ts`) với lề và ngắt trang tính bằng point,
+   nên đống `!important` đó không còn ai đọc tới.
+
+   Vẫn giữ phần ẩn header/footer: người ta thỉnh thoảng in một bài blog, và
+   thanh điều hướng trên giấy thì luôn vô nghĩa.
    ============================================================ */
 @media print {
   header,
@@ -587,15 +617,6 @@ html.snap {
   main {
     padding: 0 !important;
   }
-  .cv-doc {
-    max-width: none !important;
-  }
-  .cv-doc a {
-    color: inherit !important;
-    text-decoration: none !important;
-  }
-  /* Không cắt ngang một mục kinh nghiệm giữa hai trang */
-  .cv-doc article,
   .break-inside-avoid {
     break-inside: avoid;
   }

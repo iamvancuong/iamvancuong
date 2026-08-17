@@ -84,17 +84,21 @@ npm.cmd run db:push         # sau khi sửa schema
 
 ```
 app/
-├── (công khai)  page · now · blog/[slug]/(ja) · journey · photos · projects · about
+├── (công khai)  page · now · blog/[slug]/(ja) · journey · photos · projects
+│                ⚠️ `projects` = trang «Hồ sơ», đã GỘP /projects + /cv + /about
+│                   (17/08). Hai địa chỉ kia chỉ còn 308 trong `next.config.ts`.
 ├── login/       LoginForm (client)
 ├── os/          layout(force-dynamic, noindex) · page(dashboard) · calendar · focus
 │   ├── goals · journey · log/[date] · write/[slug] · data
 │   └── a/[slug]   ← MỘT file cho CẢ 7 lĩnh vực (điểm mấu chốt của thiết kế)
 ├── api/         auth/login · auth/logout · backup · uploads · uploads/[...path]
+│               cv/[lang]  ← sinh file CV PDF (vi/ja) bằng pdf-lib
 ├── error.tsx · os/error.tsx · robots.ts · sitemap.ts(force-dynamic)
 lib/
 ├── db.ts          Prisma singleton — ĐỌC CHÚ THÍCH, có bẫy caching_sha2 (§7)
 ├── auth.ts · session.ts
 ├── posts.ts · markdown.ts · now.ts · projects.ts · site.ts
+├── cv.ts · cv-pdf.ts   dữ liệu CV + bộ dựng PDF (tọa độ tính tay — xem §7.7)
 └── os/
     ├── actions.ts      23 action: Goal · Principle · Item · Memory · Photo
     ├── dayActions.ts    7 action: Focus · DailyLog
@@ -239,7 +243,7 @@ Toàn bộ nhóm này **đã đóng ngày 06/08**. Không còn mục nào.
 
 ---
 
-## 7. 🪤 SÁU CÁI BẪY ĐÃ VẤP — đừng vấp lại
+## 7. 🪤 TÁM CÁI BẪY ĐÃ VẤP — đừng vấp lại
 
 > Phần này là thứ giá trị nhất của file. Mỗi mục đều tốn thời gian thật để tìm ra,
 > và triệu chứng đều **không hề chỉ về nguyên nhân**.
@@ -294,6 +298,47 @@ Chạy `next dev` thứ hai (dù khác cổng) sẽ bị từ chối. Muốn tes
 
 ### 6. PowerShell chặn `npm`
 Execution policy `Restricted` (mặc định Windows) chặn `npm.ps1`. Dùng `npm.cmd`, hoặc đổi policy sang `RemoteSigned` cho `CurrentUser`.
+
+### 7. CV PDF: chữ mất tích mà không có lỗi nào (17/08/2026)
+
+`lib/cv-pdf.ts` dựng file bằng `pdf-lib` — không có trình duyệt nào ở giữa để
+tự bọc chữ hay tự đổi font. Hai kiểu hỏng, **cả hai đều im lặng**:
+
+1. **Thiếu glyph.** Bản đầu dùng Noto Sans cho bản Việt. Noto Sans KHÔNG có
+   `→`, mà `lib/projects.ts` có dòng *"Tối ưu UX/UI từ Figma → Angular"* —
+   pdf-lib vẽ ra một ô trống chứ không ném lỗi. Đã bịt hai lớp: dùng **một bộ
+   font duy nhất** (Noto Sans JP phủ cả Latin + dấu Việt + kana), và
+   `assertGlyphs()` ném lỗi nếu còn ký tự nào không vẽ được.
+2. ⭐ **Bộ cắt font làm hỏng glyph ghép.** `@pdf-lib/fontkit` (rẽ nhánh fontkit
+   v1.1.1, 2019) cắt font sai ở glyph GHÉP — chữ có dấu là một glyph cơ sở cộng
+   một glyph dấu, ghép bằng tham chiếu ID; cắt mà không kéo theo thành phần thì
+   tham chiếu trỏ ra ngoài và glyph **không vẽ ra gì**. Đo trên đúng file đã
+   sinh: `138 glyph → 61 có nét · 68 LỖI`. Kết quả là một file PDF mở được, đủ
+   2 trang, đúng bề rộng từng dòng, mà **hơn nửa số chữ biến mất**.
+   **Đã sửa:** `lib/cv-fontkit.ts` — lớp đệm cho pdf-lib dùng `fontkit` v2
+   (chỉ thiếu đúng hàm `encodeStream()`). Sau khi sửa: `137 có nét · 0 lỗi`.
+   **Bài học đắt hơn cả bug:** bộ kiểm đầu tiên báo "✓ sạch" trên chính file
+   hỏng đó, vì nó đo bề rộng bằng font **gốc** còn thứ nằm trong PDF là font
+   **đã cắt** — hai vật thể khác nhau. Muốn biết chữ có hiện ra không thì phải
+   **đọc ngược font nhúng trong file PDF ra và đếm glyph có nét**.
+3. **Tràn lề.** Thêm một dòng kỹ năng dài vào `lib/cv.ts` là chữ có thể chạy ra
+   khỏi mép giấy.
+
+`npm run check:cv` giờ kiểm cả ba: tràn lề · nét vẽ của font đã nhúng · bảng
+ToUnicode (copy chữ + máy quét CV đọc được). Chạy sau mỗi lần sửa `lib/cv.ts`,
+`lib/projects.ts`, hoặc nâng cấp `pdf-lib`/`fontkit`.
+
+⚠️ `assets/fonts/*.ttf` (10.6MB) **phải được commit**. Thiếu file font thì
+route `/api/cv/[lang]` chết ở lượt tải đầu tiên, và chỉ ở production.
+
+### 8. Nội dung thu gọn bằng CSS vẫn bấm được bằng phím Tab
+
+Thủ thuật `grid-rows-[0fr]` + `overflow-hidden` (dùng ở accordion Hành trình và
+menu mobile) chỉ giấu nội dung khỏi MẮT. Nút bên trong vẫn nằm trong thứ tự Tab,
+vẫn bấm được, trình đọc màn hình vẫn đọc hết. Phát hiện khi thử bằng script:
+một cú bấm vào ô tháng của năm đang ĐÓNG vẫn đổi được trạng thái.
+**Cách sửa:** `inert={!open}` trên khối bị thu gọn — nó cắt cả Tab lẫn chuột mà
+KHÔNG phá hiệu ứng chuyển động, khác `hidden`.
 
 ---
 
@@ -376,6 +421,6 @@ Rất có thể danh sách §8 sẽ **ngắn đi** chứ không dài ra.
 1. **Đừng thêm module mới trước khi bước 5 xong.** Chủ nhân có xu hướng muốn xây nhiều thứ cùng lúc và đã tự nhận điều đó; công việc của bạn là giúp phanh lại, không phải giúp tăng ga.
 2. **Đừng viết thêm tài liệu.** `PLAN.md` đã 700+ dòng cho một app một người dùng. Viết tài liệu cho cảm giác giống tiến bộ và rẻ hơn nhiều so với việc ghi ba dòng lúc 11 giờ đêm. Cập nhật file này khi trạng thái đổi là đủ.
 3. **Đừng tin dữ liệu trong DB là thật** — kiểm `prisma/.demo-days.json` và dấu `[demo]` trước khi kết luận "hệ thống đang được dùng".
-4. **Kiểm chứng, đừng khẳng định.** Bốn bug trong §7 đều có triệu chứng chỉ sai hướng. Chạy thử và đo, đừng suy luận từ tên file.
+4. **Kiểm chứng, đừng khẳng định.** Mọi bug trong §7 đều có triệu chứng chỉ sai hướng. Chạy thử và đo, đừng suy luận từ tên file.
 5. **Không để lại dữ liệu bịa trong Life OS.** Nếu tạo bản ghi để test, xóa sạch sau đó — đây là nhật ký cá nhân thật, không phải môi trường sandbox.
 6. Ngân sách của chủ nhân cho dự án này là **6 giờ/tuần**, và website xếp **ưu tiên #7** sau tiếng Nhật, trường học, việc/tiền, ngủ/cơ thể, career. Nếu một tuần nào code web nhiều hơn học tiếng Nhật thì đó là **thất bại của hệ thống**, không phải thành tích.

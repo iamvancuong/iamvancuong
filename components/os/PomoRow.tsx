@@ -62,7 +62,7 @@ export function PomoRow({
               className={`rounded-full px-2.5 py-1 text-[12px] transition-colors ${
                 c.id === goalId
                   ? "bg-ink text-bg"
-                  : "border border-line text-ink-2 hover:bg-surface hover:text-ink"
+                  : "border border-line text-ink-2 hover:bg-surface-2 hover:text-ink"
               }`}
             >
               {c.icon && <span className="mr-1">{c.icon}</span>}
@@ -113,7 +113,7 @@ export function PomoRow({
                     : /* Viền `ink-3` chứ không phải `line`: viền của một ĐIỀU
                          KHIỂN cần ≥3:1, mà `line` chỉ được 1.3:1 ở chế độ tối.
                          Cùng lý do đã ghi ở TodayPanel.tsx. */
-                      `border-ink-3 bg-bg text-ink-3 hover:bg-surface ${
+                      `border-ink-3 bg-bg text-ink-3 hover:bg-surface-2 ${
                         beyond ? "border-dashed opacity-60" : ""
                       }`
                 }`}

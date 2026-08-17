@@ -93,7 +93,7 @@ export function DayPlan({
                   <button
                     type="submit"
                     aria-pressed={t.done}
-                    className="flex w-full items-center gap-3 rounded-[var(--radius-md)] px-2 py-2.5 text-left transition-colors hover:bg-surface"
+                    className="flex w-full items-center gap-3 rounded-[var(--radius-md)] px-2 py-2.5 text-left transition-colors hover:bg-surface-2"
                   >
                     <span
                       /* Viền `ink-3` chứ không phải `line` — xem chú thích
@@ -123,7 +123,7 @@ export function DayPlan({
                       type="submit"
                       aria-label={`Lặp lại cho ngày mai: ${t.title}`}
                       title="Lặp lại cho ngày mai"
-                      className="rounded-[var(--radius-sm)] p-1.5 text-ink-3 transition-colors hover:bg-surface hover:text-ink"
+                      className="rounded-[var(--radius-sm)] p-1.5 text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
                     >
                       <CopyPlus size={15} strokeWidth={1.75} />
                     </button>
@@ -134,7 +134,7 @@ export function DayPlan({
                     type="submit"
                     aria-label={`Xóa: ${t.title}`}
                     title="Xóa"
-                    className="rounded-[var(--radius-sm)] p-1.5 text-ink-3 transition-colors hover:bg-surface hover:text-ink"
+                    className="rounded-[var(--radius-sm)] p-1.5 text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
                   >
                     <X size={15} strokeWidth={1.75} />
                   </button>

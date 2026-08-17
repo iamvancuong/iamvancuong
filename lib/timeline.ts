@@ -105,9 +105,27 @@ export function mergeTimeline(
     .sort((a, b) => a.year - b.year)
     .map(({ t, year }) => {
 
+      /**
+       * Tháng bắt đầu = SỚM HƠN giữa mốc khai trong khung và tháng có ký ức
+       * sớm nhất của năm đó.
+       *
+       * Khung khai 2023 bắt đầu từ tháng 8 (tháng đặt chân đến Nhật). Nhưng
+       * một ký ức đề ngày 2023-03 vẫn là ký ức thật — nó chỉ xảy ra trước khi
+       * sang Nhật. Lấy cứng `from` của khung thì tháng đó không có ô để rơi
+       * vào, nên ký ức **biến mất khỏi trang mà không báo gì**, và
+       * `memoryCount` cũng đếm thiếu vì nó cộng từ chính mảng tháng này.
+       *
+       * Khung là mức sàn, không phải bộ lọc — cùng một luật đã áp cho những
+       * NĂM ngoài khung, giờ áp nốt cho THÁNG.
+       */
+      const earliest = Math.min(
+        ...entries.filter((e) => e.year === year).map((e) => e.month),
+        t?.from ?? 1,
+      );
+      const from = Number.isFinite(earliest) ? earliest : (t?.from ?? 1);
+
       // Năm hiện tại chỉ hiện tới tháng NÀY — bày sẵn cả 12 ô là bày ra bốn
       // tháng chưa xảy ra, và chúng trông giống hệt tháng đã qua mà chưa viết.
-      const from = t?.from ?? 1;
       const to = year === todayYear ? todayMonth : 12;
 
       const months: TimelineMonth[] = [];

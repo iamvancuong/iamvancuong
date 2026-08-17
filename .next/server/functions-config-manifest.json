@@ -4,6 +4,7 @@
     "/api/auth/login": {},
     "/api/backup": {},
     "/api/contact": {},
+    "/api/cv/[lang]": {},
     "/api/uploads": {},
     "/api/uploads/[...path]": {}
   }

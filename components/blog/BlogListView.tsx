@@ -76,7 +76,11 @@ export function BlogListView({
         </p>
       )}
 
-      <div className="mt-8">
+      {/* `space-y-5` — thiếu nó thì các thẻ bài DÍNH LIỀN nhau thành một khối
+          dài, và vì mỗi thẻ đều có viền nên hai thẻ cạnh nhau tạo ra một đường
+          kẻ đôi ở chỗ giáp ranh: nhìn ra là một bảng, không ra mấy bài riêng.
+          Cùng khoảng cách với thẻ ở trang Hồ sơ và mục Viết ở trang chủ. */}
+      <div className="mt-8 space-y-5">
         {posts.length > 0 ? (
           posts.map((p) => <PostCard key={p.id} post={p} />)
         ) : (

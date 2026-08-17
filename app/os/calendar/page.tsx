@@ -143,7 +143,7 @@ export default async function CalendarPage({
             </MonthLink>
             <Link
               href="/os/calendar"
-              className="rounded-[var(--radius-sm)] px-2.5 py-1.5 text-[13px] text-ink-2 transition-colors hover:bg-surface hover:text-ink"
+              className="rounded-[var(--radius-sm)] px-2.5 py-1.5 text-[13px] text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
             >
               Hôm nay
             </Link>
@@ -316,7 +316,7 @@ function MonthLink({
       href={`/os/calendar?m=${to}`}
       aria-label={label}
       title={label}
-      className="flex size-9 items-center justify-center rounded-[var(--radius-sm)] text-ink-2 transition-colors hover:bg-surface hover:text-ink"
+      className="flex size-9 items-center justify-center rounded-[var(--radius-sm)] text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
     >
       {children}
     </Link>

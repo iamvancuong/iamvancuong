@@ -406,7 +406,6 @@ async function seedMemories() {
          * bật cờ này thì cờ nằm đó vô nghĩa, và lúc xem dữ liệu sẽ tưởng nó
          * hỏng trong khi nó đang đúng.
          */
-        showOnHome: vis === Visibility.PUBLIC && photos.length > 0,
       },
     });
   }
@@ -526,9 +525,8 @@ Baito được khoảng 85.000¥/tháng, nên vẫn phải bù thêm.`,
    * bài công khai — nhìn ra thì tưởng tính năng hỏng, thực ra là chưa có ảnh
    * để mà hiện.
    *
-   * `showOnHome` chỉ bật khi bài vừa CÔNG KHAI vừa có ảnh: đúng hai điều kiện
-   * `getHomeStrips()` đòi. Bài riêng tư vẫn có ảnh bìa nhưng không lên trang
-   * chủ — và đó chính là phép thử đáng giá nhất của bộ dữ liệu mẫu này.
+   * Bài riêng tư vẫn có ảnh bìa — đó là phép thử đáng giá của bộ dữ liệu mẫu:
+   * ảnh bìa tồn tại không có nghĩa là nó được phép hiện ra ngoài.
    */
   let covers = 0;
   for (const p of posts) {
@@ -556,7 +554,6 @@ Baito được khoảng 85.000¥/tháng, nên vẫn phải bù thêm.`,
             },
           ],
         },
-        showOnHome: isPub,
       },
     });
   }

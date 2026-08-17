@@ -56,7 +56,7 @@ export default async function LogDayPage({
           <Link
             href={`/os/log/${addDaysISO(iso, -1)}`}
             aria-label="Ngày trước"
-            className="flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-ink-2 transition-colors hover:bg-surface hover:text-ink"
+            className="flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
           >
             <ChevronLeft size={18} strokeWidth={1.75} />
           </Link>
@@ -80,7 +80,7 @@ export default async function LogDayPage({
             <Link
               href={`/os/log/${addDaysISO(iso, 1)}`}
               aria-label="Ngày sau"
-              className="flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-ink-2 transition-colors hover:bg-surface hover:text-ink"
+              className="flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
             >
               <ChevronRight size={18} strokeWidth={1.75} />
             </Link>
@@ -105,7 +105,7 @@ export default async function LogDayPage({
                   <button
                     type="submit"
                     aria-pressed={t.done}
-                    className="flex w-full items-center gap-3 rounded-[var(--radius-md)] px-2 py-2.5 text-left transition-colors hover:bg-surface"
+                    className="flex w-full items-center gap-3 rounded-[var(--radius-md)] px-2 py-2.5 text-left transition-colors hover:bg-surface-2"
                   >
                     <span
                       /* Viền `ink-3` chứ không phải `line` — xem chú thích cùng

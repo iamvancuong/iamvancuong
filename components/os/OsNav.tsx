@@ -76,7 +76,7 @@ export function OsNav({ areas, unread = 0 }: { areas: NavArea[]; unread?: number
           className={`flex items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-1.5 text-[14px] transition-colors ${
             on
               ? "bg-surface-2 font-medium text-ink"
-              : "text-ink-2 hover:bg-surface hover:text-ink"
+              : "text-ink-2 hover:bg-surface-2 hover:text-ink"
           }`}
         >
           <Icon size={15} strokeWidth={1.75} />
@@ -102,7 +102,7 @@ export function OsNav({ areas, unread = 0 }: { areas: NavArea[]; unread?: number
           className={`flex items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2.5 text-[14px] transition-colors ${
             on
               ? "bg-surface-2 font-medium text-ink"
-              : "text-ink-2 hover:bg-surface hover:text-ink"
+              : "text-ink-2 hover:bg-surface-2 hover:text-ink"
           }`}
         >
           <Icon size={16} strokeWidth={1.75} />
@@ -119,8 +119,19 @@ export function OsNav({ areas, unread = 0 }: { areas: NavArea[]; unread?: number
 
   return (
     <>
-      {/* Desktop */}
-      <nav className="hidden shrink-0 md:block md:w-48">
+      {/*
+        Desktop — thanh bên có ĐƯỜNG PHÂN ĐỊNH bên phải.
+
+        Trước đây nó không có gì cả: nền trang là kem, nội dung nằm trong các
+        thẻ trắng, nên thanh bên tự tách ra khỏi nội dung nhờ chính độ chênh
+        kem/trắng. Từ lúc cả site về nền trắng thì độ chênh đó biến mất, và
+        thanh bên trôi thẳng vào cột nội dung — hai vùng có vai trò hoàn toàn
+        khác nhau mà trông như một khối chữ liền.
+
+        `border-r` + `pr-6`: một đường 1px làm đúng việc mà màu nền vừa thôi
+        làm. `-ml-*` không cần vì `gap-10` của layout đã chừa sẵn khoảng thở.
+      */}
+      <nav className="hidden shrink-0 border-r border-line-soft pr-6 md:block md:w-48">
         <div className="sticky top-8 space-y-6">
           <ul className="space-y-0.5">
             {MAIN.map((m) => link(m.href, m.label, m.icon, m.href))}
@@ -211,7 +222,7 @@ export function OsNav({ areas, unread = 0 }: { areas: NavArea[]; unread?: number
                 type="button"
                 onClick={() => setMoreOpen(false)}
                 aria-label="Đóng"
-                className="rounded-[var(--radius-md)] p-1 text-ink-2 hover:bg-surface"
+                className="rounded-[var(--radius-md)] p-1 text-ink-2 hover:bg-surface-2"
               >
                 <X size={18} strokeWidth={1.75} />
               </button>
@@ -245,7 +256,7 @@ export function OsNav({ areas, unread = 0 }: { areas: NavArea[]; unread?: number
                     setMoreOpen(false);
                     logout();
                   }}
-                  className="flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2.5 text-[14px] text-ink-2 hover:bg-surface"
+                  className="flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2.5 text-[14px] text-ink-2 hover:bg-surface-2"
                 >
                   <LogOut size={16} strokeWidth={1.75} />
                   Đăng xuất

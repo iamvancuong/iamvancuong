@@ -48,7 +48,11 @@ export const nav = [
   { href: "/now", label: { vi: "Dạo này", ja: "いま" } },
   { href: "/blog", label: { vi: "Viết", ja: "ブログ" } },
   { href: "/journey", label: { vi: "Hành trình", ja: "歩み" } },
-  { href: "/projects", label: { vi: "Dự án", ja: "プロジェクト" } },
-  { href: "/cv", label: { vi: "CV", ja: "履歴書" } },
-  { href: "/about", label: { vi: "Giới thiệu", ja: "自己紹介" } },
+  /**
+   * MỘT mục cho cả ba thứ cũ (Dự án · CV · Giới thiệu) — chúng đã gộp thành
+   * `/projects`. Nhãn phải là «Hồ sơ» chứ không giữ «Dự án»: người xem không
+   * có cách nào đoán rằng CV nằm sau chữ "Dự án", nên giữ nhãn cũ là giấu mất
+   * đúng thứ mà một nhà tuyển dụng đang tìm.
+   */
+  { href: "/projects", label: { vi: "Hồ sơ", ja: "プロフィール" } },
 ] as const;

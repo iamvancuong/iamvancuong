@@ -3,7 +3,7 @@
 # iamvancuong.com
 
 **Đọc [`docs/STATE.md`](docs/STATE.md) trước khi làm bất cứ việc gì.** Đó là trạng
-thái thật của dự án: đang ở đâu, đã làm gì, còn gì, và — quan trọng nhất — sáu
+thái thật của dự án: đang ở đâu, đã làm gì, còn gì, và — quan trọng nhất — tám
 cái bẫy đã vấp mà triệu chứng của chúng không hề chỉ về nguyên nhân.
 
 Trang cá nhân + Life OS riêng, **một người dùng duy nhất**. Next.js 16 · Prisma 7

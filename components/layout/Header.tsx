@@ -100,7 +100,7 @@ export function Header() {
                   href={item.href}
                   lang={jl}
                   onClick={() => setOpen(false)}
-                  className="rounded-[var(--radius-md)] px-2 py-2.5 text-[15px] text-ink-2 transition-colors hover:bg-surface hover:text-ink"
+                  className="rounded-[var(--radius-md)] px-2 py-2.5 text-[15px] text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
                 >
                   {item.label[lang]}
                 </Link>

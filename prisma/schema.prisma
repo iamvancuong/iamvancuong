@@ -142,8 +142,8 @@ model Goal {
   /// phải đệ quy và "tổng của cha" thành một câu hỏi không ai trả lời chắc
   /// được. Chặn ở server, xem `lib/os/studyActions.ts`.
   parentId String?
-  parent   Goal?   @relation("GoalTree", fields: [parentId], references: [id], onDelete: Cascade)
-  children Goal[]  @relation("GoalTree")
+  parent   Goal?         @relation("GoalTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children Goal[]        @relation("GoalTree")
   pomos    PomoSession[] @relation("GoalPomo")
 
   /// Emoji cho mục tiêu con — nhận ra bằng mắt nhanh hơn đọc chữ, và hàng chip
@@ -153,8 +153,8 @@ model Goal {
   /// Cách đo. Để trống nếu mục tiêu không đo được bằng số.
   /// ⚠️ Chuỗi tự do, dành cho KẾT QUẢ ("điểm mock" · "≥95"). Giờ học là NỖ LỰC
   /// và có chỗ riêng ở trên — đừng nhét giờ vào đây.
-  metric String?
-  target String?
+  metric  String?
+  target  String?
   current String?
 
   status     GoalStatus @default(NOT_STARTED)
@@ -219,8 +219,8 @@ model Item {
   areaId String
   area   Area   @relation(fields: [areaId], references: [id], onDelete: Cascade)
 
-  name  String
-  kind  String? // "skincare" | "tóc" | "quần áo" | "sách"... nhập tự do
+  name   String
+  kind   String? // "skincare" | "tóc" | "quần áo" | "sách"... nhập tự do
   status ItemStatus @default(WANT)
 
   startedAt DateTime?
@@ -384,34 +384,22 @@ model Memory {
   visibility Visibility @default(PRIVATE)
   photos     Photo[]
 
-  /// Hiện ảnh bìa của ký ức này trên dải ảnh ở TRANG CHỦ.
-  ///
-  /// Tách khỏi `visibility` vì hai câu hỏi khác nhau: "ai được xem" và "có
-  /// đáng lên trang chủ không". Công khai hết mọi ký ức vẫn hợp lý, nhưng dải
-  /// ảnh trang chủ chỉ chứa được vài tấm — nhồi hết vào thì nó thành một trang
-  /// ảnh thu nhỏ, mất luôn tác dụng chọn lọc.
-  ///
-  /// Ảnh bìa KHÔNG có cột riêng: là tấm đầu tiên theo `Photo.order`, mà thứ tự
-  /// đó đã sắp được bằng hai nút lên/xuống sẵn có.
-  showOnHome Boolean @default(false)
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([date])
   @@index([visibility, date])
-  @@index([showOnHome])
 }
 
 /// Ảnh — database chỉ giữ ĐƯỜNG DẪN. File thật nằm ở object storage.
 /// Nhồi ảnh vào MySQL sẽ làm backup chậm và không có CDN.
 model Photo {
-  id  String @id @default(cuid())
-  url String @db.Text // bản đầy đủ (WebP)
+  id       String  @id @default(cuid())
+  url      String  @db.Text // bản đầy đủ (WebP)
   thumbUrl String? @db.Text // bản nhỏ cho trang lưới
-  width  Int?
-  height Int?
-  bytes  Int?
+  width    Int?
+  height   Int?
+  bytes    Int?
 
   caption String?   @db.Text
   takenAt DateTime?
@@ -615,15 +603,10 @@ model Post {
 
   photos Photo[]
 
-  /// Hiện ảnh bìa của bài này trên dải ảnh ở TRANG CHỦ. Cùng lý do và cùng
-  /// cách lấy ảnh bìa với `Memory.showOnHome`.
-  showOnHome Boolean @default(false)
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([visibility, publishedAt])
-  @@index([showOnHome])
 }
 
 /// Tin nhắn từ form liên hệ ở trang chủ công khai. Chỉ LƯU (chưa có hạ tầng
