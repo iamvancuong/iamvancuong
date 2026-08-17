@@ -117,7 +117,22 @@ Bài publish, ký ức tick công khai, ảnh… hiện ra ngay, **không cần 
 
 ## 5. Biến môi trường (đặt ở cPanel → Setup Node.js App → Environment variables)
 
-Không nằm trong git. 4 biến (`NODE_ENV=production` do Application mode tự set):
+> ### ⚠️ Trên server KHÔNG có file `.env` — và đó là đúng
+>
+> `.env` bị `.gitignore` chặn nên `git pull` không bao giờ mang nó xuống. Cố ý:
+> repo này **công khai**, mà một lần lỡ commit file đó là mật khẩu database và
+> khóa API nằm vĩnh viễn trong lịch sử git — xóa file ở commit sau cũng không
+> gỡ được nó khỏi các commit cũ.
+>
+> Ở production, cùng những giá trị đó nằm trong **Environment variables của
+> cPanel**. Passenger nạp chúng vào tiến trình, nên `process.env.X` trong code
+> đọc được y hệt như khi chạy ở máy local với `.env`.
+>
+> **Đừng tạo `.env` trên server để cho tiện.** Nó không được git quản lý nên
+> sẽ lặng lẽ lệch khỏi những gì cPanel đang đặt, và khi hai nơi nói hai giá trị
+> khác nhau thì không có cách nào biết cái nào đang có hiệu lực.
+
+5 biến (`NODE_ENV=production` do Application mode tự set):
 
 | Biến | Giá trị |
 |---|---|
@@ -125,9 +140,18 @@ Không nằm trong git. 4 biến (`NODE_ENV=production` do Application mode tự
 | `AUTH_SECRET` | chuỗi hex ngẫu nhiên (ký cookie) |
 | `OS_PASSWORD_HASH_B64` | hash bcrypt base64 của mật khẩu `/os` (tạo bằng `npm run hash-password`) |
 | `UPLOAD_DIR` | `/home/ujxmchhx/iamvancuong/uploads` |
+| `OPENAI_API_KEY` | khóa OpenAI — nút «Dịch sang tiếng Nhật» ở `/os/write/[slug]` (17/08/2026) |
 
 > Mật khẩu DB có ký tự `@` → mã hóa thành `%40` trong URL cho chắc.
 > Đổi biến ở đây rồi phải **Restart** app.
+
+**Thiếu `OPENAI_API_KEY` thì hỏng thế nào:** cả site vẫn chạy bình thường, chỉ
+riêng nút dịch báo *«Thiếu OPENAI_API_KEY trong .env»* khi bấm. Cố ý để nó hỏng
+đúng một chỗ chứ không chặn khởi động — một trang cá nhân không nên chết cả site
+vì thiếu một tính năng phụ.
+
+`OPENAI_MODEL` là biến **tùy chọn**, bỏ trống thì dùng `gpt-4o`. Đặt nó khi muốn
+đổi model mà không phải build lại.
 
 ---
 
@@ -154,7 +178,7 @@ Không nằm trong git. 4 biến (`NODE_ENV=production` do Application mode tự
    `scripts/deploy-db.sql` (15 bảng + 7 lĩnh vực).
 2. **Domain**: PA Vietnam trỏ nameserver → AZDIGI. cPanel → Domains → thêm domain.
 3. **Node app**: Setup Node.js App → Node ≥ 20 · Production · root `iamvancuong` ·
-   URL = domain · startup `server.js`. Nhập 4 env vars (§5). Tạo thư mục `uploads`.
+   URL = domain · startup `server.js`. Nhập 5 env vars (§5). Tạo thư mục `uploads`.
 4. **Code**: Terminal:
    ```bash
    cd /home/ujxmchhx/iamvancuong
