@@ -241,13 +241,17 @@ export async function deleteTag(id: string) {
  * Ném lỗi trong server action làm cả trang `/os/write/[slug]` rơi vào
  * `error.tsx` — mất trắng mọi thứ đang gõ dở trong form. Với một thao tác có
  * thể hỏng vì lý do bên ngoài (hết hạn mức, mất mạng, khóa sai) thì đó là cái
- * giá quá đắt. `useActionState` ở phía nút nhận chuỗi này và hiện tại chỗ.
+ * giá quá đắt. Nút gọi hàm này nhận chuỗi và hiện lỗi ngay tại chỗ.
+ *
+ * ## Gọi THẲNG từ trình xử lý sự kiện, không qua `<form action=…>`
+ *
+ * Bản đầu bọc nút trong một `<form>` riêng. Nhưng khối «Bản tiếng Nhật» nằm
+ * BÊN TRONG form Lưu bài, mà HTML **không cho form lồng nhau** — trình duyệt
+ * lặng lẽ bỏ thẻ `<form>` bên trong, nên nút trở thành nút submit của form
+ * Lưu. Triệu chứng là một lỗi của React chẳng liên quan gì tới dịch thuật:
+ * *"A React form was unexpectedly submitted"*.
  */
-export async function translatePost(
-  id: string,
-  _prev: string | null,
-  _fd: FormData,
-): Promise<string | null> {
+export async function translatePost(id: string): Promise<string | null> {
   await assertOwner();
 
   const post = await db.post.findUniqueOrThrow({

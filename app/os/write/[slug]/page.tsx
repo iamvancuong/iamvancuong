@@ -254,22 +254,41 @@ export default async function EditPostPage({
             <code className="text-ink-2">/blog/{post.slug}/ja</code> không tồn tại.
           </p>
 
-          <input
-            name="titleJa"
-            lang="ja"
-            defaultValue={post.titleJa ?? ""}
-            placeholder="日本語のタイトル"
-            className="mt-3 w-full rounded-[var(--radius-sm)] border border-line px-3 py-2 text-[15px] outline-none focus:border-ink-3"
-          />
-          <div className="mt-2">
-            <MarkdownEditor
-              name="bodyJa"
-              postId={post.id}
-              defaultValue={post.bodyJa ?? ""}
-              rows={10}
+          {/**
+            * `key` đổi theo `updatedAt` — KHÔNG phải để cho vui.
+            *
+            * Cả hai ô này là ô KHÔNG kiểm soát: `<input defaultValue>` chỉ đọc
+            * giá trị lúc gắn vào DOM, còn `MarkdownEditor` giữ nội dung trong
+            * `useState(defaultValue)` — cũng chỉ chạy một lần lúc mount.
+            *
+            * Nghĩa là nút Dịch có ghi đúng vào database, `revalidatePath` có
+            * chạy, server có gửi bản tiếng Nhật mới xuống — mà hai ô này vẫn
+            * hiện y nguyên nội dung cũ. Người bấm sẽ thấy "bấm xong chẳng có
+            * gì xảy ra" và bấm lại, mỗi lần là một lượt tính tiền thật.
+            *
+            * `updatedAt` đổi sau MỌI lần ghi (`@updatedAt` của Prisma), nên
+            * key đổi → React tháo và dựng lại → `defaultValue` mới được đọc.
+            * Đặt key ở đây chứ không ở ô nội dung tiếng Việt: chỉ hai ô này bị
+            * thứ khác ngoài bàn phím ghi vào.
+            */}
+          <div key={post.updatedAt.toISOString()}>
+            <input
+              name="titleJa"
               lang="ja"
-              placeholder="日本語の本文…"
+              defaultValue={post.titleJa ?? ""}
+              placeholder="日本語のタイトル"
+              className="mt-3 w-full rounded-[var(--radius-sm)] border border-line px-3 py-2 text-[15px] outline-none focus:border-ink-3"
             />
+            <div className="mt-2">
+              <MarkdownEditor
+                name="bodyJa"
+                postId={post.id}
+                defaultValue={post.bodyJa ?? ""}
+                rows={10}
+                lang="ja"
+                placeholder="日本語の本文…"
+              />
+            </div>
           </div>
         </div>
 
