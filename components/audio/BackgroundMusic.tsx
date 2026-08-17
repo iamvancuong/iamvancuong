@@ -145,7 +145,21 @@ export function BackgroundMusic({ track }: { track: Track | null }) {
         onClick={toggle}
         aria-label={on ? "Tắt nhạc nền" : "Bật nhạc nền"}
         title={on ? "Tắt nhạc nền" : "Bật nhạc nền"}
-        className="fixed bottom-4 left-4 z-30 flex size-9 items-center justify-center rounded-full border border-line bg-bg/80 text-ink-3 backdrop-blur transition-colors hover:text-ink md:bottom-6 md:left-6"
+        /**
+         * Góc dưới BÊN PHẢI, không phải bên trái.
+         *
+         * Bên trái thì nó đè lên hàng icon mạng xã hội: cả hai đều bám mép
+         * trái, mà container dùng `px-6` nên icon đầu tiên (GitHub) bắt đầu ở
+         * x=24 còn nút này ở x=16 — chồng nhau 28px trên màn 375px. Lỗi chỉ
+         * hiện ra khi cuộn tới đúng đoạn hàng icon chạm đáy màn hình, nên rất
+         * dễ lọt qua lúc thử trên máy tính.
+         *
+         * Bên phải trống hẳn: cả trang công khai không có gì bám mép phải, và
+         * mọi thứ trong trang đều căn trái. Trùng góc với trình phát của `/os`
+         * (`OsPlayer` cũng `right`) là có chủ ý — hai thứ không bao giờ cùng
+         * xuất hiện, nhưng cùng một góc thì thành cùng một thói quen.
+         */
+        className="fixed bottom-4 right-4 z-30 flex size-9 items-center justify-center rounded-full border border-line bg-bg/80 text-ink-3 backdrop-blur transition-colors hover:text-ink md:bottom-6 md:right-6"
       >
         {on ? (
           <Music size={15} strokeWidth={1.75} />
