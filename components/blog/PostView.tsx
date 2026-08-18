@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Visibility } from "@prisma/client";
 import { Container } from "@/components/layout/Container";
-import { LanguageToggle } from "./LanguageToggle";
+import { PostLangSync } from "./PostLangSync";
 import { fmtDate, hasJa, type Lang, type PostWithTags } from "@/lib/posts";
 import { renderMarkdown } from "@/lib/markdown";
 import { t } from "@/lib/i18n";
@@ -43,6 +43,7 @@ export async function PostView({
 
   return (
     <div className="band band-white -my-10 py-10 md:-my-16 md:py-16">
+      <PostLangSync slug={post.slug} hasJa={hasJa(post)} />
       <Container width="prose">
         {/* Chỉ hiện khi bạn đăng nhập — khách không tới được bài riêng tư */}
         {!isPublic && (
@@ -90,10 +91,6 @@ export async function PostView({
                   mọi trang và mọi mục. Thiếu nó thì đúng trang này lạc giọng. */}
               <span className="text-accent">.</span>
             </h1>
-
-            <div className="mt-6">
-              <LanguageToggle slug={post.slug} hasJa={hasJa(post)} current={lang} />
-            </div>
 
             {/**
               * Câu này đã đổi cùng lúc với việc thêm nút dịch bằng AI.

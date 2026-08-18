@@ -9,6 +9,9 @@ import {
 } from "react";
 import { LANG_COOKIE, type Lang } from "@/lib/i18n";
 
+/** URL bản Việt/Nhật của bài đang đọc — `ja: null` nếu bài chưa có bản dịch. */
+export type PostLangLinks = { vi: string; ja: string | null };
+
 /**
  * Ngôn ngữ hiển thị dùng chung cho toàn site (nút chuyển ở header đổi cái này).
  *
@@ -20,8 +23,18 @@ import { LANG_COOKIE, type Lang } from "@/lib/i18n";
  * set `<html lang="ja">` toàn cục: dữ liệu người dùng viết bằng tiếng Việt sẽ
  * bị đẩy sang font Nhật (thiếu dấu ề/ữ/ộ). Từng phần tử chữ Nhật tự gắn
  * `lang="ja"` như trang chủ đang làm.
+ *
+ * `postLangLinks` là cách trang đọc bài (`PostLangSync`) "đăng ký" hai URL
+ * việt/nhật của bài đang mở với nút chuyển ở header — nhờ vậy MỘT nút đó vừa
+ * đổi chữ giao diện vừa điều hướng `/blog/slug` ⇄ `/blog/slug/ja`, thay vì
+ * bài viết phải có nút riêng của nó.
  */
-type Ctx = { lang: Lang; setLang: (l: Lang) => void };
+type Ctx = {
+  lang: Lang;
+  setLang: (l: Lang) => void;
+  postLangLinks: PostLangLinks | null;
+  setPostLangLinks: (links: PostLangLinks | null) => void;
+};
 
 const LangCtx = createContext<Ctx | null>(null);
 
@@ -33,6 +46,7 @@ export function LangProvider({
   children: ReactNode;
 }) {
   const [lang, setLangState] = useState<Lang>(initial);
+  const [postLangLinks, setPostLangLinks] = useState<PostLangLinks | null>(null);
 
   const setLang = useCallback((l: Lang) => {
     setLangState(l);
@@ -45,7 +59,11 @@ export function LangProvider({
     }
   }, []);
 
-  return <LangCtx.Provider value={{ lang, setLang }}>{children}</LangCtx.Provider>;
+  return (
+    <LangCtx.Provider value={{ lang, setLang, postLangLinks, setPostLangLinks }}>
+      {children}
+    </LangCtx.Provider>
+  );
 }
 
 export function useLang(): Ctx {
