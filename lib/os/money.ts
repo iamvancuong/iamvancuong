@@ -14,8 +14,12 @@ import { monthStartISO } from "./period";
 export type MonthMoney = {
   /** "2026-08-01" — ngày 1, nửa đêm UTC */
   month: string;
-  /** Chi hằng ngày: tổng `DailyLog.spend` trong tháng */
+  /** Chi tiêu DÙNG ĐỂ TÍNH: tổng nhập tay nếu có, không thì cộng từ nhật ký. */
   daily: number;
+  /** Tổng `DailyLog.spend` trong tháng — nguồn dự phòng khi chưa nhập tay. */
+  logged: number;
+  /** Tổng chi tiêu tháng nhập tay (`MonthBudget.spend`). Null = chưa nhập. */
+  spendEntered: number | null;
   /** Chi cố định quy về tháng */
   fixed: number;
   /** daily + fixed */
@@ -75,12 +79,17 @@ export function monthMoney(
   const m = monthKey(monthISO);
 
   const inMonth = logs.filter((l) => monthKey(isoUTC(l.date)) === m);
-  const daily = inMonth.reduce((s, l) => s + (l.spend ?? 0), 0);
-  const fixed = fixedTotal(costs, monthISO);
-  const total = daily + fixed;
+  const logged = inMonth.reduce((s, l) => s + (l.spend ?? 0), 0);
 
   const budget = budgets.find((b) => monthKey(isoUTC(b.month)) === m);
   const income = budget?.income ?? null;
+
+  // Tổng nhập tay ĐÈ lên cộng-từ-nhật-ký. `null` (chưa nhập) mới rơi về `logged`
+  // — «chưa nhập» khác «tháng này tiêu 0¥», nên phân biệt bằng null chứ không 0.
+  const spendEntered = budget?.spend ?? null;
+  const daily = spendEntered ?? logged;
+  const fixed = fixedTotal(costs, monthISO);
+  const total = daily + fixed;
 
   const saved = income == null ? null : income - total;
   const savedRate = income == null || income <= 0 ? null : (income - total) / income;
@@ -88,6 +97,8 @@ export function monthMoney(
   return {
     month: monthISO,
     daily,
+    logged,
+    spendEntered,
     fixed,
     total,
     income,

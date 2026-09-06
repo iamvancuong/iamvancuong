@@ -351,7 +351,16 @@ model MonthBudget {
   month DateTime @unique @db.Date
 
   income Int? // ¥ thực nhận
-  note   String? @db.Text
+
+  /// Tổng CHI TIÊU cả tháng, nhập tay. ¥.
+  ///
+  /// Đè lên cách cũ (cộng `DailyLog.spend` từng ngày): theo dõi chi tiêu hằng
+  /// ngày nay làm trên app điện thoại cho tiện, nên ở đây chỉ cần gõ một con số
+  /// tổng. `null` = chưa nhập ⇒ QUAY VỀ cộng từ nhật ký như trước (hai tháng cũ
+  /// đã có dữ liệu ngày vẫn hiện đúng). Xem `monthMoney()` trong lib/os/money.ts.
+  spend Int?
+
+  note String? @db.Text
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
