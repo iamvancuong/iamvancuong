@@ -27,7 +27,6 @@ import { TodayPanel } from "@/components/os/TodayPanel";
 import { DayPlan } from "@/components/os/DayPlan";
 import { JapaneseToday } from "@/components/os/JapaneseToday";
 import { DashTabs, toDashTab } from "@/components/os/DashTabs";
-import { WhyPanel } from "@/components/os/WhyPanel";
 import { DailyGate } from "@/components/os/DailyGate";
 
 /** Bao nhiêu nguyên tắc hiện mỗi ngày. Một câu quá dễ lướt qua, ba câu thì không. */
@@ -243,8 +242,8 @@ export default async function DashboardPage({
       <div className="mt-8 space-y-12">
         {tab === "nho" && (
           <>
-            {/* Vì sao phải cố. Cố định trong code — xem WhyPanel.tsx. */}
-            <WhyPanel />
+            {/* «Nỗ lực để làm gì?» đã chuyển hẳn vào modal DailyGate (đọc mỗi
+                sáng) — để cả ở đây nữa là thừa, nên tab này chỉ còn nguyên tắc. */}
 
             {/* Nguyên tắc trong ngày — đọc mất ba giây, nhưng là cách duy nhất
                 để những dòng đó không thành chữ chết. */}

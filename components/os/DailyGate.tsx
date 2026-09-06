@@ -3,7 +3,6 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { Check, ChevronDown } from "lucide-react";
 import { fmtDateVN, weekdayVN } from "@/lib/os/day";
-import { REASONS } from "@/components/os/WhyPanel";
 
 /**
  * «Hệ điều hành hôm nay» — cửa bắt buộc mở MỖI NGÀY trước khi dùng /os.
@@ -34,6 +33,25 @@ const STEPS = [
   "Bạn sẽ bị lãng quên – vì vậy, hãy hành động",
   "Thất bại duy nhất là KHÔNG LÀM GÌ CẢ",
   "Không tồn tại sự cân bằng",
+];
+
+/**
+ * «Nỗ lực để làm gì?» — bảy dòng câu trả lời viết sẵn, gập trong modal.
+ *
+ * Trước đây là component `WhyPanel` riêng ở tab «Nên nhớ»; nay modal đọc mỗi
+ * sáng đã bao trọn nó nên chỗ kia thành thừa và đã gỡ. Cố ý HARDCODE, cùng lý
+ * do như bốn câu creed: muốn đổi phải mở code ra — chính cái phanh đó giữ cho
+ * nó không thành một ô nội dung xoàng phải điền mỗi tuần. Bảy dòng đều mở đầu
+ * bằng «Để», đọc dọc xuống là một câu trả lời liền mạch.
+ */
+const REASONS = [
+  "Để mình không thiếu — tiền bạc, hiểu biết, cảm xúc, trải nghiệm.",
+  "Để nhà mình không phải cãi nhau vì chuyện mưu sinh.",
+  "Để dẫn được bố mẹ đến nơi họ chưa từng đến, và giúp được người thân lúc họ cần.",
+  "Để không ai xem thường mình, và cũng không ai xem thường người nhà mình.",
+  "Để gặp được những người tốt hơn.",
+  "Để con mình học được điều tốt nhất từ chính mình — người dạy nó sớm nhất là mình.",
+  "Để đi được nơi mình muốn đến, và quay lại được nơi mình muốn quay lại.",
 ];
 
 /** Nhớ ngày (YYYY-MM-DD) đã qua cửa. Bằng hôm nay ⇒ không hiện lại. */
