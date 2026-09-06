@@ -1,27 +1,29 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import { Check, ChevronDown } from "lucide-react";
 import { fmtDateVN, weekdayVN } from "@/lib/os/day";
 
 /**
- * «Hệ điều hành hôm nay» — cửa bắt buộc mở MỖI NGÀY trước khi dùng /os.
+ * «Hệ điều hành hôm nay» — cửa bắt buộc mở MỖI LẦN vào /os.
  *
  * Một nghi thức, không phải một tính năng: bốn câu creed phải được ĐỌC và TICK
- * theo thứ tự thì mới vào được Hôm nay. Sau khi qua cửa một lần, cả ngày hôm đó
- * không hiện lại nữa (nhớ ngày đã qua trong `localStorage`, so theo hôm nay JST).
+ * theo thứ tự thì mới vào được Hôm nay. CỐ Ý lặp lại mỗi lần bước vào trang, KHÔNG
+ * nhớ "đã qua cửa hôm nay rồi" — mục tiêu là đọc lại liên tục, một câu đọc một lần
+ * rồi thôi thì thành chữ chết. (Trước đây từng gate 1 lần/ngày bằng localStorage;
+ * đã bỏ theo yêu cầu.)
  *
- * Vì sao gate ở CLIENT + localStorage chứ không phải server action + DB:
- *   - Đây là nghi thức tự kỷ luật của MỘT người dùng, không phải hàng rào an
- *     ninh. Không có gì bí mật phía sau nó — /os đã được `middleware` + cookie
- *     JWT bảo vệ rồi. Đẩy lên DB chỉ thêm một action, một cột, một truy vấn cho
- *     đúng một việc mà `localStorage` làm gọn.
- *   - Ngày "hôm nay" lấy từ server (prop `iso`, đã tính bằng `todayISO()` JST)
- *     nên client và server đồng nhất một ngày, không lệch múi giờ trình duyệt.
+ * Vì thế trạng thái chỉ nằm trong BỘ NHỚ component:
+ *   - Mở trang /os (tải mới, hoặc quay lại từ trang khác) ⇒ component mount lại
+ *     ⇒ modal hiện, mọi ô tick về trắng.
+ *   - Đổi tab trong chính /os (?tab=) là đổi searchParams của CÙNG một trang,
+ *     component không mount lại nên state `dismissed` giữ nguyên — đã tick xong
+ *     thì không bị hỏi lại khi bấm qua tab «Việc», «Nhìn lại»…
+ *   - Ngày "hôm nay" lấy từ server (prop `iso`, `todayISO()` JST) chỉ để HIỂN THỊ.
  *
- * BỐN CÂU hardcode ngay đây, cùng lý do như `WhyPanel`: sửa phải mở code ra, và
- * chính cái phải-mở-code đó là cái phanh giữ cho chúng không thành ô nội dung
- * xoàng phải điền mỗi tuần.
+ * BỐN CÂU hardcode ngay đây, cùng lý do như bảy dòng «Nỗ lực»: sửa phải mở code
+ * ra, và chính cái phải-mở-code đó là cái phanh giữ cho chúng không thành ô nội
+ * dung xoàng phải điền mỗi tuần.
  *
  * Tick theo THỨ TỰ (guided): chỉ bước kế tiếp mới bật; bước sau bị khóa & mờ,
  * mũi tên nối sáng lên xanh khi bước trên đã xong. Gỡ một bước đã tick thì gỡ
@@ -54,44 +56,16 @@ const REASONS = [
   "Để đi được nơi mình muốn đến, và quay lại được nơi mình muốn quay lại.",
 ];
 
-/** Nhớ ngày (YYYY-MM-DD) đã qua cửa. Bằng hôm nay ⇒ không hiện lại. */
-const STORAGE_KEY = "os-daily-gate";
-
-/**
- * Đọc `localStorage` qua `useSyncExternalStore` chứ không phải `setState` trong
- * effect. Đây đúng là "đọc một hệ thống ngoài React lúc mount", và cách này:
- *   - Hydrate khớp SSR: `getServerSnapshot` trả `null` (server không có
- *     localStorage), React dùng đúng giá trị đó cho khung hình đầu rồi mới đổi
- *     sang giá trị client — không lệch hydration, không chớp modal.
- *   - Không kích hoạt lint `set-state-in-effect`.
- * Không cần đăng ký lắng nghe thật: giá trị chỉ đổi khi chính tab này ghi vào,
- * mà lúc đó ta đã đóng modal bằng state phiên nên `subscribe` để rỗng là đủ.
- */
-const NOOP_SUBSCRIBE = () => () => {};
-function readGateISO(): string {
-  try {
-    return localStorage.getItem(STORAGE_KEY) ?? "";
-  } catch {
-    // localStorage bị chặn — trả rỗng ⇒ khác mọi ngày ⇒ cứ hiện nghi thức.
-    return "";
-  }
-}
-
 export function DailyGate({ iso }: { iso: string }) {
-  // `null` trên server / khung hình hydrate đầu tiên = chưa biết, không vẽ gì.
-  const storedISO = useSyncExternalStore(
-    NOOP_SUBSCRIBE,
-    readGateISO,
-    () => null,
-  );
-
   const [dismissed, setDismissed] = useState(false);
   const [checked, setChecked] = useState<boolean[]>(() =>
     STEPS.map(() => false),
   );
   const [openReasons, setOpenReasons] = useState(false);
 
-  const show = storedISO !== null && storedISO !== iso && !dismissed;
+  // Hiện ngay từ khung hình đầu (cả SSR lẫn client cùng `true`, không lệch
+  // hydration), ẩn đi khi đã bấm «Vào Hôm nay» trong lần vào này.
+  const show = !dismissed;
 
   // Khóa cuộn nền khi mở, trả lại đúng giá trị cũ khi đóng.
   useEffect(() => {
@@ -120,14 +94,10 @@ export function DailyGate({ iso }: { iso: string }) {
     });
   };
 
+  // Đóng modal cho LẦN vào này thôi — không ghi nhớ đâu cả, nên lần vào /os sau
+  // (tải lại / quay lại từ trang khác) modal lại hiện, đúng ý «lặp lại liên tục».
   const enter = () => {
-    if (!allDone) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, iso);
-    } catch {
-      // Không lưu được thì mai lại hiện — chấp nhận được.
-    }
-    setDismissed(true);
+    if (allDone) setDismissed(true);
   };
 
   return (
