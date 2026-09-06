@@ -9,9 +9,12 @@
  *
  * Bảy dòng đều bắt đầu bằng «Để» — đọc dọc xuống là một câu trả lời liền mạch,
  * không phải bảy gạch đầu dòng rời rạc.
+ *
+ * `REASONS` được XUẤT ra để `DailyGate` (modal bắt buộc mỗi sáng) dùng lại đúng
+ * bảy dòng này — một nguồn duy nhất, sửa một chỗ là hai nơi cùng đổi.
  */
 
-const REASONS = [
+export const REASONS = [
   "Để mình không thiếu — tiền bạc, hiểu biết, cảm xúc, trải nghiệm.",
   "Để nhà mình không phải cãi nhau vì chuyện mưu sinh.",
   "Để dẫn được bố mẹ đến nơi họ chưa từng đến, và giúp được người thân lúc họ cần.",
@@ -27,13 +30,16 @@ export function WhyPanel() {
       <h2 className="text-[17px] font-semibold tracking-[-0.01em]">
         Nỗ lực để làm gì?
       </h2>
-      <ul className="mt-3 space-y-2">
-        {REASONS.map((r) => (
-          <li key={r} className="text-[15px] leading-relaxed text-ink-2">
-            {r}
+      <ol className="mt-4 space-y-3">
+        {REASONS.map((r, i) => (
+          <li key={r} className="flex gap-3">
+            <span className="shrink-0 pt-px text-[12px] font-medium tabular-nums text-accent">
+              {String(i + 1).padStart(2, "0")}
+            </span>
+            <span className="text-[15px] leading-relaxed text-ink-2">{r}</span>
           </li>
         ))}
-      </ul>
+      </ol>
     </section>
   );
 }

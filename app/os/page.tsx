@@ -28,6 +28,7 @@ import { DayPlan } from "@/components/os/DayPlan";
 import { JapaneseToday } from "@/components/os/JapaneseToday";
 import { DashTabs, toDashTab } from "@/components/os/DashTabs";
 import { WhyPanel } from "@/components/os/WhyPanel";
+import { DailyGate } from "@/components/os/DailyGate";
 
 /** Bao nhiêu nguyên tắc hiện mỗi ngày. Một câu quá dễ lướt qua, ba câu thì không. */
 const DAILY_PRINCIPLES = 3;
@@ -218,6 +219,10 @@ export default async function DashboardPage({
 
   return (
     <div className="max-w-[880px]">
+      {/* Cửa bắt buộc mỗi ngày — đọc & tick 4 câu creed trước khi dùng Hôm nay.
+          Tự gate theo ngày JST + localStorage, xem DailyGate.tsx. */}
+      <DailyGate iso={iso} />
+
       <header className="flex flex-wrap items-baseline justify-between gap-2 pb-4">
         <h1 className="text-[20px] font-semibold tracking-[-0.01em]">
           Hôm nay

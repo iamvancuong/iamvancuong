@@ -539,6 +539,82 @@ body {
   }
 }
 
+/* ── CỬA HÔM NAY (DailyGate) ────────────────────────────────────
+   Nghi thức mỗi sáng nên vào phải NHẸ và có nhịp: modal trồi lên, và BƯỚC
+   ĐANG CHỜ TICK thở nhẹ một quầng xanh để mắt biết bấm chỗ nào tiếp theo
+   ("click cái này rồi đến cái kia"). Tự viết, không thư viện (PLAN §3), và
+   nhường hết cho `prefers-reduced-motion`. */
+@keyframes gate-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes gate-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Quầng sáng thở của bước đang chờ. Dùng box-shadow (không đổi layout) nên
+   không đẩy các bước khác khi nhấp nháy. */
+@keyframes gate-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 22%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 4px color-mix(in srgb, var(--color-accent) 32%, transparent),
+      0 0 16px 1px color-mix(in srgb, var(--color-accent) 25%, transparent);
+  }
+}
+
+/* Dấu tick bật ra khi vừa tick xong. */
+@keyframes gate-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.gate-overlay {
+  animation: gate-in 0.18s ease-out both;
+}
+
+.gate-card {
+  animation: gate-rise 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.gate-active {
+  animation: gate-glow 2s ease-in-out infinite;
+}
+
+.gate-check {
+  animation: gate-pop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gate-overlay,
+  .gate-card,
+  .gate-active,
+  .gate-check {
+    animation: none;
+  }
+}
+
 /* Trang chủ (class `.snap` gắn/gỡ trong Intro): cuộn MƯỢT + chừa chỗ header
    dính. KHÔNG dùng scroll-snap CSS nữa — lăn chuột bị khựng. Để cuộn tự nhiên,
    mỗi mục full-height, và dùng hiệu ứng TRƯỢT-LÊN khi vào khung nhìn cho đẹp. */
