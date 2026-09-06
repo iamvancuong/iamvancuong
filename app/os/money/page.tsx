@@ -50,10 +50,9 @@ export default async function MoneyPage() {
       <header className="border-b border-line pb-5">
         <h1 className="text-[24px] font-semibold tracking-[-0.02em]">Tiền</h1>
         <p className="mt-1.5 text-[15px] leading-relaxed text-ink-2">
-          Chi tiêu điền thẳng tổng cả tháng ở bảng dưới (theo dõi hằng ngày để
-          cho app điện thoại lo). Để trống thì tự cộng từ ô «Chi tiêu» trong
-          nhật ký. Chi cố định lấy từ danh sách bên dưới; thu nhập vẫn phải tự
-          khai.
+          Chi hằng ngày cộng từ ô «Chi tiêu» trong nhật ký. Chi cố định lấy từ
+          danh sách bên dưới. Chỉ thu nhập là con số bạn phải tự khai — hệ thống
+          không có cách nào biết.
         </p>
       </header>
 

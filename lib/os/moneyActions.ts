@@ -101,16 +101,16 @@ export async function deleteFixedCost(id: string) {
   revalidateMoney();
 }
 
-/* ---------------- Tổng kết tháng: thu nhập & chi tiêu ---------------- */
+/* ---------------- Thu nhập tháng ---------------- */
 
 /**
- * Thu nhập tháng — con số phải tự khai.
+ * Chỉ thu nhập phải tự khai — chi tiêu thì cộng từ `DailyLog.spend` và
+ * `FixedCost`, hệ thống tự biết.
  *
  * Upsert theo cột `month` (unique) nên lưu bao nhiêu lần cũng không tạo trùng.
  * Để trống ô = xóa con số đó đi, không phải ghi 0: "chưa khai" và "tháng này
  * thu nhập bằng 0" là hai chuyện khác nhau, và tỷ lệ tiết kiệm chỉ tính được
- * ở trường hợp đầu nếu phân biệt được. Chỉ đụng `income`/`note`, không đè cột
- * `spend` mà `saveMonthSpend` giữ.
+ * ở trường hợp đầu nếu phân biệt được.
  */
 export async function saveMonthIncome(monthISO: string, fd: FormData) {
   await assertOwner();
@@ -124,30 +124,6 @@ export async function saveMonthIncome(monthISO: string, fd: FormData) {
     where: { month },
     update: { income, note },
     create: { month, income, note },
-  });
-
-  revalidateMoney();
-}
-
-/**
- * Tổng CHI TIÊU cả tháng, nhập tay — đè lên cách cộng từng ngày từ nhật ký.
- *
- * Theo dõi chi tiêu hằng ngày làm trên app điện thoại cho tiện, nên ở đây chỉ
- * cần gõ một con số tổng. Để trống = xóa con số nhập tay, quay về cộng
- * `DailyLog.spend` như trước (hai chuyện khác nhau: "chưa nhập" thì rơi về
- * nhật ký, còn gõ "0" là khẳng định tháng này tiêu 0¥). Chỉ đụng cột `spend`.
- */
-export async function saveMonthSpend(monthISO: string, fd: FormData) {
-  await assertOwner();
-  if (!/^\d{4}-\d{2}-01$/.test(monthISO)) return;
-
-  const spend = num(fd, "spend", { min: 0, max: 100_000_000 });
-  const month = dayUTC(monthISO);
-
-  await db.monthBudget.upsert({
-    where: { month },
-    update: { spend },
-    create: { month, spend },
   });
 
   revalidateMoney();

@@ -1,5 +1,5 @@
 import { fmtYen, monthLabelVN, type MonthMoney } from "@/lib/os/money";
-import { saveMonthIncome, saveMonthSpend } from "@/lib/os/moneyActions";
+import { saveMonthIncome } from "@/lib/os/moneyActions";
 import { MicroLabel, SubmitButton } from "./formBits";
 
 /**
@@ -15,9 +15,8 @@ export function MonthTable({ rows }: { rows: MonthMoney[] }) {
         <MicroLabel>Mười hai tháng gần nhất</MicroLabel>
       </h2>
       <p className="mb-3 text-[13px] leading-relaxed text-ink-3">
-        Chi tiêu: gõ thẳng tổng cả tháng vào ô. Để trống thì hệ thống tự cộng ô
-        «Chi tiêu» của từng ngày trong nhật ký — số ngày đã ghi nói con số đó
-        đáng tin tới đâu.
+        Tháng nào chưa ghi ngày nào thì chi tiêu hằng ngày bằng 0 — đó là chưa
+        ghi, không phải không tiêu. Cột «ngày» nói con số đáng tin tới đâu.
       </p>
 
       <div className="overflow-x-auto rounded-[var(--radius-lg)] border border-line">
@@ -44,28 +43,11 @@ export function MonthTable({ rows }: { rows: MonthMoney[] }) {
                     </span>
                   )}
                   <div className="text-[11px] tabular-nums text-ink-3">
-                    {r.spendEntered != null
-                      ? "chi tiêu nhập tay"
-                      : `${r.daysWithSpend} ngày đã ghi`}
+                    {r.daysWithSpend} ngày đã ghi
                   </div>
                 </td>
-                <td className="px-3 py-2 text-right">
-                  <form
-                    action={saveMonthSpend.bind(null, r.month)}
-                    className="flex items-center justify-end gap-1"
-                  >
-                    <input
-                      name="spend"
-                      inputMode="numeric"
-                      defaultValue={r.spendEntered ?? ""}
-                      placeholder={r.logged > 0 ? fmtYen(r.logged) : "—"}
-                      aria-label={`Chi tiêu ${monthLabelVN(r.month)}`}
-                      className="w-24 rounded-[var(--radius-sm)] border border-line-soft bg-bg px-2 py-1 text-right text-[13px] tabular-nums outline-none focus:border-ink-3"
-                    />
-                    <SubmitButton variant="quiet" pendingLabel="…">
-                      lưu
-                    </SubmitButton>
-                  </form>
+                <td className="px-3 py-2 text-right tabular-nums">
+                  {fmtYen(r.daily)}
                 </td>
                 <td className="px-3 py-2 text-right tabular-nums text-ink-3">
                   {fmtYen(r.fixed)}

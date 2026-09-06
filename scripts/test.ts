@@ -262,18 +262,6 @@ eq("còn lại", m.saved, 138000);
 eq("tỷ lệ tiết kiệm 69%", Math.round((m.savedRate ?? 0) * 100), 69);
 eq("đếm ngày đã ghi, bỏ ngày null", m.daysWithSpend, 2);
 eq("tháng hiện tại là partial", m.partial, true);
-eq("chưa nhập tay -> giữ tổng từ nhật ký", m.spendEntered, null);
-eq("logged = tổng ô ngày", m.logged, 2000);
-
-// Tổng nhập tay ĐÈ lên cộng-từ-nhật-ký; `logged` vẫn giữ số cũ để hiện gợi ý.
-const mOverride = monthMoney("2026-08-01", logs, [cost({ amount: 60000 })], [{ month: D("2026-08-01"), income: 200000, spend: 50000 } as never], "2026-08-06");
-eq("nhập tay đè lên nhật ký", mOverride.daily, 50000);
-eq("logged vẫn là tổng ngày", mOverride.logged, 2000);
-eq("tổng dùng số nhập tay", mOverride.total, 110000);
-eq("còn lại theo số nhập tay", mOverride.saved, 90000);
-// Gõ "0" là khẳng định tiêu 0¥, KHÁC "chưa nhập" (vốn rơi về nhật ký = 2000).
-const mZero = monthMoney("2026-08-01", logs, [], [{ month: D("2026-08-01"), spend: 0 } as never], "2026-08-06");
-eq("nhập tay 0 không rơi về nhật ký", mZero.daily, 0);
 
 const m2 = monthMoney("2026-07-01", logs, [], [], "2026-08-06");
 eq("chưa khai thu nhập -> còn lại null", m2.saved, null);
