@@ -25,6 +25,7 @@ export function PomoRow({
   subGoals,
   targetPomo,
   extraMin,
+  baseFilled = 0,
 }: {
   iso: string;
   sessions: (Pick<PomoSession, "id" | "order"> & { goalId: string | null })[];
@@ -32,8 +33,15 @@ export function PomoRow({
   subGoals: Pick<Goal, "id" | "title" | "icon">[];
   targetPomo: number;
   extraMin: number;
+  /**
+   * Số ô "khóa" đến từ checklist học ở nhật ký (mỗi ô học đã tick = 1 hiệp).
+   * Chúng luôn nằm ĐẦU hàng, hiện đầy, và KHÔNG tắt được ở đây — chỉ bỏ tick
+   * bên nhật ký. Hàng ô sao chỉ thêm/bớt các hiệp bấm tay NẰM TRÊN nền này.
+   */
+  baseFilled?: number;
 }) {
-  const pomo = sessions.length;
+  // Tổng ô sáng = ô khóa từ checklist + hiệp bấm tay (PomoSession).
+  const pomo = baseFilled + sessions.length;
 
   /**
    * Mảng đang chọn. Mặc định là mảng của hiệp GẦN NHẤT hôm đó — đang học dở
@@ -92,12 +100,31 @@ export function PomoRow({
           // Ô vượt đích vẫn bấm được nhưng vẽ nhạt hơn: học thêm là tốt, chỉ
           // là nó không còn là thứ đang bị đòi hỏi.
           const beyond = targetPomo > 0 && n > targetPomo;
-          const mark = on ? label(sessions[i]?.goalId ?? null) : "";
+
+          // Ô KHÓA: đến từ checklist học ở nhật ký. Luôn đầy, không bấm được ở
+          // đây — chỉ bỏ tick bên nhật ký. Không phải <form>, nên không gọi
+          // setPomodoro và không tắt được số hiệp học.
+          if (n <= baseFilled) {
+            return (
+              <div
+                key={n}
+                aria-label={`${n} hiệp — từ checklist học`}
+                title="Từ checklist học ở nhật ký · bỏ tick ở đó"
+                className="flex h-11 flex-1 items-center justify-center rounded-[var(--radius-sm)] border border-ink bg-ink/70 text-[13px] tabular-nums text-bg"
+              >
+                ✓
+              </div>
+            );
+          }
+
+          // Hiệp bấm tay nằm TRÊN nền khóa: ô thứ n ứng với hiệp thứ (n − base).
+          const realIndex = n - baseFilled;
+          const mark = on ? label(sessions[realIndex - 1]?.goalId ?? null) : "";
 
           return (
             <form
               key={n}
-              action={setPomodoro.bind(null, iso, n, goalId)}
+              action={setPomodoro.bind(null, iso, realIndex, goalId)}
               className="flex-1"
             >
               <button
@@ -126,7 +153,10 @@ export function PomoRow({
       </div>
 
       <p className="mt-2 text-[12px] text-ink-3">
-        Một ô = {POMO_MIN} phút. Bấm ô cuối đang sáng để lùi một hiệp.
+        Một ô = {POMO_MIN} phút. Bấm ô trống để thêm hiệp; bấm ô cuối đang sáng
+        để lùi một hiệp.
+        {baseFilled > 0 &&
+          ` Ô ✓ là việc học đã tick ở nhật ký (khóa) — bỏ ở đó.`}
         {extraMin > 0 && ` Cộng ${fmtH(extraMin)} lẻ đã ghi ở nhật ký.`}
       </p>
     </div>

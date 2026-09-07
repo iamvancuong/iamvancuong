@@ -113,6 +113,7 @@ export function JapaneseToday({
           subGoals={subGoals}
           targetPomo={targetPomo}
           extraMin={log?.jpMin ?? 0}
+          baseFilled={studyPomo}
         />
       </div>
 
