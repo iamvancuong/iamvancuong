@@ -221,10 +221,12 @@ export async function deleteDailyLog(iso: string) {
  * Việc quyết định lùi hay không nằm ở ĐÂY chứ không ở giao diện, để gọi thẳng
  * action cũng không đặt được số vô lý.
  *
- * ⚠️ Đây là ĐƯỜNG GHI DUY NHẤT cho `DailyLog.jpPomo`, và nó ghi cùng lúc với
- * các dòng `PomoSession` trong một transaction. Bất biến cần giữ:
- * `jpPomo == số dòng PomoSession cùng ngày`. Thêm một chỗ ghi thứ hai là hai
- * con số bắt đầu trôi khỏi nhau, và không có lỗi nào hiện ra.
+ * ⚠️ Đây là MỘT trong HAI đường ghi `DailyLog.jpPomo` (đường kia là
+ * `setSkillPomodoro` — checklist theo mảng ở /os/log). Cả hai ghi jpPomo cùng
+ * lúc với các dòng `PomoSession` trong một transaction, và luôn tính lại
+ * `jpPomo = số dòng thật`. Bất biến cần giữ: `jpPomo == số dòng PomoSession
+ * cùng ngày`. Thêm đường ghi nào KHÔNG đụng PomoSession là hai con số trôi
+ * khỏi nhau, và không có lỗi nào hiện ra.
  *
  * Chỉ những hiệp MỚI THÊM mới nhận `goalId` (một MỤC TIÊU CON: chặng N5-N4,
  * mảng từ vựng...). Học hai mảng trong một ngày thì đổi chip rồi bấm tiếp —
@@ -288,6 +290,90 @@ export async function setPomodoro(
       }),
     );
   }
+
+  await db.$transaction(writes);
+
+  revalidatePath("/os");
+  revalidatePath("/os/log");
+  revalidatePath("/os/calendar");
+}
+
+/**
+ * Đặt số hiệp của MỘT mảng kỹ năng (mục tiêu con) trong một ngày về đúng `k`.
+ *
+ * Đây là cách checklist ở `/os/log` ghi hiệp: tick theo TỪNG mảng, khác hàng ô
+ * sao ở `/os` vốn đặt TỔNG rồi gắn mảng đang chọn. Hai đường vào khác nhau,
+ * nhưng cùng ĐỀU HỢP LỆ: cả hai ghi `PomoSession` + `jpPomo` trong một
+ * transaction và luôn tính lại `jpPomo = SỐ DÒNG thật` sau khi sửa. Bất biến
+ * `jpPomo == số dòng PomoSession cùng ngày` vẫn giữ, vì không chỗ nào ghi
+ * thẳng một con số vào `jpPomo` mà không đụng tới các dòng.
+ *
+ * Chỉ thêm/bớt hiệp CỦA CHÍNH mảng này; hiệp của mảng khác giữ nguyên. Bấm
+ * đúng ô cuối đang sáng của mảng = lùi một hiệp (cùng cử chỉ với hàng sao).
+ */
+export async function setSkillPomodoro(iso: string, goalId: string, k: number) {
+  await assertOwner();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
+  if (!goalId) return;
+
+  const date = dayUTC(iso);
+  const want = Math.min(POMO_SLOTS, Math.max(0, Math.round(k)));
+
+  const [existing, all] = await Promise.all([
+    db.dailyLog.findUnique({ where: { date } }),
+    db.pomoSession.findMany({
+      where: { date },
+      orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+      select: { id: true, order: true, goalId: true },
+    }),
+  ]);
+
+  const mine = all.filter((s) => s.goalId === goalId);
+  const current = mine.length;
+  // Bấm đúng ô cuối đang sáng của mảng này = bỏ hiệp đó.
+  const target = Math.max(0, want === current ? want - 1 : want);
+
+  const writes: Prisma.PrismaPromise<unknown>[] = [];
+  let total = all.length;
+
+  if (target < current) {
+    // Bỏ từ hiệp order cao nhất của mảng — hiệp vừa bấm nhầm, không phải hiệp đầu.
+    const remove = mine.slice(target).map((s) => s.id);
+    writes.push(db.pomoSession.deleteMany({ where: { id: { in: remove } } }));
+    total -= remove.length;
+  } else if (target > current) {
+    // Tổng cả ngày không vượt POMO_SLOTS — hàng ô sao ở /os chỉ vẽ được bấy nhiêu.
+    const canAdd = Math.min(target - current, POMO_SLOTS - all.length);
+    if (canAdd <= 0) return; // đã kịch trần ngày
+    const maxOrder = all.reduce((m, s) => Math.max(m, s.order), 0);
+    writes.push(
+      db.pomoSession.createMany({
+        data: Array.from({ length: canAdd }, (_, i) => ({
+          date,
+          goalId,
+          order: maxOrder + i + 1,
+        })),
+      }),
+    );
+    total += canAdd;
+  } else {
+    return; // không đổi gì
+  }
+
+  // Đủ 60 phút thì việc nền tảng «Tiếng Nhật» tự sáng — cùng luật với setPomodoro.
+  // Chỉ BẬT, không tự tắt: bỏ một hiệp bấm nhầm không có nghĩa là hôm đó không học.
+  const totalMin = total * POMO_MIN + (existing?.jpMin ?? 0);
+  const logData = totalMin >= 60 ? { jpPomo: total, kJapanese: true } : { jpPomo: total };
+
+  // dailyLog ghi TRƯỚC trong transaction cho dễ đọc; thứ tự không đổi kết quả
+  // vì cả khối là một giao dịch nguyên tử.
+  writes.unshift(
+    db.dailyLog.upsert({
+      where: { date },
+      update: logData,
+      create: { date, ...logData },
+    }),
+  );
 
   await db.$transaction(writes);
 

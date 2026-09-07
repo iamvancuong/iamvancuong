@@ -850,6 +850,18 @@ function StudyChildren({
                     aria-label="Ngân sách giờ"
                     className={inputSmCls}
                   />
+                  {/* Kế hoạch hiệp/ngày của MẢNG này = số ô checklist ở
+                      /os/log. Để trống thì mảng không hiện trong checklist. */}
+                  <input
+                    type="number"
+                    name="dailyPomo"
+                    min={1}
+                    max={POMO_SLOTS}
+                    defaultValue={k.dailyPomo ?? ""}
+                    placeholder="hiệp/ngày"
+                    aria-label="Hiệp mỗi ngày (số ô checklist)"
+                    className={inputSmCls}
+                  />
                   <input
                     type="date"
                     name="studyStart"
@@ -922,6 +934,17 @@ function StudyChildren({
                 aria-label="Ngân sách giờ"
                 className={inputSmCls}
               />
+              {/* Kế hoạch hiệp/ngày = số ô checklist ở /os/log (để trống nếu
+                  mảng này không cần tick hằng ngày). */}
+              <input
+                type="number"
+                name="dailyPomo"
+                min={1}
+                max={POMO_SLOTS}
+                placeholder="hiệp/ngày"
+                aria-label="Hiệp mỗi ngày (số ô checklist)"
+                className={inputSmCls}
+              />
               <label className="block sm:col-span-2">
                 <span className="block text-[11px] text-ink-3">
                   Bắt đầu — để trống nếu là mảng kỹ năng
@@ -949,7 +972,9 @@ function StudyChildren({
             Có ngày = một <strong className="font-medium text-ink-2">chặng</strong>{" "}
             (N5–N4 rồi tới N3). Không ngày = một{" "}
             <strong className="font-medium text-ink-2">mảng kỹ năng</strong>{" "}
-            chạy suốt đợt (từ vựng · nghe · đọc).
+            chạy suốt đợt (từ vựng · nghe · đọc). Đặt{" "}
+            <strong className="font-medium text-ink-2">hiệp/ngày</strong> thì mảng
+            hiện thành dãy ô tick ở nhật ký mỗi ngày — mỗi ô một hiệp.
           </p>
         </InlineEditor>
       </li>

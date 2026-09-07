@@ -468,9 +468,12 @@ model DailyLog {
   /// bảng ở mười chỗ.
   ///
   /// Bất biến: `jpPomo == số dòng PomoSession cùng ngày`. Giữ được vì **chỉ
-  /// `setPomodoro()` được phép ghi cột này**, và nó ghi cả hai trong cùng một
-  /// transaction. Đừng thêm đường ghi thứ hai — form nhật ký cố ý KHÔNG còn
-  /// nhận `jpPomo` nữa, nó dùng chính hàng ô đó.
+  /// `setPomodoro()` và `setSkillPomodoro()` được phép ghi cột này**, và cả
+  /// hai đều ghi jpPomo + PomoSession trong CÙNG một transaction, luôn tính lại
+  /// `jpPomo = số dòng thật` sau khi sửa (một hàm đặt TỔNG cho hàng ô sao ở
+  /// /os, hàm kia đặt số hiệp của TỪNG mảng cho checklist ở /os/log). Đừng thêm
+  /// đường ghi nào KHÔNG đụng PomoSession — form nhật ký cố ý KHÔNG nhận
+  /// `jpPomo` nữa.
   jpPomo Int @default(0)
 
   /// Phút tiếng Nhật **LẺ, ngoài pomodoro** — nghe podcast trên tàu, nói

@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { deleteDailyLog, toggleDayTask } from "@/lib/os/dayActions";
 import { DailyLogForm } from "@/components/os/DailyLogForm";
 import { PomoRow } from "@/components/os/PomoRow";
+import { PomoChecklist, type SkillPlan } from "@/components/os/PomoChecklist";
 import { ConfirmButton } from "@/components/os/formBits";
 import {
   addDaysISO,
@@ -48,6 +49,24 @@ export default async function LogDayPage({
       orderBy: [{ order: "asc" }, { createdAt: "asc" }],
     }),
   ]);
+
+  // Kế hoạch học theo TỪNG mảng: mỗi mảng con có `dailyPomo` là số ô checklist.
+  // Đếm hiệp đã tick của mỗi mảng từ chính `sessions` (nguồn thật của jpPomo).
+  const doneByGoal = new Map<string, number>();
+  for (const s of sessions) {
+    if (s.goalId) doneByGoal.set(s.goalId, (doneByGoal.get(s.goalId) ?? 0) + 1);
+  }
+  const skills: SkillPlan[] = (studyGoal?.children ?? [])
+    .map((c) => ({
+      id: c.id,
+      title: c.title,
+      icon: c.icon,
+      planned: c.dailyPomo ?? 0,
+      done: doneByGoal.get(c.id) ?? 0,
+    }))
+    // Chỉ hiện mảng ĐÃ đặt kế hoạch hoặc ĐÃ học hôm nay — mảng trống thì ẩn.
+    .filter((s) => s.planned > 0 || s.done > 0);
+  const untagged = sessions.filter((s) => !s.goalId).length;
 
   return (
     <div className="max-w-[560px] space-y-10">
@@ -137,15 +156,28 @@ export default async function LogDayPage({
           (xem chú thích `jpPomo` trong schema). */}
       <section>
         <h2 className="mb-3 text-[12px] font-medium uppercase tracking-[0.08em] text-ink-3">
-          Pomodoro tiếng Nhật
+          Học tiếng Nhật hôm nay
         </h2>
-        <PomoRow
-          iso={iso}
-          sessions={sessions}
-          subGoals={studyGoal?.children ?? []}
-          targetPomo={studyGoal?.dailyPomo ?? 0}
-          extraMin={log?.jpMin ?? 0}
-        />
+        {/* Đã đặt kế hoạch «hiệp/ngày» cho ít nhất một mảng → checklist theo
+            mảng. Chưa đặt → giữ hàng ô sao như cũ để vẫn ghi hiệp được, và mở
+            /os/data đặt kế hoạch là checklist tự hiện ra. */}
+        {skills.length > 0 ? (
+          <PomoChecklist
+            iso={iso}
+            skills={skills}
+            totalPomo={sessions.length}
+            extraMin={log?.jpMin ?? 0}
+            untagged={untagged}
+          />
+        ) : (
+          <PomoRow
+            iso={iso}
+            sessions={sessions}
+            subGoals={studyGoal?.children ?? []}
+            targetPomo={studyGoal?.dailyPomo ?? 0}
+            extraMin={log?.jpMin ?? 0}
+          />
+        )}
       </section>
 
       <DailyLogForm iso={iso} log={log} />
