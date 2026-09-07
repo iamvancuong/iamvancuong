@@ -110,9 +110,13 @@ export function DailyLogForm({
           <p className="mt-2 text-[12px] tabular-nums text-ink-3">
             Tổng tiếng Nhật hôm đó:{" "}
             <strong className="font-medium text-ink-2">{fmtH(jpTotal(log))}</strong>
-            {log && log.jpPomo > 0 && ` (${log.jpPomo} hiệp`}
-            {log && log.jpPomo > 0 && log.jpMin > 0 && ` + ${log.jpMin}p lẻ`}
-            {log && log.jpPomo > 0 && ")"}
+            {(() => {
+              const parts: string[] = [];
+              if (log && log.jpPomo > 0) parts.push(`${log.jpPomo} hiệp`);
+              if (study.size > 0) parts.push(`${study.size} việc học`);
+              if (log && log.jpMin > 0) parts.push(`${log.jpMin}p lẻ`);
+              return parts.length ? ` (${parts.join(" + ")})` : "";
+            })()}
           </p>
         )}
       </section>

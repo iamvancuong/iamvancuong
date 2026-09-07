@@ -11,8 +11,22 @@ import { POMO_MIN } from "./constants";
  * đã không lần ngược được. Vì vậy mọi hàm ở đây nhận `today` vào để kiểm được.
  */
 
-/** Chỉ những trường cần cho phép tính — nhận cả bản ghi rút gọn. */
-export type JpLog = Pick<DailyLog, "date" | "jpPomo" | "jpMin">;
+/** Chỉ những trường cần cho phép tính — nhận cả bản ghi rút gọn.
+ * `study` không bắt buộc: query nào không nạp nó thì coi như không có việc học
+ * nào tick (0 phút), không vỡ. */
+export type JpLog = Pick<DailyLog, "date" | "jpPomo" | "jpMin"> & {
+  study?: string | null;
+};
+
+/**
+ * Phút quy từ checklist học tiếng Nhật (DailyLog.study): mỗi ô đã tick = MỘT
+ * hiệp = POMO_MIN phút. Đây là chỗ "bind" checkbox vào giờ học — nhờ cộng vào
+ * `jpTotal`, giờ này tự chảy vào tổng của mục tiêu N3, chuỗi ngày, lịch, thống kê.
+ */
+export function studyMinutes(study: string | null | undefined): number {
+  if (!study) return 0;
+  return study.split(",").filter(Boolean).length * POMO_MIN;
+}
 
 /**
  * Một mục tiêu có bấm giờ. Nhận ra bằng `targetHours != null` — đó là dấu
@@ -36,7 +50,7 @@ export function isStudyGoal<T extends { targetHours: number | null }>(
  */
 export function jpTotal(log: JpLog | undefined | null): number {
   if (!log) return 0;
-  return log.jpPomo * POMO_MIN + log.jpMin;
+  return log.jpPomo * POMO_MIN + log.jpMin + studyMinutes(log.study);
 }
 
 /** Tổng phút trong khoảng [from, to], hai đầu đều tính. */

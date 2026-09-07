@@ -156,6 +156,11 @@ export async function saveDailyLog(iso: string, fd: FormData) {
   await assertOwner();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
 
+  // Checklist học: gom mọi ô đã tick (name="study"), chỉ giữ key hợp lệ.
+  const studyKeys = fd
+    .getAll("study")
+    .filter((v): v is string => typeof v === "string" && STUDY_KEYS.includes(v));
+
   const data = {
     sleepAt: str(fd, "sleepAt", 5),
     // ⚠️ KHÔNG có `jpPomo` ở đây, và đừng thêm vào. Cột đó là bản sao của số
@@ -168,19 +173,18 @@ export async function saveDailyLog(iso: string, fd: FormData) {
     webMin: num(fd, "webMin", { min: 0, max: MINUTES_IN_DAY }) ?? 0,
     spend: num(fd, "spend", { min: 0, max: 10_000_000 }),
     kSleep: bool(fd, "kSleep"),
-    kJapanese: bool(fd, "kJapanese"),
+    // Tick đủ ≥60 phút việc học (≥2 ô × POMO_MIN) thì keystone «Tiếng Nhật ≥ 60
+    // phút» tự bật — cùng luật với pomodoro, chỉ BẬT không tự tắt.
+    kJapanese: bool(fd, "kJapanese") || studyKeys.length * POMO_MIN >= 60,
     kEat: bool(fd, "kEat"),
     workout: bool(fd, "workout"),
     journalWhat: text(fd, "journalWhat"),
     journalLearn: text(fd, "journalLearn"),
     journalChange: text(fd, "journalChange"),
     publishable: bool(fd, "publishable"),
-    // Checklist học tiếng Nhật: gom mọi ô đã tick (name="study") thành chuỗi
-    // key, chỉ giữ key hợp lệ. Không tick ô nào → chuỗi rỗng (xóa hết).
-    study: fd
-      .getAll("study")
-      .filter((v): v is string => typeof v === "string" && STUDY_KEYS.includes(v))
-      .join(","),
+    // Không tick ô nào → chuỗi rỗng (xóa hết). Mỗi ô = 1 hiệp: xem studyMinutes()
+    // trong japanese.ts, nó cộng số phút này vào tổng giờ (→ mục tiêu N3).
+    study: studyKeys.join(","),
   };
 
   await db.dailyLog.upsert({

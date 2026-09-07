@@ -50,7 +50,7 @@ export default async function AreaPage({
    */
   const jpLogs = await db.dailyLog.findMany({
     where: { date: { gte: dayUTC(addDaysISO(todayISO(), -550)) } },
-    select: { date: true, jpPomo: true, jpMin: true },
+    select: { date: true, jpPomo: true, jpMin: true, study: true },
     orderBy: { date: "asc" },
   });
 
