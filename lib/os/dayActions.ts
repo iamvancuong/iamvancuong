@@ -9,7 +9,7 @@ import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { isOwner } from "@/lib/session";
 import { dayUTC } from "./day";
-import { MAX_NOW, POMO_MIN, POMO_SLOTS } from "./constants";
+import { MAX_NOW, POMO_MIN, POMO_SLOTS, STUDY_KEYS } from "./constants";
 import {
   bool,
   enumOf,
@@ -175,6 +175,12 @@ export async function saveDailyLog(iso: string, fd: FormData) {
     journalLearn: text(fd, "journalLearn"),
     journalChange: text(fd, "journalChange"),
     publishable: bool(fd, "publishable"),
+    // Checklist học tiếng Nhật: gom mọi ô đã tick (name="study") thành chuỗi
+    // key, chỉ giữ key hợp lệ. Không tick ô nào → chuỗi rỗng (xóa hết).
+    study: fd
+      .getAll("study")
+      .filter((v): v is string => typeof v === "string" && STUDY_KEYS.includes(v))
+      .join(","),
   };
 
   await db.dailyLog.upsert({

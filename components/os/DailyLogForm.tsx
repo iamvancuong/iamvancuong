@@ -7,6 +7,7 @@ import { saveDailyLog } from "@/lib/os/dayActions";
 import { fmtH } from "@/lib/os/day";
 import { jpTotal } from "@/lib/os/japanese";
 import { renderMarkdown } from "@/lib/markdown";
+import { STUDY_TASKS } from "@/lib/os/constants";
 
 /**
  * Không có nút Lưu.
@@ -27,6 +28,9 @@ export function DailyLogForm({
   const [preview, setPreview] = useState(false);
 
   const submit = () => ref.current?.requestSubmit();
+
+  // Các ô học đã tick hôm nay (chuỗi key trong DailyLog.study).
+  const study = new Set((log?.study ?? "").split(",").filter(Boolean));
 
   return (
     <form
@@ -121,6 +125,59 @@ export function DailyLogForm({
           <Check name="kEat" label="Ăn đủ 3 bữa" defaultChecked={!!log?.kEat} onToggle={submit} />
           <div className="my-1 border-t border-line-soft" />
           <Check name="workout" label="Tập luyện" defaultChecked={!!log?.workout} onToggle={submit} />
+        </div>
+      </section>
+
+      {/* Học tiếng Nhật hôm nay — checkbox thuần để biết đã học gì. Mỗi ô tick
+          lưu ngay (name="study"), không nối với pomodoro/giờ. Việc dài (Grammar/
+          Vocab) chia thành nhiều ô ở bên phải. Đổi danh sách ở STUDY_TASKS. */}
+      <section>
+        <Label>Học tiếng Nhật hôm nay</Label>
+        <div className="rounded-[var(--radius-lg)] border border-line p-2">
+          {STUDY_TASKS.map((t) => {
+            const slots = t.slots ?? 1;
+
+            if (slots <= 1) {
+              return (
+                <Check
+                  key={t.key}
+                  name="study"
+                  value={t.key}
+                  label={`${t.icon}  ${t.label}`}
+                  defaultChecked={study.has(t.key)}
+                  onToggle={submit}
+                />
+              );
+            }
+
+            return (
+              <div
+                key={t.key}
+                className="flex items-center gap-3 rounded-[var(--radius-md)] px-2 py-2.5"
+              >
+                <span className="min-w-0 flex-1 text-[15px] leading-snug">
+                  {t.icon}  {t.label}
+                </span>
+                <span className="flex gap-2">
+                  {Array.from({ length: slots }, (_, s) => {
+                    const k = `${t.key}-${s + 1}`;
+                    return (
+                      <input
+                        key={k}
+                        type="checkbox"
+                        name="study"
+                        value={k}
+                        defaultChecked={study.has(k)}
+                        onChange={submit}
+                        aria-label={`${t.label} ${s + 1}/${slots}`}
+                        className="size-[22px] shrink-0 accent-[var(--color-ink)]"
+                      />
+                    );
+                  })}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </section>
 
@@ -268,12 +325,16 @@ function Field({
 
 function Check({
   name,
+  value,
   label,
   hint,
   defaultChecked,
   onToggle,
 }: {
   name: string;
+  /** Có nhiều checkbox cùng `name` (vd checklist học) thì mỗi ô cần `value`
+      riêng để `formData.getAll(name)` phân biệt được. Bỏ trống cho ô đơn. */
+  value?: string;
   label: string;
   hint?: string;
   defaultChecked: boolean;
@@ -284,6 +345,7 @@ function Check({
       <input
         type="checkbox"
         name={name}
+        value={value}
         defaultChecked={defaultChecked}
         onChange={onToggle}
         className="size-[22px] shrink-0 accent-[var(--color-ink)]"

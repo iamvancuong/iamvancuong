@@ -510,6 +510,12 @@ model DailyLog {
   /// Đáng viết thành bài — cuối tuần lọc ra
   publishable Boolean @default(false)
 
+  /// Việc học tiếng Nhật đã tick hôm nay — danh sách key phân tách bằng dấu phẩy
+  /// (STUDY_TASKS trong lib/os/constants.ts), vd "anki,reading,grammar-1".
+  /// Checkbox THUẦN để biết "hôm nay học gì" — cố ý KHÔNG nối với pomodoro / giờ
+  /// / đợt N3. Thêm/bớt hạng mục chỉ cần sửa STUDY_TASKS, không đụng schema.
+  study String? @db.Text
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
