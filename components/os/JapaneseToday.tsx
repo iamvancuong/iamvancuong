@@ -5,6 +5,7 @@ import {
   jpPeriodTotal,
   jpStreak,
   jpTotal,
+  studyMinutes,
   childProgress,
   unassignedPomo,
   type Bucket,
@@ -46,7 +47,11 @@ export function JapaneseToday({
   daily: Bucket[];
   monthly: Bucket[];
 }) {
-  const pomo = todaySessions.length;
+  // Mỗi ô học đã tick = 1 hiệp (POMO_MIN phút). Cộng vào số hiệp hiển thị để
+  // /os khớp với checklist ở nhật ký — "check = 1 P". Giờ (todayMin) đã gồm sẵn
+  // qua jpTotal.
+  const studyPomo = studyMinutes(log?.study) / POMO_MIN;
+  const pomo = todaySessions.length + studyPomo;
   const todayMin = jpTotal(log);
   const targetPomo = goal?.dailyPomo ?? 0;
   const subGoals = goal?.children ?? [];
