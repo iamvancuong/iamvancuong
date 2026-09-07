@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
-import { jpTotal } from "@/lib/os/japanese";
+import { jpTotal, studyMinutes } from "@/lib/os/japanese";
+import { POMO_MIN } from "@/lib/os/constants";
 import {
   dayIntensity,
   daysWith,
@@ -129,7 +130,8 @@ export async function getPublicStreaks(): Promise<PublicStreaks> {
       .map((l) => ({
         iso: isoUTC(l.date),
         level: dayIntensity(l),
-        pomo: l.jpPomo,
+        // Gồm cả ô học đã tick (mỗi ô = 1 hiệp) — khớp với độ đậm và với /os.
+        pomo: l.jpPomo + studyMinutes(l.study) / POMO_MIN,
         keys: [l.kSleep, l.kJapanese, l.kEat].filter(Boolean).length,
         isToday: isoUTC(l.date) === todayISO(),
       }))

@@ -1,6 +1,7 @@
 import type { DailyLog } from "@prisma/client";
 import { addDaysISO, isoUTC, todayISO } from "./day";
-import { jpTotal } from "./japanese";
+import { jpTotal, studyMinutes } from "./japanese";
+import { POMO_MIN } from "./constants";
 
 /**
  * Mọi con số trên Dashboard tính ra từ đây — không nhập tay.
@@ -218,7 +219,11 @@ export function dayIntensity(log: DailyLog | undefined): Intensity {
   if (!log) return 0;
 
   const keys = [log.kSleep, log.kJapanese, log.kEat].filter(Boolean).length;
-  const pomo = POMO_STEPS.filter((step) => log.jpPomo >= step).length;
+  // Số hiệp hiệu dụng = hiệp pomodoro (hàng ô sao) + ô học đã tick ở nhật ký
+  // (mỗi ô = 1 hiệp). Nhờ vậy lịch CÔNG KHAI đậm lên theo cả checklist học,
+  // không chỉ theo hàng ô sao — "có thêm tiếng nhật" phản ánh ở đây.
+  const effPomo = log.jpPomo + studyMinutes(log.study) / POMO_MIN;
+  const pomo = POMO_STEPS.filter((step) => effPomo >= step).length;
 
   return (keys + pomo) as Intensity;
 }
