@@ -118,22 +118,22 @@ export function DailyLogForm({
       </section>
 
       <section>
-        <Label>Ba việc nền tảng</Label>
+        <Label>Việc nền tảng</Label>
         <div className="rounded-[var(--radius-lg)] border border-line p-2">
           <Check name="kSleep" label="Ngủ trước 00:00" defaultChecked={!!log?.kSleep} onToggle={submit} />
           <Check name="kJapanese" label="Tiếng Nhật ≥ 60 phút" defaultChecked={!!log?.kJapanese} onToggle={submit} />
           <Check name="kEat" label="Ăn đủ 3 bữa" defaultChecked={!!log?.kEat} onToggle={submit} />
           <div className="my-1 border-t border-line-soft" />
           <Check name="workout" label="Tập luyện" defaultChecked={!!log?.workout} onToggle={submit} />
-        </div>
-      </section>
 
-      {/* Học tiếng Nhật hôm nay — checkbox thuần để biết đã học gì. Mỗi ô tick
-          lưu ngay (name="study"), không nối với pomodoro/giờ. Việc dài (Grammar/
-          Vocab) chia thành nhiều ô ở bên phải. Đổi danh sách ở STUDY_TASKS. */}
-      <section>
-        <Label>Học tiếng Nhật hôm nay</Label>
-        <div className="rounded-[var(--radius-lg)] border border-line p-2">
+          {/* Task học tiếng Nhật — nằm CHÍNH TRONG danh sách việc nền tảng, chia
+              theo kỹ năng. Checkbox thuần để biết hôm nay học gì (Anki chưa?
+              Reading chưa?); tick lưu ngay. Việc dài (Grammar/Vocab) chia thành
+              nhiều ô. Thêm/bớt kỹ năng chỉ sửa STUDY_TASKS trong constants.ts. */}
+          <div className="my-1 border-t border-line-soft" />
+          <p className="px-2 pb-0.5 pt-1 text-[11px] font-medium uppercase tracking-[0.06em] text-ink-3">
+            Học tiếng Nhật
+          </p>
           {STUDY_TASKS.map((t) => {
             const slots = t.slots ?? 1;
 
