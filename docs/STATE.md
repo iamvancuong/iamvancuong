@@ -181,13 +181,10 @@ Bốn bảng mới: `DayTask` · `StudyGoal` · `StudySkill` · `PomoSession`.
 DailyLog.jpPomo  ==  số dòng PomoSession cùng ngày
 ```
 
-Giữ được vì **chỉ `setPomodoro()` và `setSkillPomodoro()` được ghi `jpPomo`**,
-và cả hai ghi jpPomo + PomoSession trong một transaction, luôn tính lại
-`jpPomo = số dòng thật`. `setPomodoro` đặt TỔNG (hàng ô sao ở /os);
-`setSkillPomodoro` đặt số hiệp TỪNG mảng (checklist ở /os/log — mỗi mảng con có
-`dailyPomo` là số ô). Form nhật ký cố ý **không** nhận `jpPomo`. Thêm đường ghi
-nào **không đụng PomoSession** là hai con số trôi khỏi nhau — hỏng âm thầm, cả
-hai vẫn trông hợp lý. Nghi thì chạy `npm run check:pomo` (kiểm cả hai chiều).
+Giữ được vì **chỉ `setPomodoro()` được ghi `jpPomo`**, và nó ghi cả hai trong
+một transaction. Form nhật ký cố ý **không** còn nhận `jpPomo` nữa. Thêm đường
+ghi thứ hai là hai con số trôi khỏi nhau — hỏng âm thầm, cả hai vẫn trông hợp
+lý. Nghi thì chạy `npm run check:pomo` (kiểm cả hai chiều).
 
 ⚠️ **Không đọc thẳng `DailyLog.jpMin`** ở bất cứ chỗ thống kê nào — nó chỉ còn
 là phút LẺ ngoài pomodoro. Tổng là `jpTotal()` trong `lib/os/japanese.ts`.
