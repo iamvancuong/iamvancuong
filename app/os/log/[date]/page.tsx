@@ -5,7 +5,6 @@ import { Check, ChevronLeft, ChevronRight, List } from "lucide-react";
 import { db } from "@/lib/db";
 import { deleteDailyLog, toggleDayTask } from "@/lib/os/dayActions";
 import { DailyLogForm } from "@/components/os/DailyLogForm";
-import { PomoRow } from "@/components/os/PomoRow";
 import { ConfirmButton } from "@/components/os/formBits";
 import {
   addDaysISO,
@@ -25,22 +24,8 @@ export default async function LogDayPage({
 
   const isToday = iso === todayISO();
 
-  const [log, sessions, studyGoal, tasks] = await Promise.all([
+  const [log, tasks] = await Promise.all([
     db.dailyLog.findUnique({ where: { date: dayUTC(iso) } }),
-    db.pomoSession.findMany({
-      where: { date: dayUTC(iso) },
-      orderBy: [{ order: "asc" }, { createdAt: "asc" }],
-      select: { id: true, order: true, goalId: true },
-    }),
-    db.goal.findFirst({
-      where: {
-        parentId: null,
-        targetHours: { not: null },
-        area: { tracksStudy: true },
-      },
-      orderBy: { studyEnd: "asc" },
-      include: { children: { orderBy: { order: "asc" } } },
-    }),
     // Việc đã đặt ra cho ngày này. Trước đây KHÔNG trang nào hiện chúng sau khi
     // ngày trôi qua — dữ liệu nằm nguyên trong database mà không nhìn lại được.
     db.dayTask.findMany({
@@ -130,23 +115,6 @@ export default async function LogDayPage({
           </ul>
         </section>
       )}
-
-      {/* Cùng hàng ô với /os, nhưng cho ĐÚNG ngày đang mở — đây là chỗ chữa
-          ngày đã qua mà quên tick. Cố ý không có ô nhập số hiệp trong form
-          bên dưới: hai đường ghi vào một con số là hai con số trôi khỏi nhau
-          (xem chú thích `jpPomo` trong schema). */}
-      <section>
-        <h2 className="mb-3 text-[12px] font-medium uppercase tracking-[0.08em] text-ink-3">
-          Pomodoro tiếng Nhật
-        </h2>
-        <PomoRow
-          iso={iso}
-          sessions={sessions}
-          subGoals={studyGoal?.children ?? []}
-          targetPomo={studyGoal?.dailyPomo ?? 0}
-          extraMin={log?.jpMin ?? 0}
-        />
-      </section>
 
       <DailyLogForm iso={iso} log={log} />
 
