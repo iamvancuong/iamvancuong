@@ -69,6 +69,7 @@ import {
   overruns,
   parseHM,
   payByJob,
+  payByMonth,
   payOf,
   shiftMinutes,
   windowSum,
@@ -265,7 +266,7 @@ eq("không khai ngày = luôn hiệu lực", costActiveIn(cost({}), "1999-01-01"
 eq("sàn = khoản tháng + khoản năm/12", fixedTotal([cost({ amount: 55000 }), cost({ amount: 24000, cycle: CostCycle.YEAR })], "2026-08-01"), 57000);
 
 const logs = [log("2026-08-03", { spend: 1200 }), log("2026-08-04", { spend: 800 }), log("2026-07-31", { spend: 9999 }), log("2026-08-05")];
-const m = monthMoney("2026-08-01", logs, [cost({ amount: 60000 })], [{ month: D("2026-08-01"), income: 200000 } as never], "2026-08-06");
+const m = monthMoney("2026-08-01", logs, [cost({ amount: 60000 })], new Map([["2026-08", 200000]]), "2026-08-06");
 eq("chi hằng ngày chỉ lấy trong tháng", m.daily, 2000);
 eq("cộng chi cố định", m.fixed, 60000);
 eq("tổng chi", m.total, 62000);
@@ -274,12 +275,13 @@ eq("tỷ lệ tiết kiệm 69%", Math.round((m.savedRate ?? 0) * 100), 69);
 eq("đếm ngày đã ghi, bỏ ngày null", m.daysWithSpend, 2);
 eq("tháng hiện tại là partial", m.partial, true);
 
-const m2 = monthMoney("2026-07-01", logs, [], [], "2026-08-06");
-eq("chưa khai thu nhập -> còn lại null", m2.saved, null);
-eq("chưa khai thu nhập -> tỷ lệ null", m2.savedRate, null);
+const m2 = monthMoney("2026-07-01", logs, [], new Map([["2026-08", 200000]]), "2026-08-06");
+eq("tháng không có ca baito -> thu nhập null", m2.income, null);
+eq("không có thu nhập -> còn lại null", m2.saved, null);
+eq("không có thu nhập -> tỷ lệ null", m2.savedRate, null);
 eq("tháng cũ không partial", m2.partial, false);
 
-const m3 = monthMoney("2026-08-01", [], [], [{ month: D("2026-08-01"), income: 0 } as never], "2026-08-06");
+const m3 = monthMoney("2026-08-01", [], [], new Map([["2026-08", 0]]), "2026-08-06");
 eq("thu nhập 0 không bị chia cho 0", m3.savedRate, null);
 
 // Lùi tháng bằng số học trên (năm×12 + tháng), không trừ 30 ngày.
@@ -522,6 +524,15 @@ eq("ca qua nửa đêm 22:00–06:00 = 8h", shiftMinutes("22:00", "06:00"), 480)
   eq("tiền giao báo dùng lương chụp lại nếu có", get("gb")!.pay, 2990 + 4485 + 1400);
   eq("tiền việc 2", get("v2")!.pay, 6000);
   eq("ca chưa gán việc: đếm giờ, tiền 0", [get(null)!.minutes, get(null)!.pay], [60, 0]);
+
+  // Thu nhập trang Tiền = tiền baito gộp theo tháng.
+  const pm = payByMonth(
+    [S("2026-10-31", 600, "v2"), S("2026-11-01", 120, "gb"), S("2026-11-02", 300, "v2"), S("2026-11-03", 60, "gb", 1400)],
+    rates,
+  );
+  eq("thu nhập tháng 10", pm.get("2026-10"), 12000);
+  eq("thu nhập tháng 11 = cộng mọi việc", pm.get("2026-11"), 2990 + 6000 + 1400);
+  eq("tháng không có ca thì không có khóa", pm.has("2026-09"), false);
 }
 
 /* ---------------------------------------------------------------- slug */

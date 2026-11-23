@@ -1,12 +1,11 @@
 import { fmtYen, monthLabelVN, type MonthMoney } from "@/lib/os/money";
-import { saveMonthIncome } from "@/lib/os/moneyActions";
-import { MicroLabel, SubmitButton } from "./formBits";
+import { MicroLabel } from "./formBits";
 
 /**
  * Mười hai tháng gần nhất, mới nhất trên cùng.
  *
- * Ô thu nhập nhập ngay trong bảng: đây là con số duy nhất phải tự khai, và
- * bắt mở một form riêng cho mỗi tháng thì tháng cũ sẽ không bao giờ được điền.
+ * Cột thu nhập CHỈ ĐỌC: nó là tiền baito của tháng (lib/os/baito.ts), không
+ * nhập tay — một nguồn duy nhất, nên không có hai con số trôi khỏi nhau.
  */
 export function MonthTable({ rows }: { rows: MonthMoney[] }) {
   return (
@@ -55,23 +54,12 @@ export function MonthTable({ rows }: { rows: MonthMoney[] }) {
                 <td className="px-3 py-2 text-right font-medium tabular-nums">
                   {fmtYen(r.total)}
                 </td>
-                <td className="px-3 py-2 text-right">
-                  <form
-                    action={saveMonthIncome.bind(null, r.month)}
-                    className="flex items-center justify-end gap-1"
-                  >
-                    <input
-                      name="income"
-                      inputMode="numeric"
-                      defaultValue={r.income ?? ""}
-                      placeholder="—"
-                      aria-label={`Thu nhập ${monthLabelVN(r.month)}`}
-                      className="w-24 rounded-[var(--radius-sm)] border border-line-soft bg-bg px-2 py-1 text-right text-[13px] tabular-nums outline-none focus:border-ink-3"
-                    />
-                    <SubmitButton variant="quiet" pendingLabel="…">
-                      lưu
-                    </SubmitButton>
-                  </form>
+                <td className="px-3 py-2 text-right tabular-nums">
+                  {r.income == null ? (
+                    <span className="text-ink-3">—</span>
+                  ) : (
+                    fmtYen(r.income)
+                  )}
                 </td>
                 <td
                   className={`px-3 py-2 text-right tabular-nums ${

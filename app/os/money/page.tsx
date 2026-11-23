@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { db } from "@/lib/db";
 import { todayISO } from "@/lib/os/day";
 import {
@@ -9,6 +10,7 @@ import {
   perMonth,
   recentMonths,
 } from "@/lib/os/money";
+import { payByMonth } from "@/lib/os/baito";
 import { MonthTable } from "@/components/os/MonthTable";
 import { FixedCosts } from "@/components/os/FixedCosts";
 
@@ -30,16 +32,22 @@ export default async function MoneyPage() {
   // tháng cho một trang một người dùng là phí, mà dữ liệu thì bé.
   const oldest = months[months.length - 1];
 
-  const [logs, costs, budgets] = await Promise.all([
+  const [logs, costs, shifts, jobs] = await Promise.all([
     db.dailyLog.findMany({
       where: { date: { gte: new Date(`${oldest}T00:00:00.000Z`) } },
       orderBy: { date: "asc" },
     }),
     db.fixedCost.findMany({ orderBy: [{ order: "asc" }, { createdAt: "asc" }] }),
-    db.monthBudget.findMany(),
+    // Thu nhập = tiền baito, lấy thẳng từ ca đã nhập ở /os/baito.
+    db.workShift.findMany({
+      where: { date: { gte: new Date(`${oldest}T00:00:00.000Z`) } },
+      select: { date: true, minutes: true, jobId: true, rate: true },
+    }),
+    db.baitoJob.findMany({ select: { id: true, rate: true } }),
   ]);
 
-  const rows = months.map((m) => monthMoney(m, logs, costs, budgets, today));
+  const income = payByMonth(shifts, new Map(jobs.map((j) => [j.id, j.rate])));
+  const rows = months.map((m) => monthMoney(m, logs, costs, income, today));
 
   const thisMonth = rows[0];
   const activeNow = costs.filter((c) => costActiveIn(c, months[0]));
@@ -51,8 +59,11 @@ export default async function MoneyPage() {
         <h1 className="text-[24px] font-semibold tracking-[-0.02em]">Tiền</h1>
         <p className="mt-1.5 text-[15px] leading-relaxed text-ink-2">
           Chi hằng ngày cộng từ ô «Chi tiêu» trong nhật ký. Chi cố định lấy từ
-          danh sách bên dưới. Chỉ thu nhập là con số bạn phải tự khai — hệ thống
-          không có cách nào biết.
+          danh sách bên dưới. Thu nhập tự tính từ giờ làm ở{" "}
+          <Link href="/os/baito" className="text-accent underline underline-offset-2">
+            Baito
+          </Link>{" "}
+          (giờ × lương giờ) — không nhập tay ở đây.
         </p>
       </header>
 
@@ -67,7 +78,7 @@ export default async function MoneyPage() {
           <Tile
             label="Thu nhập tháng này"
             value={thisMonth.income == null ? "—" : `${fmtYen(thisMonth.income)}¥`}
-            hint={thisMonth.income == null ? "chưa khai" : undefined}
+            hint={thisMonth.income == null ? "chưa có ca baito" : "từ baito · gồm cả ca đã xếp"}
           />
           <Tile
             label="Tỷ lệ tiết kiệm"
@@ -78,7 +89,7 @@ export default async function MoneyPage() {
             }
             hint={
               thisMonth.saved == null
-                ? "cần thu nhập"
+                ? "chưa có ca baito"
                 : `${fmtYen(thisMonth.saved)}¥ còn lại`
             }
           />

@@ -149,3 +149,21 @@ export function payByJob(
   }
   return [...by.values()];
 }
+
+/**
+ * Tiền baito theo tháng: "YYYY-MM" → ¥. Đây là THU NHẬP của trang Tiền —
+ * nguồn duy nhất, không nhập tay. Tháng không có ca thì không có khóa.
+ * Cùng quy tắc lương với `payByJob`: lương chụp trên ca, rồi tới lương hiện tại.
+ */
+export function payByMonth(
+  shifts: { date: Date; minutes: number; jobId: string | null; rate: number | null }[],
+  jobRates: Map<string, number>,
+): Map<string, number> {
+  const m = new Map<string, number>();
+  for (const s of shifts) {
+    const k = isoUTC(s.date).slice(0, 7);
+    const rate = s.rate ?? (s.jobId ? jobRates.get(s.jobId) : undefined) ?? 0;
+    m.set(k, (m.get(k) ?? 0) + payOf(s.minutes, rate));
+  }
+  return m;
+}

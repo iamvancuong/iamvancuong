@@ -1,4 +1,4 @@
-import { CostCycle, type DailyLog, type FixedCost, type MonthBudget } from "@prisma/client";
+import { CostCycle, type DailyLog, type FixedCost } from "@prisma/client";
 import { isoUTC, todayISO } from "./day";
 import { monthStartISO } from "./period";
 
@@ -20,8 +20,12 @@ export type MonthMoney = {
   fixed: number;
   /** daily + fixed */
   total: number;
+  /**
+   * Thu nhập = tiền baito của tháng (`payByJob` ở baito.ts), KHÔNG nhập tay.
+   * Null khi tháng đó không có ca nào — «chưa có dữ liệu» khác «thu nhập 0».
+   */
   income: number | null;
-  /** income − total. Null khi chưa khai thu nhập. */
+  /** income − total. Null khi tháng không có ca baito. */
   saved: number | null;
   /** saved / income, 0–1. Null khi chưa khai thu nhập hoặc thu nhập = 0. */
   savedRate: number | null;
@@ -62,14 +66,15 @@ export function fixedTotal(costs: FixedCost[], monthISO: string): number {
 /**
  * Gộp một tháng.
  *
- * `logs` và `budgets` truyền vào đã lọc sẵn hay chưa đều được — hàm tự lọc
- * theo tháng, nên gọi nó trong vòng lặp nhiều tháng vẫn đúng.
+ * `logs` truyền vào đã lọc sẵn hay chưa đều được — hàm tự lọc theo tháng.
+ * `incomeByMonth`: "YYYY-MM" → tiền baito của tháng đó; tháng không có ca thì
+ * không có khóa (→ income null).
  */
 export function monthMoney(
   monthISO: string,
   logs: DailyLog[],
   costs: FixedCost[],
-  budgets: MonthBudget[],
+  incomeByMonth: Map<string, number>,
   today = todayISO(),
 ): MonthMoney {
   const m = monthKey(monthISO);
@@ -79,8 +84,7 @@ export function monthMoney(
   const fixed = fixedTotal(costs, monthISO);
   const total = daily + fixed;
 
-  const budget = budgets.find((b) => monthKey(isoUTC(b.month)) === m);
-  const income = budget?.income ?? null;
+  const income = incomeByMonth.get(m) ?? null;
 
   const saved = income == null ? null : income - total;
   const savedRate = income == null || income <= 0 ? null : (income - total) / income;

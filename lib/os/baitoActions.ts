@@ -18,6 +18,8 @@ async function assertOwner() {
 
 function revalidateBaito() {
   revalidatePath("/os/baito");
+  // Thu nhập ở trang Tiền tính từ chính các ca này.
+  revalidatePath("/os/money");
 }
 
 /**

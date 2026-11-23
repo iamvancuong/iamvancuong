@@ -103,28 +103,6 @@ export async function deleteFixedCost(id: string) {
 
 /* ---------------- Thu nhập tháng ---------------- */
 
-/**
- * Chỉ thu nhập phải tự khai — chi tiêu thì cộng từ `DailyLog.spend` và
- * `FixedCost`, hệ thống tự biết.
- *
- * Upsert theo cột `month` (unique) nên lưu bao nhiêu lần cũng không tạo trùng.
- * Để trống ô = xóa con số đó đi, không phải ghi 0: "chưa khai" và "tháng này
- * thu nhập bằng 0" là hai chuyện khác nhau, và tỷ lệ tiết kiệm chỉ tính được
- * ở trường hợp đầu nếu phân biệt được.
- */
-export async function saveMonthIncome(monthISO: string, fd: FormData) {
-  await assertOwner();
-  if (!/^\d{4}-\d{2}-01$/.test(monthISO)) return;
-
-  const income = num(fd, "income", { min: 0, max: 100_000_000 });
-  const note = text(fd, "note", 300);
-  const month = dayUTC(monthISO);
-
-  await db.monthBudget.upsert({
-    where: { month },
-    update: { income, note },
-    create: { month, income, note },
-  });
-
-  revalidateMoney();
-}
+// Thu nhập KHÔNG còn nhập tay: trang Tiền đọc thẳng tiền baito
+// (`payByMonth` ở baito.ts). Bảng `MonthBudget` cố ý giữ lại, không xóa — dữ
+// liệu cũ còn nằm đó, chỉ là không còn được đọc.
