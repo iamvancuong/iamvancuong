@@ -31,6 +31,7 @@ import {
   inputSmCls,
 } from "@/components/os/formBits";
 import { Disclosure } from "@/components/os/Disclosure";
+import { BaitoCalendar } from "@/components/os/BaitoCalendar";
 
 export const metadata: Metadata = { title: "Baito" };
 
@@ -73,6 +74,11 @@ export default async function BaitoPage({
   });
 
   const totals = dailyTotals(shifts);
+  const shiftCount = new Map<string, number>();
+  for (const s of shifts) {
+    const k = isoUTC(s.date);
+    shiftCount.set(k, (shiftCount.get(k) ?? 0) + 1);
+  }
   const lastShift = shifts.length ? isoUTC(shifts[0].date) : last;
   const scanEnd = [last, today, addDaysISO(lastShift, WINDOW_DAYS - 1)].sort().at(-1)!;
   const overs = overruns(totals, first, scanEnd);
@@ -216,53 +222,28 @@ export default async function BaitoPage({
           </nav>
         </div>
 
-        <div className="grid grid-cols-7 gap-1 text-center text-[11px] text-ink-3">
-          {["T2", "T3", "T4", "T5", "T6", "T7", "CN"].map((d) => (
-            <div key={d} className="pb-1">
-              {d}
-            </div>
-          ))}
-        </div>
-        <div className="space-y-1">
-          {weeks.map((wk) => (
-            <div key={wk[0]} className="grid grid-cols-7 gap-1">
-              {wk.map((d) => {
-                const min = totals.get(d) ?? 0;
-                const sum = windowSum(totals, d);
-                const lv = windowLevel(sum);
-                return (
-                  <div
-                    key={d}
-                    title={`${fmtDateVN(d)} · ngày ${fmtH(min)} · 7 ngày đến đây ${fmtH(sum)}`}
-                    className={`min-h-[62px] rounded-[var(--radius-md)] border px-1 py-1.5 ${
-                      lv === "over"
-                        ? "border-down/60 bg-down/5"
-                        : d === today
-                          ? "border-ink-3"
-                          : "border-line"
-                    } ${d > today ? "border-dashed" : ""}`}
-                  >
-                    <div className="text-[11px] text-ink-3">
-                      {d.slice(8) === "01" || d === first
-                        ? `${Number(d.slice(8))}/${Number(d.slice(5, 7))}`
-                        : Number(d.slice(8))}
-                    </div>
-                    <div className="text-[14px] font-semibold tabular-nums">
-                      {min ? fmtH(min) : <span className="text-ink-3/50">·</span>}
-                    </div>
-                    {sum > 0 && (
-                      <div className={`text-[10px] tabular-nums ${LEVEL_TEXT[lv]}`}>
-                        Σ{fmtH(sum)}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-        </div>
+        <BaitoCalendar
+          today={today}
+          weeks={weeks.map((wk) =>
+            wk.map((d) => {
+              const sum = windowSum(totals, d);
+              return {
+                iso: d,
+                label:
+                  d.slice(8) === "01" || d === first
+                    ? `${Number(d.slice(8))}/${Number(d.slice(5, 7))}`
+                    : String(Number(d.slice(8))),
+                min: totals.get(d) ?? 0,
+                sum,
+                level: windowLevel(sum),
+                count: shiftCount.get(d) ?? 0,
+                room: headroom(totals, d),
+              };
+            }),
+          )}
+        />
         <p className="mt-2 text-[12px] leading-relaxed text-ink-3">
-          Số to = giờ làm ngày đó. Σ = tổng 7 ngày kết thúc ở ngày đó —{" "}
+          Bấm ô để nhập giờ. Số to = giờ làm ngày đó. Σ = tổng 7 ngày kết thúc ở ngày đó —{" "}
           <span className={LEVEL_TEXT.near}>vàng từ 24h</span>,{" "}
           <span className={LEVEL_TEXT.over}>đỏ khi quá 28h</span>. Viền đứt =
           ngày chưa tới.
