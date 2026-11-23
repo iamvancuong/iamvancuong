@@ -78,6 +78,8 @@ export default async function BaitoPage({
   const overs = overruns(totals, first, scanEnd);
 
   const past7 = windowSum(totals, today);
+  // Hai việc gộp chung một trần 28h — nên ô tổng phải nói rõ mỗi việc góp bao nhiêu.
+  const past7ByJob = payByJob(shifts, new Map(), addDaysISO(today, -(WINDOW_DAYS - 1)), addDaysISO(today, 1));
   const roomToday = headroom(totals, today);
 
   // Phút theo (ngày, việc) + việc nào có > 1 ca trong ngày.
@@ -176,7 +178,12 @@ export default async function BaitoPage({
           <Tile
             label="7 ngày tính đến hôm nay"
             value={past7 ? fmtH(past7) : "0h"}
-            hint={`trần ${BAITO_LIMIT_MIN / 60}h`}
+            hint={
+              [
+                ...past7ByJob.map((r) => `${jobName(r.jobId)} ${fmtH(r.minutes)}`),
+                `trần ${BAITO_LIMIT_MIN / 60}h`,
+              ].join(" · ")
+            }
             tone={windowLevel(past7)}
           />
           <Tile
@@ -263,10 +270,11 @@ export default async function BaitoPage({
           jobs={jobs.map((j) => ({ id: j.id, name: j.name, rate: j.rate }))}
         />
         <p className="mt-1 text-[12px] leading-relaxed text-ink-3">
-          Số to = tổng giờ ngày đó (mọi việc). Chấm màu = việc có làm. Σ = tổng 7
+          Dòng màu = giờ từng việc, số đậm = tổng cả hai việc (trần 28h tính trên số này). Σ = tổng 7
           ngày kết thúc ở ngày đó — <span className={NEAR_TEXT}>vàng từ 24h</span>,{" "}
           <span className="font-semibold text-down">đỏ khi quá 28h</span>. Viền
-          đứt = ngày chưa tới.
+          đứt = ngày chưa tới. Dòng dưới mỗi tuần là tổng T2–CN để nhìn tổng quan —
+          luật vẫn tính theo Σ (7 ngày liên tục bất kỳ).
         </p>
       </section>
 

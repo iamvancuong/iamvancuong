@@ -31,8 +31,9 @@ const LEVEL_TEXT = {
   over: "text-down font-semibold",
 } as const;
 
-/** Màu chấm của từng việc, theo thứ tự. */
+/** Màu của từng việc, theo thứ tự — chấm ở chip và chữ trong ô phải khớp nhau. */
 const JOB_DOT = ["bg-accent", "bg-amber-500", "bg-up", "bg-ink-3"];
+const JOB_TEXT = ["text-accent", "text-amber-600 dark:text-amber-400", "text-up", "text-ink-2"];
 
 /** Cùng cách viết với `fmtYen` (money.ts) — không import file đó vào client vì nó kéo theo @prisma/client. */
 const yen = (n: number) => n.toLocaleString("vi-VN");
@@ -68,6 +69,7 @@ export function BaitoCalendar({
   const active = useRef<string | null>(null);
 
   const job = jobs.find((j) => j.id === jobId);
+  const jobIdx = Math.max(0, jobs.findIndex((j) => j.id === jobId));
   const jobMin = (d: BaitoDay) => (d.byJob[jobId] ?? 0) + d.unassigned;
 
   function open(d: BaitoDay) {
@@ -161,78 +163,122 @@ export function BaitoCalendar({
         ))}
       </div>
       <div className="space-y-1">
-        {weeks.map((wk) => (
-          <div key={wk[0].iso} className="grid grid-cols-7 gap-1">
-            {wk.map((d) => {
-              const isEditing = editing === d.iso;
-              const border =
-                d.level === "over"
-                  ? "border-down/60 bg-down/5"
-                  : isEditing
-                    ? "border-accent"
-                    : d.iso === today
-                      ? "border-ink-3"
-                      : "border-line";
-              return (
-                <div
-                  key={d.iso}
-                  className={`relative min-h-[66px] rounded-[var(--radius-md)] border px-1 py-1.5 ${border} ${
+        {weeks.map((wk) => {
+          const wkByJob = jobs.map((j) => wk.reduce((s, d) => s + (d.byJob[j.id] ?? 0), 0));
+          const wkUn = wk.reduce((s, d) => s + d.unassigned, 0);
+          const wkMin = wk.reduce((s, d) => s + d.min, 0);
+          const wkPay = jobs.reduce((s, j, i) => s + Math.round((wkByJob[i] * j.rate) / 60), 0);
+          return (
+            <div key={wk[0].iso}>
+              <div className="grid grid-cols-7 gap-1">
+                {wk.map((d) => {
+                  const isEditing = editing === d.iso;
+                  const border =
+                    d.level === "over"
+                      ? "border-down/60 bg-down/5"
+                      : isEditing
+                        ? "border-accent"
+                        : d.iso === today
+                          ? "border-ink-3"
+                          : "border-line";
+                  const cellCls = `flex min-h-[84px] w-full flex-col rounded-[var(--radius-md)] border px-1 py-1 text-left ${border} ${
                     d.iso > today && !isEditing ? "border-dashed" : ""
-                  } ${saving.has(d.iso) ? "opacity-50" : ""}`}
-                >
-                  <div className="flex items-center justify-between gap-0.5 text-[11px] text-ink-3">
-                    <span>{d.label}</span>
-                    <span className="flex gap-0.5">
-                      {jobs.map((j, i) =>
-                        d.byJob[j.id] ? (
-                          <span
-                            key={j.id}
-                            className={`h-1.5 w-1.5 rounded-full ${JOB_DOT[i % JOB_DOT.length]}`}
-                          />
-                        ) : null,
-                      )}
-                    </span>
-                  </div>
-                  {isEditing ? (
-                    <input
-                      autoFocus
-                      onFocus={(e) => e.currentTarget.select()}
-                      inputMode="decimal"
-                      value={draft}
-                      onChange={(e) => setDraft(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          commit(d, true);
-                        } else if (e.key === "Escape") {
-                          close();
-                        }
-                      }}
-                      onBlur={() => commit(d, false)}
-                      placeholder="0"
-                      aria-label={`Số giờ ${job?.name} ngày ${fmtDateVN(d.iso)}`}
-                      className="mt-0.5 w-full min-w-0 rounded-[var(--radius-sm)] border border-line bg-bg px-1 py-0.5 text-center text-[16px] font-semibold tabular-nums outline-none focus:border-accent"
-                    />
-                  ) : (
+                  } ${saving.has(d.iso) ? "opacity-50" : ""}`;
+                  const label = <span className="text-[11px] text-ink-3">{d.label}</span>;
+
+                  if (isEditing) {
+                    return (
+                      <div key={d.iso} className={cellCls}>
+                        {label}
+                        <input
+                          autoFocus
+                          onFocus={(e) => e.currentTarget.select()}
+                          inputMode="decimal"
+                          value={draft}
+                          onChange={(e) => setDraft(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              commit(d, true);
+                            } else if (e.key === "Escape") {
+                              close();
+                            }
+                          }}
+                          onBlur={() => commit(d, false)}
+                          placeholder="0"
+                          aria-label={`Số giờ ${job?.name} ngày ${fmtDateVN(d.iso)}`}
+                          className={`mt-1 w-full min-w-0 rounded-[var(--radius-sm)] border border-line bg-bg px-1 py-0.5 text-center text-[16px] font-semibold tabular-nums outline-none focus:border-accent ${JOB_TEXT[jobIdx % JOB_TEXT.length]}`}
+                        />
+                      </div>
+                    );
+                  }
+
+                  return (
                     <button
+                      key={d.iso}
                       type="button"
                       onClick={() => open(d)}
                       aria-label={`${fmtDateVN(d.iso)}: ${d.min ? fmtH(d.min) : "chưa có ca"} — bấm để nhập giờ ${job?.name}`}
-                      className="absolute inset-0 flex flex-col justify-end rounded-[var(--radius-md)] px-1 pb-1.5 pt-5 text-left hover:bg-surface-2/60"
+                      className={`${cellCls} hover:bg-surface-2/60`}
                     >
-                      <span className="text-[14px] font-semibold tabular-nums">
-                        {d.min ? fmtH(d.min) : <span className="text-ink-3/50">·</span>}
-                      </span>
+                      {label}
+                      {(() => {
+                        const parts = jobs
+                          .map((j, i) => ({ min: d.byJob[j.id] ?? 0, cls: JOB_TEXT[i % JOB_TEXT.length], title: j.name }))
+                          .filter((p) => p.min > 0);
+                        if (d.unassigned > 0) {
+                          parts.push({ min: d.unassigned, cls: "text-ink-3", title: "Ca cũ chưa gán việc" });
+                        }
+                        // Một việc: chỉ một số, tô màu việc đó. Hai việc: từng dòng màu + tổng đậm.
+                        if (parts.length <= 1) {
+                          return (
+                            <span
+                              className={`mt-auto text-[14px] font-semibold leading-tight tabular-nums ${parts[0]?.cls ?? ""}`}
+                              title={parts[0]?.title}
+                            >
+                              {d.min ? fmtH(d.min) : <span className="text-ink-3/50">·</span>}
+                            </span>
+                          );
+                        }
+                        return (
+                          <>
+                            <span className="mt-auto text-[11px] leading-[1.35] tabular-nums">
+                              {parts.map((p) => (
+                                <span key={p.title} className={`block ${p.cls}`} title={p.title}>
+                                  {fmtH(p.min)}
+                                </span>
+                              ))}
+                            </span>
+                            <span className="border-t border-line-soft text-[14px] font-semibold leading-tight tabular-nums">
+                              {fmtH(d.min)}
+                            </span>
+                          </>
+                        );
+                      })()}
                       <span className={`text-[10px] tabular-nums ${LEVEL_TEXT[d.level]}`}>
-                        {d.sum > 0 ? `Σ${fmtH(d.sum)}` : " "}
+                        {d.sum > 0 ? `Σ${fmtH(d.sum)}` : " "}
                       </span>
                     </button>
+                  );
+                })}
+              </div>
+              {wkMin > 0 && (
+                <div className="flex flex-wrap items-baseline justify-end gap-x-3 px-1 pb-1 pt-0.5 text-[12px] tabular-nums">
+                  {jobs.map((j, i) =>
+                    wkByJob[i] ? (
+                      <span key={j.id} className={JOB_TEXT[i % JOB_TEXT.length]}>
+                        {j.name} {fmtH(wkByJob[i])}
+                      </span>
+                    ) : null,
                   )}
+                  {wkUn > 0 && <span className="text-ink-3">chưa gán {fmtH(wkUn)}</span>}
+                  <span className="font-semibold">T2–CN: {fmtH(wkMin)}</span>
+                  <span className="text-ink-3">≈ {yen(wkPay)}¥</span>
                 </div>
-              );
-            })}
-          </div>
-        ))}
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <p className="mt-2 min-h-[40px] text-[13px] leading-relaxed" aria-live="polite">
