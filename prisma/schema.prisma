@@ -359,6 +359,28 @@ model MonthBudget {
   @@index([month])
 }
 
+/// Một ca làm thêm (アルバイト). Giới hạn 資格外活動: 28 giờ trong BẤT KỲ 7 ngày
+/// liên tục nào — không phải tuần T2–CN. Tính ở `lib/os/baito.ts`.
+///
+/// Một ngày có thể có nhiều ca (hai chỗ làm, ca tách). `minutes` là số phút
+/// thật đã trừ nghỉ, tính sẵn lúc lưu; `start`/`end` chỉ để nhìn lại.
+/// Ca qua nửa đêm được tính trọn vào ngày BẮT ĐẦU.
+model WorkShift {
+  id       String   @id @default(cuid())
+  date     DateTime @db.Date
+  start    String? // "HH:MM"
+  end      String? // "HH:MM"
+  breakMin Int      @default(0)
+  minutes  Int
+  place    String?
+  note     String?  @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([date])
+}
+
 enum Visibility {
   PRIVATE // mặc định — chỉ mình xem
   PUBLIC // đã tick "cho người khác xem"

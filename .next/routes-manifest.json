@@ -195,6 +195,12 @@
       "namedRegex": "^/os(?:/)?$"
     },
     {
+      "page": "/os/baito",
+      "regex": "^/os/baito(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/os/baito(?:/)?$"
+    },
+    {
       "page": "/os/calendar",
       "regex": "^/os/calendar(?:/)?$",
       "routeKeys": {},

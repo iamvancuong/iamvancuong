@@ -62,6 +62,15 @@ import {
   perMonth,
   recentMonths,
 } from "../lib/os/money";
+import {
+  BAITO_LIMIT_MIN,
+  dailyTotals,
+  headroom,
+  overruns,
+  parseHM,
+  shiftMinutes,
+  windowSum,
+} from "../lib/os/baito";
 import { slugify } from "../lib/posts-format";
 import { mergeTimeline, TIMELINE } from "../lib/timeline";
 
@@ -444,6 +453,48 @@ eq(
   monthlyBuckets(week, 12, "2026-08-11")[11].key,
   "2026-08",
 );
+
+/* ---------------------------------------------------------------- baito */
+
+describe("baito.ts — 28h trong BẤT KỲ 7 ngày liên tục");
+
+eq("parseHM đọc HH:MM", parseHM("09:30"), 570);
+eq("parseHM từ chối phút 60", parseHM("09:60"), null);
+eq("ca thường 9:00–13:00 nghỉ 0", shiftMinutes("09:00", "13:00"), 240);
+eq("trừ giờ nghỉ", shiftMinutes("10:00", "18:00", 60), 420);
+// Ca đêm konbini: kết thúc nhỏ hơn bắt đầu = qua nửa đêm, không phải số âm.
+eq("ca qua nửa đêm 22:00–06:00 = 8h", shiftMinutes("22:00", "06:00"), 480);
+
+{
+  const sh = (iso: string, h: number) => ({ date: dayUTC(iso), minutes: h * 60 });
+  // T6 21 → CN 23: 14h · T2 24 → T4 26: 15h. Tuần lịch T2–CN đầu chỉ 14h, tuần
+  // sau 15h — đều sạch nếu đếm theo tuần lịch. Nhưng 7 ngày 20 → 26 là 29h.
+  const t = dailyTotals([
+    sh("2026-11-20", 0),
+    sh("2026-11-21", 5),
+    sh("2026-11-22", 5),
+    sh("2026-11-23", 4),
+    sh("2026-11-24", 5),
+    sh("2026-11-25", 5),
+    sh("2026-11-26", 5),
+  ]);
+  eq("gộp nhiều ca cùng ngày", dailyTotals([sh("2026-11-01", 3), sh("2026-11-01", 2)]).get("2026-11-01"), 300);
+  eq("tổng 7 ngày kết thúc 26/11", windowSum(t, "2026-11-26"), 29 * 60);
+  const o = overruns(t, "2026-11-01", "2026-12-10");
+  eq("bắt được vượt dù hai tuần lịch đều sạch", o.length, 1);
+  eq("báo đúng cửa sổ nặng nhất", [o[0].start, o[0].end, o[0].over], ["2026-11-20", "2026-11-26", 60]);
+
+  // Đúng 28h là HỢP LỆ — "không quá 28 tiếng".
+  const exact = dailyTotals([sh("2026-11-02", 14), sh("2026-11-08", 14)]);
+  eq("đúng 28h không bị báo", overruns(exact, "2026-11-01", "2026-11-30").length, 0);
+  eq("cửa sổ chứa cả hai ngày = 28h", windowSum(exact, "2026-11-08"), BAITO_LIMIT_MIN);
+
+  // Headroom phải nhìn cả VỀ SAU: đã xếp 20h cho 3 ngày tới thì hôm nay chỉ còn 8h.
+  const ahead = dailyTotals([sh("2026-11-24", 10), sh("2026-11-25", 10)]);
+  eq("headroom tính cả ca đã xếp phía sau", headroom(ahead, "2026-11-23"), 8 * 60);
+  eq("ngày trống xa mọi ca thì đủ 28h", headroom(ahead, "2026-12-20"), BAITO_LIMIT_MIN);
+  eq("đã vượt thì headroom là 0, không âm", headroom(t, "2026-11-23"), 0);
+}
 
 /* ---------------------------------------------------------------- slug */
 
