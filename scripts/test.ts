@@ -68,6 +68,8 @@ import {
   headroom,
   overruns,
   parseHM,
+  payByJob,
+  payOf,
   shiftMinutes,
   windowSum,
 } from "../lib/os/baito";
@@ -494,6 +496,32 @@ eq("ca qua nửa đêm 22:00–06:00 = 8h", shiftMinutes("22:00", "06:00"), 480)
   eq("headroom tính cả ca đã xếp phía sau", headroom(ahead, "2026-11-23"), 8 * 60);
   eq("ngày trống xa mọi ca thì đủ 28h", headroom(ahead, "2026-12-20"), BAITO_LIMIT_MIN);
   eq("đã vượt thì headroom là 0, không âm", headroom(t, "2026-11-23"), 0);
+}
+
+{
+  // Giao báo 1495¥/h · việc 2 1200¥/h.
+  eq("tiền ca 4h giao báo", payOf(240, 1495), 5980);
+  eq("ca lẻ 2h30 làm tròn yên", payOf(150, 1495), 3738);
+  const rates = new Map([["gb", 1495], ["v2", 1200]]);
+  const S = (iso: string, min: number, jobId: string | null, rate: number | null = null) => ({ date: dayUTC(iso), minutes: min, jobId, rate });
+  const p = payByJob(
+    [
+      S("2026-11-01", 120, "gb"),
+      S("2026-11-02", 180, "gb"),
+      S("2026-11-02", 300, "v2"),
+      S("2026-11-03", 60, "gb", 1400), // lương cũ đã chụp lại — không lấy lương mới
+      S("2026-10-31", 600, "gb"), // ngoài tháng
+      S("2026-11-04", 60, null), // chưa gán việc
+    ],
+    rates,
+    "2026-11-01",
+    "2026-12-01",
+  );
+  const get = (id: string | null) => p.find((x) => x.jobId === id);
+  eq("giờ giao báo trong tháng", get("gb")!.minutes, 360);
+  eq("tiền giao báo dùng lương chụp lại nếu có", get("gb")!.pay, 2990 + 4485 + 1400);
+  eq("tiền việc 2", get("v2")!.pay, 6000);
+  eq("ca chưa gán việc: đếm giờ, tiền 0", [get(null)!.minutes, get(null)!.pay], [60, 0]);
 }
 
 /* ---------------------------------------------------------------- slug */

@@ -3,87 +3,32 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { isOwner } from "@/lib/session";
-import { parseHM, shiftMinutes } from "./baito";
-import { dateISO, num, str, text } from "./formData";
+import { num, str } from "./formData";
 
 /**
- * Ca baito. MỌI hàm ở đây phải tự kiểm đăng nhập — Server Action là endpoint
+ * Baito. MỌI hàm ở đây phải tự kiểm đăng nhập — Server Action là endpoint
  * thật, middleware không chặn nó.
+ *
+ * Nhập duy nhất qua ô lịch: một ngày × một việc = tối đa một ca.
  */
 
 async function assertOwner() {
   if (!(await isOwner())) throw new Error("Chưa đăng nhập.");
 }
 
-/**
- * Hai cách nhập: giờ bắt đầu–kết thúc (+ nghỉ), HOẶC thẳng số giờ.
- * Có đủ bắt đầu + kết thúc thì tính từ đó; không thì đọc ô «số giờ».
- * Trần 24h/ca: gõ «45» thay vì «4.5» thì bị kẹp, không làm hỏng cả tuần.
- */
-function shiftFields(fd: FormData) {
-  const date = dateISO(fd, "date");
-  const start = str(fd, "start", 5);
-  const end = str(fd, "end", 5);
-  const breakMin = num(fd, "breakMin", { min: 0, max: 600 }) ?? 0;
-
-  let minutes: number | null = null;
-  let s: string | null = null;
-  let e: string | null = null;
-  if (parseHM(start) != null && parseHM(end) != null) {
-    minutes = shiftMinutes(start!, end!, breakMin);
-    s = start;
-    e = end;
-  } else {
-    const raw = str(fd, "hours", 10);
-    const h = raw == null ? NaN : Number(raw.replace(",", "."));
-    if (Number.isFinite(h) && h > 0) minutes = Math.round(Math.min(24, h) * 60);
-  }
-  if (minutes != null) minutes = Math.min(24 * 60, minutes);
-
-  return {
-    date,
-    start: s,
-    end: e,
-    breakMin: s ? breakMin : 0,
-    minutes,
-    place: str(fd, "place", 80),
-    note: text(fd, "note", 500),
-  };
-}
-
 function revalidateBaito() {
   revalidatePath("/os/baito");
 }
 
-export async function createShift(fd: FormData) {
-  await assertOwner();
-  const f = shiftFields(fd);
-  if (!f.date || f.minutes == null || f.minutes <= 0) return;
-  await db.workShift.create({ data: { ...f, date: f.date, minutes: f.minutes } });
-  revalidateBaito();
-}
-
-export async function updateShift(id: string, fd: FormData) {
-  await assertOwner();
-  const f = shiftFields(fd);
-  if (!f.date || f.minutes == null || f.minutes <= 0) return;
-  await db.workShift.update({
-    where: { id },
-    data: { ...f, date: f.date, minutes: f.minutes },
-  });
-  revalidateBaito();
-}
-
 /**
- * Nhập thẳng trong ô lịch: đặt TỔNG giờ của một ngày.
+ * Đặt số giờ của MỘT việc trong MỘT ngày. 0 = xóa.
  *
- * Chỉ an toàn khi ngày đó có ≤ 1 ca — nhiều ca thì không biết bớt ở ca nào,
- * nên từ chối và để form chi tiết lo. 0 = xóa ca của ngày đó.
- * Đổi số giờ của một ca có giờ bắt đầu–kết thúc thì xóa hai mốc đó đi:
- * giữ lại là để «09:00–13:00» nằm cạnh «6h», hai con số nói dối nhau.
+ * Lương giờ được chụp lại vào ca mỗi lần lưu, nên tăng lương ở bảng việc chỉ
+ * ảnh hưởng ca nhập/sửa từ đó trở đi.
  */
 export async function setDayHours(
   iso: string,
+  jobId: string,
   hours: number,
 ): Promise<{ ok: boolean; error?: string }> {
   await assertOwner();
@@ -96,20 +41,28 @@ export async function setDayHours(
   if (!Number.isFinite(hours) || hours < 0) return { ok: false, error: "Số giờ sai." };
   const minutes = Math.round(Math.min(24, hours) * 60);
 
-  const existing = await db.workShift.findMany({ where: { date } });
+  const job = await db.baitoJob.findUnique({ where: { id: jobId } });
+  if (!job) return { ok: false, error: "Không thấy việc này." };
+
+  const existing = await db.workShift.findMany({ where: { date, jobId } });
   if (existing.length > 1) {
-    return { ok: false, error: "Ngày này có nhiều ca — sửa ở danh sách bên dưới." };
+    return { ok: false, error: "Ngày này có nhiều ca cùng việc — không sửa trong ô được." };
   }
+
+  // Ca nhập trước khi có bảng việc (jobId NULL) không còn chỗ nào sửa được,
+  // nên lưu ô của ngày đó là GỘP chúng vào việc đang chọn. Ô lịch đã cộng sẵn
+  // giờ của chúng vào số hiện ra để sửa, nên không mất giờ nào trong im lặng.
+  await db.workShift.deleteMany({ where: { date, jobId: null } });
 
   const cur = existing[0];
   if (minutes === 0) {
     if (cur) await db.workShift.delete({ where: { id: cur.id } });
   } else if (!cur) {
-    await db.workShift.create({ data: { date, minutes } });
-  } else if (cur.minutes !== minutes) {
+    await db.workShift.create({ data: { date, minutes, jobId, rate: job.rate } });
+  } else {
     await db.workShift.update({
       where: { id: cur.id },
-      data: { minutes, start: null, end: null, breakMin: 0 },
+      data: { minutes, rate: job.rate, start: null, end: null, breakMin: 0 },
     });
   }
 
@@ -117,8 +70,12 @@ export async function setDayHours(
   return { ok: true };
 }
 
-export async function deleteShift(id: string) {
+/** Sửa tên + lương giờ của một việc. Không đổi tiền các ca đã lưu. */
+export async function updateJob(id: string, fd: FormData) {
   await assertOwner();
-  await db.workShift.delete({ where: { id } });
+  const name = str(fd, "name", 60);
+  const rate = num(fd, "rate", { min: 0, max: 100_000 });
+  if (!name || rate == null) return;
+  await db.baitoJob.update({ where: { id }, data: { name, rate } });
   revalidateBaito();
 }

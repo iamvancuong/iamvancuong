@@ -1,55 +1,47 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import type { WorkShift } from "@prisma/client";
 import { AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 import { db } from "@/lib/db";
-import {
-  addDaysISO,
-  dayUTC,
-  fmtDateVN,
-  fmtH,
-  isoUTC,
-  todayISO,
-  weekdayShortVN,
-} from "@/lib/os/day";
-import { mondayISO } from "@/lib/os/period";
+import { addDaysISO, dayUTC, fmtDateVN, fmtH, isoUTC, todayISO, weekdayShortVN } from "@/lib/os/day";
+import { mondayISO, monthStartISO } from "@/lib/os/period";
 import {
   BAITO_LIMIT_MIN,
   WINDOW_DAYS,
   dailyTotals,
   headroom,
   overruns,
+  payByJob,
   windowLevel,
   windowSum,
 } from "@/lib/os/baito";
-import { createShift, deleteShift, updateShift } from "@/lib/os/baitoActions";
-import {
-  ConfirmButton,
-  EmptyNote,
-  MicroLabel,
-  SubmitButton,
-  inputSmCls,
-} from "@/components/os/formBits";
+import { fmtYen, monthLabelVN } from "@/lib/os/money";
+import { updateJob } from "@/lib/os/baitoActions";
+import { MicroLabel, SubmitButton, inputSmCls } from "@/components/os/formBits";
 import { Disclosure } from "@/components/os/Disclosure";
-import { BaitoCalendar } from "@/components/os/BaitoCalendar";
+import { BaitoCalendar, type BaitoDay } from "@/components/os/BaitoCalendar";
 
 export const metadata: Metadata = { title: "Baito" };
 
 /** Số tuần hiện trên lịch: 4 tuần đã qua + tuần này + tuần sau. */
 const WEEKS = 6;
 
-const LEVEL_TEXT = {
-  ok: "text-ink-3",
-  near: "text-amber-600 dark:text-amber-400",
-  over: "text-down font-semibold",
-} as const;
+const NEAR_TEXT = "text-amber-600 dark:text-amber-400";
+
+/** "YYYY-MM-01" của tháng kế tiếp. */
+function nextMonthISO(m: string): string {
+  const [y, mo] = m.split("-").map(Number);
+  return mo === 12 ? `${y + 1}-01-01` : `${y}-${String(mo + 1).padStart(2, "0")}-01`;
+}
 
 /**
- * Giờ làm baito và giới hạn 28 giờ / 7 ngày liên tục.
+ * Giờ làm baito: giới hạn 28 giờ / 7 ngày liên tục + tiền theo tháng.
  *
  * Mỗi ô lịch ghi hai số: giờ làm của ngày đó, và «Σ» = tổng 7 ngày KẾT THÚC
  * ở ngày đó. Ô nào Σ quá 28h là một cửa sổ vi phạm — đó là cách luật đếm,
  * không phải tuần T2–CN. Xem `lib/os/baito.ts`.
+ *
+ * Lịch là chỗ nhập DUY NHẤT (chọn việc → bấm ô → gõ giờ). Không có danh sách
+ * ca riêng: nhìn lịch là đủ.
  */
 export default async function BaitoPage({
   searchParams,
@@ -65,20 +57,22 @@ export default async function BaitoPage({
   const first = addDaysISO(lastMonday, -(WEEKS - 1) * 7);
   const last = addDaysISO(lastMonday, 6);
 
-  // Lấy rộng ra 6 ngày hai đầu: Σ của ô đầu lịch cần 6 ngày trước nó, và
-  // «còn được làm» của ô cuối cần 6 ngày sau nó. Ca tương lai lấy hết để cảnh
-  // báo cả những ca đã xếp lịch xa.
-  const shifts = await db.workShift.findMany({
-    where: { date: { gte: dayUTC(addDaysISO(first, -(WINDOW_DAYS - 1))) } },
-    orderBy: [{ date: "desc" }, { start: "asc" }, { createdAt: "asc" }],
-  });
+  const thisMonth = monthStartISO(today);
+  const prevMonth = monthStartISO(addDaysISO(thisMonth, -1));
+
+  // Lấy rộng ra 6 ngày hai đầu (Σ của ô đầu lịch cần 6 ngày trước nó, «còn
+  // được làm» của ô cuối cần 6 ngày sau nó), và lùi tới đầu tháng trước để
+  // tính tiền. Ca tương lai lấy hết để cảnh báo cả ca đã xếp lịch xa.
+  const from = [addDaysISO(first, -(WINDOW_DAYS - 1)), prevMonth].sort()[0];
+  const [shifts, jobs] = await Promise.all([
+    db.workShift.findMany({
+      where: { date: { gte: dayUTC(from) } },
+      orderBy: [{ date: "desc" }, { createdAt: "asc" }],
+    }),
+    db.baitoJob.findMany({ orderBy: [{ order: "asc" }, { createdAt: "asc" }] }),
+  ]);
 
   const totals = dailyTotals(shifts);
-  const shiftCount = new Map<string, number>();
-  for (const s of shifts) {
-    const k = isoUTC(s.date);
-    shiftCount.set(k, (shiftCount.get(k) ?? 0) + 1);
-  }
   const lastShift = shifts.length ? isoUTC(shifts[0].date) : last;
   const scanEnd = [last, today, addDaysISO(lastShift, WINDOW_DAYS - 1)].sort().at(-1)!;
   const overs = overruns(totals, first, scanEnd);
@@ -86,16 +80,57 @@ export default async function BaitoPage({
   const past7 = windowSum(totals, today);
   const roomToday = headroom(totals, today);
 
+  // Phút theo (ngày, việc) + việc nào có > 1 ca trong ngày.
+  const perDay = new Map<string, { byJob: Record<string, number>; unassigned: number; cnt: Record<string, number> }>();
+  for (const s of shifts) {
+    const k = isoUTC(s.date);
+    const e = perDay.get(k) ?? { byJob: {}, unassigned: 0, cnt: {} };
+    if (s.jobId) {
+      e.byJob[s.jobId] = (e.byJob[s.jobId] ?? 0) + s.minutes;
+      e.cnt[s.jobId] = (e.cnt[s.jobId] ?? 0) + 1;
+    } else {
+      e.unassigned += s.minutes;
+    }
+    perDay.set(k, e);
+  }
+
   const days: string[] = [];
   for (let d = first; d <= last; d = addDaysISO(d, 1)) days.push(d);
-  const weeks = Array.from({ length: WEEKS }, (_, i) => days.slice(i * 7, i * 7 + 7));
+  const weeks: BaitoDay[][] = Array.from({ length: WEEKS }, (_, i) =>
+    days.slice(i * 7, i * 7 + 7).map((d) => {
+      const e = perDay.get(d);
+      const sum = windowSum(totals, d);
+      return {
+        iso: d,
+        label:
+          d.slice(8) === "01" || d === first
+            ? `${Number(d.slice(8))}/${Number(d.slice(5, 7))}`
+            : String(Number(d.slice(8))),
+        min: totals.get(d) ?? 0,
+        byJob: e?.byJob ?? {},
+        unassigned: e?.unassigned ?? 0,
+        multi: e ? Object.keys(e.cnt).filter((j) => e.cnt[j] > 1) : [],
+        sum,
+        level: windowLevel(sum),
+        room: headroom(totals, d),
+      };
+    }),
+  );
 
   const next7 = Array.from({ length: 7 }, (_, i) => addDaysISO(today, i));
 
-  const inRange = shifts.filter((s) => {
-    const d = isoUTC(s.date);
-    return d >= first && d <= last;
+  const rates = new Map(jobs.map((j) => [j.id, j.rate]));
+  const months = [thisMonth, prevMonth].map((m) => {
+    const rows = payByJob(shifts, rates, m, nextMonthISO(m));
+    return {
+      month: m,
+      rows,
+      minutes: rows.reduce((s, r) => s + r.minutes, 0),
+      pay: rows.reduce((s, r) => s + r.pay, 0),
+    };
   });
+  const jobName = (id: string | null) =>
+    id ? (jobs.find((j) => j.id === id)?.name ?? "?") : "Chưa gán việc";
 
   return (
     <div className="max-w-[820px] space-y-10">
@@ -140,21 +175,21 @@ export default async function BaitoPage({
         <div className="grid grid-cols-1 gap-px overflow-hidden rounded-[var(--radius-lg)] border border-line bg-line sm:grid-cols-3">
           <Tile
             label="7 ngày tính đến hôm nay"
-            value={fmtH(past7) === "0p" ? "0h" : fmtH(past7)}
+            value={past7 ? fmtH(past7) : "0h"}
             hint={`trần ${BAITO_LIMIT_MIN / 60}h`}
-            level={windowLevel(past7)}
+            tone={windowLevel(past7)}
           />
           <Tile
             label="Hôm nay còn được làm"
-            value={roomToday === 0 ? "0h" : fmtH(roomToday)}
+            value={roomToday ? fmtH(roomToday) : "0h"}
             hint="đã tính cả ca xếp trong 6 ngày tới"
-            level={roomToday === 0 ? "over" : "ok"}
+            tone={roomToday === 0 ? "over" : "ok"}
           />
           <Tile
-            label="Ca trên lịch này"
-            value={String(inRange.length)}
-            hint={`${fmtDateVN(first)} → ${fmtDateVN(last)}`}
-            level="ok"
+            label={`Tiền ${monthLabelVN(thisMonth)}`}
+            value={`${fmtYen(months[0].pay)}¥`}
+            hint={`${months[0].minutes ? fmtH(months[0].minutes) : "0h"} · gồm cả ca đã xếp`}
+            tone="ok"
           />
         </div>
       </section>
@@ -224,174 +259,81 @@ export default async function BaitoPage({
 
         <BaitoCalendar
           today={today}
-          weeks={weeks.map((wk) =>
-            wk.map((d) => {
-              const sum = windowSum(totals, d);
-              return {
-                iso: d,
-                label:
-                  d.slice(8) === "01" || d === first
-                    ? `${Number(d.slice(8))}/${Number(d.slice(5, 7))}`
-                    : String(Number(d.slice(8))),
-                min: totals.get(d) ?? 0,
-                sum,
-                level: windowLevel(sum),
-                count: shiftCount.get(d) ?? 0,
-                room: headroom(totals, d),
-              };
-            }),
-          )}
+          weeks={weeks}
+          jobs={jobs.map((j) => ({ id: j.id, name: j.name, rate: j.rate }))}
         />
-        <p className="mt-2 text-[12px] leading-relaxed text-ink-3">
-          Bấm ô để nhập giờ. Số to = giờ làm ngày đó. Σ = tổng 7 ngày kết thúc ở ngày đó —{" "}
-          <span className={LEVEL_TEXT.near}>vàng từ 24h</span>,{" "}
-          <span className={LEVEL_TEXT.over}>đỏ khi quá 28h</span>. Viền đứt =
-          ngày chưa tới.
+        <p className="mt-1 text-[12px] leading-relaxed text-ink-3">
+          Số to = tổng giờ ngày đó (mọi việc). Chấm màu = việc có làm. Σ = tổng 7
+          ngày kết thúc ở ngày đó — <span className={NEAR_TEXT}>vàng từ 24h</span>,{" "}
+          <span className="font-semibold text-down">đỏ khi quá 28h</span>. Viền
+          đứt = ngày chưa tới.
         </p>
       </section>
 
       <section>
         <h2 className="mb-3">
-          <MicroLabel>Thêm ca</MicroLabel>
+          <MicroLabel>Tiền theo tháng</MicroLabel>
         </h2>
-        <form
-          action={createShift}
-          className="space-y-2 rounded-[var(--radius-lg)] border border-line p-3"
-        >
-          <ShiftFields defaultDate={today} />
-          <div className="flex justify-end">
-            <SubmitButton>Thêm ca</SubmitButton>
-          </div>
-        </form>
-      </section>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {months.map((m) => (
+            <div key={m.month} className="rounded-[var(--radius-lg)] border border-line p-3">
+              <div className="mb-2 flex items-baseline justify-between">
+                <span className="text-[14px] font-medium">{monthLabelVN(m.month)}</span>
+                <span className="text-[18px] font-semibold tabular-nums">{fmtYen(m.pay)}¥</span>
+              </div>
+              {m.rows.length === 0 ? (
+                <p className="text-[13px] text-ink-3">Chưa có ca.</p>
+              ) : (
+                <ul className="space-y-1 text-[13px]">
+                  {m.rows.map((r) => (
+                    <li key={r.jobId ?? "none"} className="flex justify-between gap-2 tabular-nums">
+                      <span className="text-ink-2">
+                        {jobName(r.jobId)} · {fmtH(r.minutes)}
+                      </span>
+                      <span>{fmtYen(r.pay)}¥</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ))}
+        </div>
+        <p className="mt-2 text-[12px] leading-relaxed text-ink-3">
+          Giờ × lương giờ, chưa trừ thuế/bảo hiểm, chưa tính phụ cấp đêm hay
+          tiền tàu. Tính theo tháng lịch — nếu chỗ làm chốt lương ngày khác (締め日)
+          thì số này lệch với phiếu lương.
+        </p>
 
-      <section>
-        <h2 className="mb-3">
-          <MicroLabel>Các ca trên lịch này</MicroLabel>
-        </h2>
-        {inRange.length === 0 ? (
-          <EmptyNote>Chưa có ca nào trong khoảng này.</EmptyNote>
-        ) : (
-          <ul className="divide-y divide-line-soft rounded-[var(--radius-lg)] border border-line">
-            {inRange.map((s) => (
-              <ShiftRow key={s.id} s={s} />
+        <Disclosure label="Sửa tên việc / lương giờ" small>
+          <div className="space-y-2 rounded-[var(--radius-lg)] border border-line p-3">
+            {jobs.map((j) => (
+              <form key={j.id} action={updateJob.bind(null, j.id)} className="flex flex-wrap gap-2">
+                <input
+                  name="name"
+                  required
+                  defaultValue={j.name}
+                  aria-label="Tên việc"
+                  className={`${inputSmCls} min-w-[140px] flex-1`}
+                />
+                <input
+                  name="rate"
+                  required
+                  inputMode="numeric"
+                  defaultValue={j.rate}
+                  aria-label="Lương giờ ¥"
+                  className={`${inputSmCls} !w-[110px]`}
+                />
+                <SubmitButton>Lưu</SubmitButton>
+              </form>
             ))}
-          </ul>
-        )}
+            <p className="text-[12px] text-ink-3">
+              Đổi lương giờ chỉ áp cho ca nhập/sửa từ giờ trở đi — tiền các ca
+              đã lưu giữ nguyên lương lúc đó.
+            </p>
+          </div>
+        </Disclosure>
       </section>
     </div>
-  );
-}
-
-function ShiftRow({ s }: { s: WorkShift }) {
-  const d = isoUTC(s.date);
-  return (
-    <li className="p-3">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <div className="min-w-0">
-          <span className="text-[15px] font-medium tabular-nums">
-            {weekdayShortVN(d)} {fmtDateVN(d)}
-          </span>
-          <span className="ml-2 text-[13px] text-ink-3">
-            {[
-              s.start && s.end ? `${s.start}–${s.end}` : null,
-              s.breakMin ? `nghỉ ${s.breakMin}p` : null,
-              s.place,
-            ]
-              .filter(Boolean)
-              .join(" · ")}
-          </span>
-          {s.note && <p className="mt-1 text-[13px] text-ink-2">{s.note}</p>}
-        </div>
-        <span className="text-[16px] font-semibold tabular-nums">{fmtH(s.minutes)}</span>
-      </div>
-      <Disclosure label="Sửa" small>
-        <div className="space-y-3 rounded-[var(--radius-lg)] border border-line p-3">
-          <form action={updateShift.bind(null, s.id)} className="space-y-2">
-            <ShiftFields shift={s} />
-            <div className="flex justify-end">
-              <SubmitButton>Lưu</SubmitButton>
-            </div>
-          </form>
-          <form action={deleteShift.bind(null, s.id)} className="border-t border-line-soft pt-3">
-            <ConfirmButton
-              label="Xóa ca này"
-              confirm={`Xóa ca ${fmtDateVN(d)} (${fmtH(s.minutes)})?`}
-              className="text-[12px] text-ink-3 hover:text-down"
-            >
-              Xóa ca
-            </ConfirmButton>
-          </form>
-        </div>
-      </Disclosure>
-    </li>
-  );
-}
-
-/** Dùng chung cho form thêm và sửa. Có giờ bắt đầu + kết thúc thì bỏ qua ô «số giờ». */
-function ShiftFields({ shift, defaultDate }: { shift?: WorkShift; defaultDate?: string }) {
-  const hasTimes = !!(shift?.start && shift?.end);
-  return (
-    <>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <label className="col-span-2 sm:col-span-1">
-          <span className="text-[12px] text-ink-3">Ngày</span>
-          <input
-            type="date"
-            name="date"
-            required
-            defaultValue={shift ? isoUTC(shift.date) : defaultDate}
-            className={inputSmCls}
-          />
-        </label>
-        <label>
-          <span className="text-[12px] text-ink-3">Bắt đầu</span>
-          <input type="time" name="start" defaultValue={shift?.start ?? ""} className={inputSmCls} />
-        </label>
-        <label>
-          <span className="text-[12px] text-ink-3">Kết thúc</span>
-          <input type="time" name="end" defaultValue={shift?.end ?? ""} className={inputSmCls} />
-        </label>
-        <label>
-          <span className="text-[12px] text-ink-3">Nghỉ (phút)</span>
-          <input
-            name="breakMin"
-            inputMode="numeric"
-            defaultValue={shift?.breakMin || ""}
-            placeholder="0"
-            className={inputSmCls}
-          />
-        </label>
-        <label>
-          <span className="text-[12px] text-ink-3">hoặc số giờ</span>
-          <input
-            name="hours"
-            inputMode="decimal"
-            defaultValue={shift && !hasTimes ? String(shift.minutes / 60) : ""}
-            placeholder="vd 4.5"
-            className={inputSmCls}
-          />
-        </label>
-      </div>
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <input
-          name="place"
-          defaultValue={shift?.place ?? ""}
-          placeholder="Chỗ làm (không bắt buộc)"
-          className={inputSmCls}
-        />
-        <input
-          name="note"
-          defaultValue={shift?.note ?? ""}
-          placeholder="Ghi chú"
-          className={inputSmCls}
-        />
-      </div>
-      <p className="text-[12px] text-ink-3">
-        Có đủ bắt đầu + kết thúc thì tính từ đó (trừ nghỉ); kết thúc nhỏ hơn bắt
-        đầu = ca qua đêm, tính vào ngày bắt đầu. Không thì dùng ô «số giờ».
-      </p>
-    </>
   );
 }
 
@@ -399,19 +341,19 @@ function Tile({
   label,
   value,
   hint,
-  level,
+  tone,
 }: {
   label: string;
   value: string;
   hint?: string;
-  level: "ok" | "near" | "over";
+  tone: "ok" | "near" | "over";
 }) {
   return (
     <div className="bg-bg p-4">
       <div className="text-[12px] leading-snug text-ink-3">{label}</div>
       <div
         className={`mt-1.5 text-[22px] font-semibold tabular-nums leading-none ${
-          level === "over" ? "text-down" : level === "near" ? LEVEL_TEXT.near : ""
+          tone === "over" ? "text-down" : tone === "near" ? NEAR_TEXT : ""
         }`}
       >
         {value}

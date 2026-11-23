@@ -115,3 +115,37 @@ export function windowLevel(min: number): "ok" | "near" | "over" {
   if (min >= 24 * 60) return "near";
   return "ok";
 }
+
+/* ------------------------------------------------------------- tiền */
+
+/** Tiền của một ca: phút × lương giờ, làm tròn yên. */
+export function payOf(minutes: number, rate: number): number {
+  return Math.round((minutes * rate) / 60);
+}
+
+export type JobPay = { jobId: string | null; minutes: number; pay: number };
+
+/**
+ * Giờ + tiền theo từng việc trong [fromISO, toISO).
+ *
+ * Lấy lương giờ CHỤP LẠI trên ca (`rate`); ca cũ chưa có thì dùng lương hiện
+ * tại của việc. Ca không gán việc vẫn đếm giờ nhưng tiền = 0 — không đoán.
+ */
+export function payByJob(
+  shifts: { date: Date; minutes: number; jobId: string | null; rate: number | null }[],
+  jobRates: Map<string, number>,
+  fromISO: string,
+  toISO: string,
+): JobPay[] {
+  const by = new Map<string | null, JobPay>();
+  for (const s of shifts) {
+    const d = isoUTC(s.date);
+    if (d < fromISO || d >= toISO) continue;
+    const rate = s.rate ?? (s.jobId ? jobRates.get(s.jobId) : undefined) ?? 0;
+    const cur = by.get(s.jobId) ?? { jobId: s.jobId, minutes: 0, pay: 0 };
+    cur.minutes += s.minutes;
+    cur.pay += payOf(s.minutes, rate);
+    by.set(s.jobId, cur);
+  }
+  return [...by.values()];
+}

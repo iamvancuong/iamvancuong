@@ -4,16 +4,23 @@ import { useRef, useState, useTransition } from "react";
 import { setDayHours } from "@/lib/os/baitoActions";
 import { fmtDateVN, fmtH, weekdayShortVN } from "@/lib/os/day";
 
+export type BaitoJobLite = { id: string; name: string; rate: number };
+
 export type BaitoDay = {
   iso: string;
   /** Nhãn ô: "23", hoặc "1/12" ở ngày đầu tháng / ô đầu lịch. */
   label: string;
+  /** Tổng phút mọi việc. */
   min: number;
+  /** Phút theo từng việc. */
+  byJob: Record<string, number>;
+  /** Phút của ca cũ chưa gán việc — gộp vào việc đang chọn khi lưu. */
+  unassigned: number;
+  /** Việc có > 1 ca trong ngày (dữ liệu cũ) — không sửa trong ô được. */
+  multi: string[];
   /** Tổng 7 ngày kết thúc ở ngày này. */
   sum: number;
   level: "ok" | "near" | "over";
-  /** Số ca của ngày — > 1 thì không sửa trong ô được. */
-  count: number;
   /** Phút còn thêm được vào ngày này mà không cửa sổ nào vượt 28h. */
   room: number;
 };
@@ -24,21 +31,31 @@ const LEVEL_TEXT = {
   over: "text-down font-semibold",
 } as const;
 
+/** Màu chấm của từng việc, theo thứ tự. */
+const JOB_DOT = ["bg-accent", "bg-amber-500", "bg-up", "bg-ink-3"];
+
+/** Cùng cách viết với `fmtYen` (money.ts) — không import file đó vào client vì nó kéo theo @prisma/client. */
+const yen = (n: number) => n.toLocaleString("vi-VN");
+const hNum = (min: number) => String(Math.round((min / 60) * 100) / 100);
+
 /**
- * Lịch baito — bấm vào ô là gõ số giờ ngay trong ô.
+ * Lịch baito — chọn việc ở hàng chip, rồi bấm ô và gõ số giờ của việc đó.
  *
- * Enter = lưu rồi nhảy sang ngày kế tiếp (nhập cả tuần không phải chạm lại),
- * Esc = bỏ, rời ô = lưu. Xóa trống / gõ 0 = xóa ca của ngày đó.
- * Ngày có nhiều ca thì không sửa ở đây: tổng mới không nói được bớt ở ca nào.
+ * Giống hàng pomodoro: chọn TRƯỚC rồi bấm. Nhập cả tuần giao báo thì chọn
+ * «Giao báo» một lần rồi Enter–Enter qua từng ngày.
+ * Enter = lưu + sang ngày sau · Esc = bỏ · rời ô = lưu · trống/0 = xóa.
  */
 export function BaitoCalendar({
   weeks,
   today,
+  jobs,
 }: {
   weeks: BaitoDay[][];
   today: string;
+  jobs: BaitoJobLite[];
 }) {
   const all = weeks.flat();
+  const [jobId, setJobId] = useState(jobs[0]?.id ?? "");
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
@@ -50,16 +67,21 @@ export function BaitoCalendar({
   // (ngày trống lưu hai lần là thành hai ca).
   const active = useRef<string | null>(null);
 
+  const job = jobs.find((j) => j.id === jobId);
+  const jobMin = (d: BaitoDay) => (d.byJob[jobId] ?? 0) + d.unassigned;
+
   function open(d: BaitoDay) {
-    if (d.count > 1) {
+    if (!job) return;
+    if (d.multi.includes(jobId)) {
       active.current = null;
       setEditing(null);
-      setMsg(`${fmtDateVN(d.iso)} có ${d.count} ca — sửa ở danh sách «Các ca» bên dưới.`);
+      setMsg(`${fmtDateVN(d.iso)} có nhiều ca «${job.name}» — không sửa trong ô được.`);
       return;
     }
     active.current = d.iso;
     setEditing(d.iso);
-    setDraft(d.min ? String(Math.round((d.min / 60) * 100) / 100) : "");
+    const m = jobMin(d);
+    setDraft(m ? hNum(m) : "");
     setMsg(null);
   }
 
@@ -79,10 +101,12 @@ export function BaitoCalendar({
       setMsg(`«${draft}» không phải số giờ (0–24).`);
       return;
     }
-    if (Math.round(h * 60) !== d.min) {
+    // Có ca chưa gán việc thì luôn lưu, để gộp chúng vào việc đang chọn.
+    if (Math.round(h * 60) !== jobMin(d) || d.unassigned > 0) {
+      const id = jobId;
       setSaving((s) => new Set(s).add(d.iso));
       startTransition(async () => {
-        const r = await setDayHours(d.iso, h);
+        const r = await setDayHours(d.iso, id, h);
         if (!r.ok) setMsg(r.error ?? "Không lưu được.");
         setSaving((s) => {
           const n = new Set(s);
@@ -95,11 +119,40 @@ export function BaitoCalendar({
   }
 
   const cur = all.find((d) => d.iso === editing);
-  const draftMin = Math.round(Number(draft.trim().replace(",", ".") || 0) * 60);
-  const maxMin = cur ? cur.min + cur.room : 0;
+  const draftMin = Math.round(Number(draft.trim().replace(",", ".") || 0) * 60) || 0;
+  const maxMin = cur ? jobMin(cur) + cur.room : 0;
+
+  if (jobs.length === 0) {
+    return <p className="text-[14px] text-ink-3">Chưa có việc nào — chạy file SQL tạo việc trước.</p>;
+  }
 
   return (
     <>
+      <div className="mb-3 flex flex-wrap gap-2" role="radiogroup" aria-label="Nhập giờ cho việc">
+        {jobs.map((j, i) => {
+          const on = j.id === jobId;
+          return (
+            <button
+              key={j.id}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              onClick={() => {
+                close();
+                setJobId(j.id);
+              }}
+              className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-[14px] transition-colors ${
+                on ? "border-ink bg-ink text-bg" : "border-line text-ink-2 hover:border-ink-3"
+              }`}
+            >
+              <span className={`h-2 w-2 rounded-full ${JOB_DOT[i % JOB_DOT.length]}`} />
+              {j.name}
+              <span className={on ? "opacity-70" : "text-ink-3"}>{yen(j.rate)}¥/h</span>
+            </button>
+          );
+        })}
+      </div>
+
       <div className="grid grid-cols-7 gap-1 text-center text-[11px] text-ink-3">
         {["T2", "T3", "T4", "T5", "T6", "T7", "CN"].map((d) => (
           <div key={d} className="pb-1">
@@ -123,11 +176,23 @@ export function BaitoCalendar({
               return (
                 <div
                   key={d.iso}
-                  className={`relative min-h-[62px] rounded-[var(--radius-md)] border px-1 py-1.5 ${border} ${
+                  className={`relative min-h-[66px] rounded-[var(--radius-md)] border px-1 py-1.5 ${border} ${
                     d.iso > today && !isEditing ? "border-dashed" : ""
                   } ${saving.has(d.iso) ? "opacity-50" : ""}`}
                 >
-                  <div className="text-[11px] text-ink-3">{d.label}</div>
+                  <div className="flex items-center justify-between gap-0.5 text-[11px] text-ink-3">
+                    <span>{d.label}</span>
+                    <span className="flex gap-0.5">
+                      {jobs.map((j, i) =>
+                        d.byJob[j.id] ? (
+                          <span
+                            key={j.id}
+                            className={`h-1.5 w-1.5 rounded-full ${JOB_DOT[i % JOB_DOT.length]}`}
+                          />
+                        ) : null,
+                      )}
+                    </span>
+                  </div>
                   {isEditing ? (
                     <input
                       autoFocus
@@ -145,14 +210,14 @@ export function BaitoCalendar({
                       }}
                       onBlur={() => commit(d, false)}
                       placeholder="0"
-                      aria-label={`Số giờ ngày ${fmtDateVN(d.iso)}`}
+                      aria-label={`Số giờ ${job?.name} ngày ${fmtDateVN(d.iso)}`}
                       className="mt-0.5 w-full min-w-0 rounded-[var(--radius-sm)] border border-line bg-bg px-1 py-0.5 text-center text-[16px] font-semibold tabular-nums outline-none focus:border-accent"
                     />
                   ) : (
                     <button
                       type="button"
                       onClick={() => open(d)}
-                      aria-label={`${fmtDateVN(d.iso)}: ${d.min ? fmtH(d.min) : "chưa có ca"} — bấm để nhập giờ`}
+                      aria-label={`${fmtDateVN(d.iso)}: ${d.min ? fmtH(d.min) : "chưa có ca"} — bấm để nhập giờ ${job?.name}`}
                       className="absolute inset-0 flex flex-col justify-end rounded-[var(--radius-md)] px-1 pb-1.5 pt-5 text-left hover:bg-surface-2/60"
                     >
                       <span className="text-[14px] font-semibold tabular-nums">
@@ -170,17 +235,29 @@ export function BaitoCalendar({
         ))}
       </div>
 
-      <p className="mt-2 min-h-[20px] text-[13px]" aria-live="polite">
-        {cur ? (
+      <p className="mt-2 min-h-[40px] text-[13px] leading-relaxed" aria-live="polite">
+        {cur && job ? (
           <>
             <span className="text-ink-2">
-              {weekdayShortVN(cur.iso)} {fmtDateVN(cur.iso)}: tối đa{" "}
-              <strong className="text-ink">{fmtH(maxMin) === "0p" ? "0h" : fmtH(maxMin)}</strong>{" "}
-              để không lố 28h.
+              {weekdayShortVN(cur.iso)} {fmtDateVN(cur.iso)} · <strong className="text-ink">{job.name}</strong>
+              {draftMin > 0 && <> ≈ {yen(Math.round((draftMin * job.rate) / 60))}¥</>}
+              {" · "}tối đa <strong className="text-ink">{maxMin ? fmtH(maxMin) : "0h"}</strong> để không lố 28h.
             </span>
             {draftMin > maxMin && (
               <span className="ml-1 font-semibold text-down">
                 Nhập {fmtH(draftMin)} là lố {fmtH(draftMin - maxMin)}.
+              </span>
+            )}
+            {jobs
+              .filter((j) => j.id !== jobId && cur.byJob[j.id])
+              .map((j) => (
+                <span key={j.id} className="ml-1 text-ink-3">
+                  ({j.name} ngày này: {fmtH(cur.byJob[j.id])})
+                </span>
+              ))}
+            {cur.unassigned > 0 && (
+              <span className="ml-1 text-ink-3">
+                Gồm {fmtH(cur.unassigned)} ca cũ chưa gán việc — lưu sẽ gán vào {job.name}.
               </span>
             )}
             <span className="ml-1 text-ink-3">Enter lưu + sang ngày sau · Esc bỏ.</span>
@@ -188,7 +265,9 @@ export function BaitoCalendar({
         ) : msg ? (
           <span className="text-down">{msg}</span>
         ) : (
-          <span className="text-ink-3">Bấm vào một ô để nhập số giờ (vd 4.5).</span>
+          <span className="text-ink-3">
+            Chọn việc ở trên, rồi bấm vào ô để nhập số giờ của việc đó (vd 4.5).
+          </span>
         )}
       </p>
     </>

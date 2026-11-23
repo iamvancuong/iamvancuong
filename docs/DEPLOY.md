@@ -89,6 +89,7 @@ $M -e "DROP DATABASE scratch_prod;"
 |---|---|---|
 | 12/08/2026 | `scripts/2026-08-12-pomodoro.sql` | `DailyLog.jpPomo` + 4 bảng `DayTask` · `StudyGoal` · `StudySkill` · `PomoSession` |
 | 23/11/2026 | `scripts/2026-11-23-baito.sql` | bảng `WorkShift` (trang `/os/baito`) |
+| 23/11/2026 | `scripts/2026-11-23b-baito-jobs.sql` | bảng `BaitoJob` (+2 việc) · `WorkShift.jobId`/`rate` |
 
 ## 3. Cập nhật khi ĐỔI NỘI DUNG
 

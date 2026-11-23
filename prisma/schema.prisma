@@ -375,10 +375,30 @@ model WorkShift {
   place    String?
   note     String?  @db.Text
 
+  /// Làm cho việc nào. Null = ca nhập trước khi có bảng việc.
+  jobId String?
+  job   BaitoJob? @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  /// Lương giờ CHỤP LẠI lúc lưu. Tăng lương sau này không được làm các tháng
+  /// cũ bỗng nhiều tiền hơn — cùng lý do `FixedCost` có `startedAt/endedAt`.
+  rate Int?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([date])
+  @@index([jobId])
+}
+
+/// Một chỗ làm baito và lương giờ hiện tại (¥/giờ).
+model BaitoJob {
+  id     String      @id @default(cuid())
+  name   String
+  rate   Int
+  order  Int         @default(0)
+  shifts WorkShift[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum Visibility {
